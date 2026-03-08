@@ -1,3 +1,7 @@
+/* ===============================
+   GLOBAL ROOT CONFIG
+================================ */
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -13,14 +17,25 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+
+/* ===============================
+   LINKS
+================================ */
+
 a {
   font-weight: 500;
   color: #646cff;
   text-decoration: inherit;
 }
+
 a:hover {
   color: #535bf2;
 }
+
+
+/* ===============================
+   BASE LAYOUT
+================================ */
 
 body {
   margin: 0;
@@ -30,60 +45,81 @@ body {
   min-height: 100vh;
 }
 
+
+/* ===============================
+   TYPOGRAPHY
+================================ */
+
 h1 {
   font-size: 3.2em;
   line-height: 1.1;
 }
 
+
+/* ===============================
+   BUTTONS
+================================ */
+
 button {
   border-radius: 8px;
   border: 1px solid transparent;
   padding: 0.6em 1.2em;
+
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
+
   background-color: #1a1a1a;
   cursor: pointer;
+
   transition: border-color 0.25s;
 }
+
 button:hover {
   border-color: #646cff;
 }
+
 button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
+
+/* ===============================
+   LIGHT MODE SUPPORT
+================================ */
+
 @media (prefers-color-scheme: light) {
+
   :root {
     color: #213547;
     background-color: #ffffff;
   }
+
   a:hover {
     color: #747bff;
   }
+
   button {
     background-color: #f9f9f9;
   }
-}
-/* SCROLL FIX GLOBAL */
 
-html{
-height:auto !important;
-overflow-y:scroll !important;
 }
 
-body{
-height:auto !important;
-overflow-y:scroll !important;
+
+/* ===============================
+   GLOBAL SCROLL FIX
+   Prevent layout lock on full-page apps
+================================ */
+
+html,
+body {
+  height: auto !important;
+  overflow-y: scroll !important;
 }
 
-#root{
-height:auto !important;
-overflow:visible !important;
-}
-
-.home{
-height:auto !important;
-overflow:visible !important;
+#root,
+.home {
+  height: auto !important;
+  overflow: visible !important;
 }

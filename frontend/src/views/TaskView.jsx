@@ -4,6 +4,29 @@ import "../assets/css/TaskHome.css";
 const DEFAULT_THEME_COLOR = "#1E3A8A";
 const MAX_THEMES = 7;
 
+/**
+ * Main dashboard view displaying tasks, progress and theme management.
+ *
+ * @param {Object} props
+ * @param {Array} props.tasks - List of tasks displayed in the dashboard.
+ * @param {Function} props.addTask - Function used to create a new task.
+ * @param {Function} props.deleteTask - Function used to remove a task.
+ * @param {Function} props.toggleStatus - Function toggling task completion.
+ * @param {Function} props.logout - Function used to log out the user.
+ * @param {Function} props.deleteTheme - Deletes a theme by id.
+ * @param {String} props.priority - Current priority selected for task creation.
+ * @param {Function} props.setPriority - Updates the selected task priority.
+ * @param {String} props.filter - Current filter applied to tasks.
+ * @param {Function} props.setFilter - Updates the active task filter.
+ * @param {Number} props.totalTasks - Total number of tasks.
+ * @param {Number} props.completedTasks - Number of completed tasks.
+ * @param {Function} props.createTheme - Function to create a new theme.
+ * @param {Array} props.themes - List of available themes.
+ * @param {Object} props.currentTheme - Currently active theme.
+ * @param {Function} props.onProfile - Opens the user profile page.
+ *
+ * @returns {JSX.Element} Task dashboard interface
+ */
 export function TaskView({
   tasks = [],
   addTask,
@@ -336,7 +359,7 @@ export function TaskView({
     toggleStatus(task);
   }}
 >
-  Done
+  
 </button>
 
                 <button onClick={() => deleteTask(task.id)}>

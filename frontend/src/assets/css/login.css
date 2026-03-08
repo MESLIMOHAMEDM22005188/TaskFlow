@@ -1,0 +1,178 @@
+@import url("https://fonts.googleapis.com/css2?family=Raleway:wght@400;700&display=swap");
+
+/* RESET SAFE */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* On ne touche PAS html/body */
+html, body {
+  height: auto;
+  background: transparent;
+  font-family: "Raleway", sans-serif;
+}
+
+/* =============================== */
+/* ROOT ISOLÉ */
+/* =============================== */
+
+#root {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #111;
+  font-family: "Raleway", sans-serif;
+}
+
+/* =============================== */
+/* MAIN CONTAINER */
+/* =============================== */
+
+.container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* =============================== */
+/* DIAGONAL BACKGROUND */
+/* =============================== */
+
+.top,
+.bottom {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+.top::before,
+.top::after,
+.bottom::before,
+.bottom::after {
+  content: "";
+  position: absolute;
+  width: 200vmax;
+  height: 200vmax;
+  top: 50%;
+  left: 50%;
+  margin-top: -100vmax;
+  transform-origin: 0 50%;
+  transition: all 0.7s cubic-bezier(.445,.05,0,1);
+  opacity: 0.65;
+}
+
+/* COLORS */
+.top::before {
+  transform: rotate(45deg);
+  background: #e46569;
+}
+
+.top::after {
+  transform: rotate(135deg);
+  background: #ecaf81;
+}
+
+.bottom::before {
+  transform: rotate(-45deg);
+  background: #60b8d4;
+}
+
+.bottom::after {
+  transform: rotate(-135deg);
+  background: #3745b5;
+}
+
+/* HOVER ANIMATION */
+.container:hover .top::before,
+.container:hover .top::after,
+.container:hover .bottom::before,
+.container:hover .bottom::after {
+  margin-left: 200px;
+  transform-origin: -200px 50%;
+}
+
+/* =============================== */
+/* CENTER CARD */
+/* =============================== */
+
+.center {
+  position: absolute;
+  width: 380px;
+  padding: 40px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.9);
+  background: rgb(0, 0, 0);
+  border-radius: 8px;
+  box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+  text-align: center;
+  z-index: 10;
+
+  opacity: 0;
+  pointer-events: none;
+
+  transition: 
+    opacity 0.4s ease,
+    transform 0.4s ease;
+}
+.container:hover .center {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+  pointer-events: auto;
+}
+
+
+
+/* TITLE */
+
+.center h2 {
+  margin-bottom: 20px;
+  font-weight: 700;
+}
+
+/* INPUTS */
+
+.center input {
+  width: 100%;
+  padding: 14px;
+  margin: 8px 0;
+  border-radius: 3px;
+  border: 1px solid #ccc;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+/* BUTTON */
+
+.center button {
+  width: 100%;
+  padding: 14px;
+  margin-top: 15px;
+  border: none;
+  border-radius: 3px;
+  background: #333;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.center button:hover {
+  background: #111;
+}
+
+.center p {
+  margin-top: 15px;
+  font-size: 13px;
+  cursor: pointer;
+  color: #666;
+}
+
+.center p:hover {
+  color: #000;
+}

@@ -10,7 +10,6 @@ import "./index.css";
 // Main application component
 import App from "./App.jsx";
 
-
 // Root element where React will mount
 const rootElement = document.getElementById("root");
 
@@ -23,7 +22,7 @@ if (!rootElement) {
 const root = createRoot(rootElement);
 
 // Render application
-root.render(git
+root.render(
   <StrictMode>
     <App />
   </StrictMode>

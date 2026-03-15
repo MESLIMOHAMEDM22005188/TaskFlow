@@ -1,0 +1,142 @@
+.profil-page{
+    min-height:100vh;
+    background:#0f172a;
+    color:white;
+    font-family:-apple-system,system-ui;
+}
+
+/* TOPBAR */
+
+.topbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:25px 60px;
+}
+
+.logo{
+    font-size:20px;
+    font-weight:600;
+}
+
+.nav-menu{
+    display:flex;
+    align-items:center;
+    gap:24px;
+    margin-left:auto;
+}
+
+.nav-item{
+    cursor:pointer;
+    font-size:14px;
+    opacity:0.8;
+    transition:0.2s;
+}
+
+.nav-item:hover{
+    opacity:1;
+}
+
+.nav-icons{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin-left:10px;
+}
+
+.nav-avatar img{
+    width:36px;
+    height:36px;
+    border-radius:50%;
+}
+
+/* MAIN */
+
+.profil-main{
+    max-width:800px;
+    margin:auto;
+    padding:40px;
+}
+
+.profil-title{
+    font-size:28px;
+    margin-bottom:30px;
+}
+
+/* CARD */
+
+.profil-card{
+    background:#1e293b;
+    padding:30px;
+    border-radius:14px;
+    display:flex;
+    gap:30px;
+    align-items:center;
+    margin-bottom:30px;
+}
+
+/* AVATAR */
+
+.profil-avatar img{
+    width:120px;
+    height:120px;
+    border-radius:50%;
+}
+
+/* FORM */
+
+.profil-form{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+
+.profil-form input,
+.profil-form textarea{
+    padding:10px;
+    border:none;
+    border-radius:8px;
+    background:#334155;
+    color:white;
+}
+
+.profil-form textarea{
+    resize:none;
+    height:80px;
+}
+
+.profil-save{
+    margin-top:10px;
+    padding:12px;
+    border:none;
+    border-radius:10px;
+    background:#6366f1;
+    color:white;
+    cursor:pointer;
+}
+
+/* STATS */
+
+.profil-stats{
+    display:flex;
+    gap:20px;
+}
+
+.stat-card{
+    flex:1;
+    background:#1e293b;
+    padding:20px;
+    border-radius:12px;
+    text-align:center;
+}
+
+.stat-card h3{
+    font-size:14px;
+    opacity:0.7;
+}
+
+.stat-card p{
+    font-size:22px;
+    margin-top:8px;
+}

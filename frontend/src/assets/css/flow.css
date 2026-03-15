@@ -1,0 +1,91 @@
+.flow-page{
+    min-height:100vh;
+    background:#0f172a;
+    color:white;
+    font-family:-apple-system,system-ui;
+}
+
+.topbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:25px 60px;
+}
+
+.logo{
+    font-size:20px;
+    font-weight:600;
+}
+
+.nav-menu{
+    display:flex;
+    align-items:center;
+    gap:24px;
+    margin-left:auto;
+}
+
+.nav-item{
+    cursor:pointer;
+    font-size:14px;
+    opacity:0.8;
+    transition:0.2s;
+}
+
+.nav-item:hover{
+    opacity:1;
+}
+
+.nav-icons{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin-left:10px;
+}
+
+.nav-avatar img{
+    width:36px;
+    height:36px;
+    border-radius:50%;
+}
+
+.flow-main{
+    max-width:700px;
+    margin:auto;
+    padding:40px;
+}
+
+.flow-title{
+    font-size:28px;
+    margin-bottom:30px;
+}
+
+.flow-list{
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+}
+
+.flow-card{
+    display:flex;
+    gap:16px;
+    align-items:center;
+    padding:16px;
+    background:#1e293b;
+    border-radius:12px;
+}
+
+.flow-avatar img{
+    width:42px;
+    height:42px;
+    border-radius:50%;
+}
+
+.flow-text{
+    font-size:14px;
+}
+
+.flow-time{
+    font-size:12px;
+    opacity:0.6;
+    margin-top:4px;
+}

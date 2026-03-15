@@ -1,0 +1,100 @@
+.objectifs-page{
+    min-height:100vh;
+    background:#0f172a;
+    color:white;
+    font-family:-apple-system,system-ui;
+}
+
+.topbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:25px 60px;
+}
+
+.logo{
+    font-size:20px;
+    font-weight:600;
+}
+
+.nav-menu{
+    display:flex;
+    align-items:center;
+    gap:24px;
+    margin-left:auto;
+}
+
+.nav-item{
+    cursor:pointer;
+    font-size:14px;
+    opacity:0.8;
+    transition:0.2s;
+}
+
+.nav-item:hover{
+    opacity:1;
+}
+
+.nav-icons{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin-left:10px;
+}
+
+.nav-avatar img{
+    width:36px;
+    height:36px;
+    border-radius:50%;
+}
+
+.objectifs-main{
+    max-width:800px;
+    margin:auto;
+    padding:40px;
+}
+
+.objectifs-title{
+    font-size:28px;
+    margin-bottom:30px;
+}
+
+.objectifs-list{
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+}
+
+.objectif-card{
+    background:#1e293b;
+    padding:20px;
+    border-radius:12px;
+}
+
+.objectif-header{
+    display:flex;
+    justify-content:space-between;
+    margin-bottom:10px;
+}
+
+.progress-text{
+    font-size:14px;
+    opacity:0.7;
+}
+
+.progress-bar{
+    height:8px;
+    background:#334155;
+    border-radius:6px;
+    overflow:hidden;
+    margin-bottom:10px;
+}
+
+.progress-fill{
+    height:100%;
+    background:#6366f1;
+}
+
+.progress-slider{
+    width:100%;
+}

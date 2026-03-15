@@ -1,7 +1,7 @@
 body{
     margin:0;
-    font-family:Arial, Helvetica, sans-serif;
-    background:#0f172a;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: linear-gradient(135deg,#0f172a,#1e293b);
 }
 
 .auth-container{
@@ -13,48 +13,71 @@ body{
 
 .auth-card{
     background:white;
-    padding:40px;
-    width:350px;
-    border-radius:10px;
-    box-shadow:0 10px 30px rgba(0,0,0,0.2);
+    padding:40px 35px;
+    width:360px;
+    border-radius:14px;
+    box-shadow:0 20px 40px rgba(0,0,0,0.25);
     display:flex;
     flex-direction:column;
+    gap:12px;
 }
 
 .auth-title{
     text-align:center;
-    margin-bottom:25px;
+    margin-bottom:15px;
+    font-weight:600;
+    font-size:22px;
+    color:#0f172a;
 }
 
 .auth-input{
-    padding:12px;
-    margin-bottom:15px;
-    border:1px solid #ddd;
-    border-radius:6px;
+    padding:13px;
+    border:1px solid #e2e8f0;
+    border-radius:8px;
     font-size:14px;
+    transition:0.2s;
 }
 
 .auth-input:focus{
     outline:none;
     border-color:#2563eb;
+    box-shadow:0 0 0 3px rgba(37,99,235,0.15);
 }
 
 .auth-button{
-    padding:12px;
+    padding:13px;
     background:#2563eb;
     color:white;
     border:none;
-    border-radius:6px;
+    border-radius:8px;
     font-size:15px;
+    font-weight:500;
     cursor:pointer;
+    transition:0.2s;
 }
 
 .auth-button:hover{
     background:#1d4ed8;
 }
 
-.auth-link{
-    margin-top:15px;
+.auth-secondary{
+    padding:11px;
+    background:transparent;
+    border:1px solid #2563eb;
+    color:#2563eb;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:14px;
+    transition:0.2s;
+}
+
+.auth-secondary:hover{
+    background:#2563eb;
+    color:white;
+}
+
+.auth-text{
     text-align:center;
     font-size:14px;
+    color:#475569;
 }

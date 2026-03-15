@@ -1,14 +1,15 @@
-require("dotenv").config();
 const express = require("express");
+const cors = require("cors");
+
+const authRoutes = require("./src/routes/auth.routes");
 
 const app = express();
 
-app.get("/", (req, res) => {
-    res.send("TaskFlow API running");
-});
+app.use(cors());
+app.use(express.json());
 
-const PORT = process.env.PORT || 3000;
+app.use("/api/auth", authRoutes);
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+app.listen(process.env.PORT, () => {
+    console.log("Server running on port 3000");
 });

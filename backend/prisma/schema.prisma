@@ -4,37 +4,10 @@ generator client {
 
 datasource db {
   provider = "mysql"
-  url      = env("DATABASE_URL")
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  username  String   @unique
-  email     String   @unique
-  password  String
-  role      String   @default("user")
-  tasks     Task[]
-  themes    Theme[]
-  createdAt DateTime @default(now())
-}
-
-model Theme {
-  id     Int    @id @default(autoincrement())
-  name   String
-  color  String
-  userId Int
-  user   User   @relation(fields: [userId], references: [id])
-  tasks  Task[]
-}
-
-model Task {
-  id        Int      @id @default(autoincrement())
-  title     String
-  status    String   @default("todo")
-  priority  String   @default("medium")
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
-  themeId   Int?
-  theme     Theme?   @relation(fields: [themeId], references: [id])
-  createdAt DateTime @default(now())
+  id       Int     @id @default(autoincrement())
+  email    String  @unique
+  password String
 }

@@ -1,73 +1,73 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
+import "../assets/css/auth.css";
 
 export default function Signup() {
 
     const navigate = useNavigate();
 
-    const [username, setUsername] = useState("");
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
+    const [email,setEmail] = useState("");
+    const [password,setPassword] = useState("");
 
-    const handleSubmit = async (e: any) => {
-
+    const handleSignup = async (e:any)=>{
         e.preventDefault();
 
-        try {
+        try{
 
-            await api.post("/auth/signup", {
-                username,
+            await api.post("/auth/signup",{
                 email,
                 password
             });
 
+            alert("Account created");
+
             navigate("/login");
 
-        } catch (err) {
-
+        }catch(err){
             console.error(err);
             alert("Signup failed");
-
         }
-
     };
 
-    return (
+    return(
 
-        <div style={{padding:40}}>
+        <div className="auth-container">
 
-            <h1>Signup</h1>
+            <form className="auth-card" onSubmit={handleSignup}>
 
-            <form onSubmit={handleSubmit}>
-
-                <input
-                    placeholder="username"
-                    value={username}
-                    onChange={(e)=>setUsername(e.target.value)}
-                />
-
-                <br/>
+                <h2 className="auth-title">Create account</h2>
 
                 <input
-                    placeholder="email"
+                    className="auth-input"
+                    type="email"
+                    placeholder="Email"
                     value={email}
                     onChange={(e)=>setEmail(e.target.value)}
                 />
 
-                <br/>
-
                 <input
+                    className="auth-input"
                     type="password"
-                    placeholder="password"
+                    placeholder="Password"
                     value={password}
                     onChange={(e)=>setPassword(e.target.value)}
                 />
 
-                <br/>
+                <button className="auth-button" type="submit">
+                    Sign up
+                </button>
 
-                <button type="submit">
-                    Create account
+                <p className="auth-text">
+                    Already have an account?
+                </p>
+
+                <button
+                    type="button"
+                    className="auth-secondary"
+                    onClick={()=>navigate("/login")}
+                >
+                    Login
                 </button>
 
             </form>
@@ -75,5 +75,4 @@ export default function Signup() {
         </div>
 
     );
-
 }

@@ -1,0 +1,188 @@
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:-apple-system,system-ui;
+}
+
+.dashboard{
+    min-height:100vh;
+    transition:.3s;
+}
+
+/* DARK */
+
+.dark{
+    background:#0f172a;
+    color:white;
+}
+
+/* LIGHT */
+
+.light{
+    background:#f4f4f7;
+    color:#1f2937;
+}
+
+/* TOPBAR */
+
+.topbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:25px 60px;
+}
+
+.logo{
+    font-size:20px;
+    font-weight:600;
+}
+
+.theme-button{
+    background:#6366f1;
+    color:white;
+    border:none;
+    padding:10px 18px;
+    border-radius:10px;
+    cursor:pointer;
+}
+
+.theme-button:hover{
+    opacity:.9;
+}
+
+/* MAIN */
+
+.main{
+    max-width:1000px;
+    margin:auto;
+    padding:40px;
+}
+
+.title{
+    font-size:32px;
+    font-weight:600;
+    margin-bottom:30px;
+    text-align:center;
+}
+
+/* ACTION BUTTONS */
+
+.action-center{
+    display:flex;
+    justify-content:center;
+    gap:20px;
+    margin-bottom:50px;
+}
+
+.main-button{
+    background:#6366f1;
+    color:white;
+    border:none;
+    padding:14px 26px;
+    border-radius:12px;
+    font-size:15px;
+    cursor:pointer;
+    transition:.2s;
+}
+
+.main-button:hover{
+    transform:translateY(-2px);
+}
+
+/* THEMES */
+
+.themes{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:25px;
+    margin-bottom:50px;
+}
+
+.theme-card{
+    padding:25px;
+    border-radius:18px;
+    background:#1e293b;
+    cursor:pointer;
+    transition:.2s;
+}
+
+.light .theme-card{
+    background:white;
+    box-shadow:0 10px 25px rgba(0,0,0,0.08);
+}
+
+.theme-card:hover{
+    transform:translateY(-4px);
+}
+
+.theme-name{
+    font-size:18px;
+    font-weight:600;
+    margin-bottom:6px;
+}
+
+.theme-count{
+    font-size:13px;
+    opacity:.7;
+}
+
+/* TASKS */
+
+.tasks{
+    padding:30px;
+    border-radius:20px;
+    background:#1e293b;
+}
+
+.light .tasks{
+    background:white;
+    box-shadow:0 10px 25px rgba(0,0,0,0.08);
+}
+
+.section-title{
+    margin-bottom:20px;
+    font-size:20px;
+}
+
+/* TASK LIST */
+
+.task-list{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+}
+
+.task{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:16px;
+    border-radius:12px;
+    background:#334155;
+}
+
+.light .task{
+    background:#f1f5f9;
+}
+
+.task-left{
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+
+.check{
+    width:18px;
+    height:18px;
+    border-radius:6px;
+    border:2px solid #6366f1;
+}
+
+.priority{
+    font-size:12px;
+    background:#6366f1;
+    padding:6px 12px;
+    border-radius:8px;
+    color:white;
+}

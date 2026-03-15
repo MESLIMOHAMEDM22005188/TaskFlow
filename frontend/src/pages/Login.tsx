@@ -3,32 +3,32 @@ import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 import "../assets/css/auth.css";
 
-export default function Login(){
+export default function Login() {
 
-    const navigate = useNavigate()
+    const navigate = useNavigate();
 
-    const [email,setEmail] = useState("")
-    const [password,setPassword] = useState("")
+    const [email,setEmail] = useState("");
+    const [password,setPassword] = useState("");
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>)=>{
-        e.preventDefault()
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
 
-        try{
+        try {
 
             const res = await api.post("/auth/login",{
                 email,
                 password
-            })
+            });
 
-            localStorage.setItem("token",res.data.token)
+            localStorage.setItem("token",res.data.token);
 
-            navigate("/dashboard")
+            navigate("/dashboard");
 
-        }catch(error){
-            console.error(error)
-            alert("Login failed")
+        } catch(error){
+            console.error(error);
+            alert("Login failed");
         }
-    }
+    };
 
     return(
 
@@ -57,14 +57,21 @@ export default function Login(){
                     Login
                 </button>
 
-                <div className="auth-link">
-                    No account ? Sign up
-                </div>
+                <p>
+                    No account?
+                </p>
+
+                <button
+                    type="button"
+                    className="auth-secondary"
+                    onClick={() => navigate("/signup")}
+                >
+                    Sign up
+                </button>
 
             </form>
 
         </div>
 
-    )
-
+    );
 }

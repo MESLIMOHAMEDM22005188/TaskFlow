@@ -31,6 +31,8 @@ export default function Dashboard(){
         { id:2,title:"Create signup page",priority:"Easy"}
     ])
 
+
+
     return(
 
         <div className={dark ? "dashboard dark" : "dashboard light"}>
@@ -123,6 +125,9 @@ export default function Dashboard(){
                             <div className="theme-count">
                                 {theme.tasks} tasks
                             </div>
+                            const [newTask,setNewTask] = useState("")
+                            const [priority,setPriority] = useState("Medium")
+
 
                         </div>
 

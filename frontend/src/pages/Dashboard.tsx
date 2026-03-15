@@ -1,7 +1,6 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import "../assets/css/dashboard.css"
-
-
 
 type Task = {
     id:number
@@ -16,6 +15,8 @@ type Theme = {
 }
 
 export default function Dashboard(){
+
+    const navigate = useNavigate()
 
     const [dark,setDark] = useState(true)
 
@@ -42,18 +43,39 @@ export default function Dashboard(){
 
                 <nav className="nav-menu">
 
-                    <div className="nav-item">Dashboard</div>
-                    <div className="nav-item">Objectifs</div>
-                    <div className="nav-item">Flow</div>
-                    <div className="nav-item">Profil</div>
-                    <div className="nav-item">Communauté</div>
-                    <div className="nav-item">Paramètres</div>
+                    <div className="nav-item" onClick={()=>navigate("/dashboard")}>
+                        Dashboard
+                    </div>
+
+                    <div className="nav-item" onClick={()=>navigate("/objectifs")}>
+                        Objectifs
+                    </div>
+
+                    <div className="nav-item" onClick={()=>navigate("/flow")}>
+                        Flow
+                    </div>
+
+                    <div className="nav-item" onClick={()=>navigate("/profil")}>
+                        Profil
+                    </div>
+
+                    <div className="nav-item" onClick={()=>navigate("/communaute")}>
+                        Communauté
+                    </div>
+
+                    <div className="nav-item" onClick={()=>navigate("/parametres")}>
+                        Paramètres
+                    </div>
 
                     <div className="nav-icons">
 
-                        <div className="nav-item nav-search">🔍</div>
+                        <div className="nav-item nav-search">
+                            🔍
+                        </div>
 
-                        <div className="nav-item nav-notif">🔔</div>
+                        <div className="nav-item nav-notif">
+                            🔔
+                        </div>
 
                         <button
                             className="theme-button"
@@ -74,7 +96,6 @@ export default function Dashboard(){
                 <h1 className="title">
                     Your workspace
                 </h1>
-
 
                 <div className="action-center">
 

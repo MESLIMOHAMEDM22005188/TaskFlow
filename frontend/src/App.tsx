@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 
 import AuthChoice from "./pages/AuthChoice";
 import Login from "./pages/Login";
@@ -14,28 +14,22 @@ function App() {
 
     return (
 
-        <BrowserRouter>
+        <Routes>
 
-            <Routes>
+            <Route path="/" element={<AuthChoice />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
 
-                <Route path="/" element={<AuthChoice />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/objectifs" element={<Objectifs />} />
+            <Route path="/flow" element={<Flow />} />
+            <Route path="/profil" element={<Profil />} />
+            <Route path="/communaute" element={<Communaute />} />
+            <Route path="/parametres" element={<Parametres />} />
 
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<Signup />} />
-
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/objectifs" element={<Objectifs />} />
-                <Route path="/flow" element={<Flow />} />
-                <Route path="/profil" element={<Profil />} />
-                <Route path="/communaute" element={<Communaute />} />
-                <Route path="/parametres" element={<Parametres />} />
-
-            </Routes>
-
-        </BrowserRouter>
+        </Routes>
 
     );
-
 }
 
 export default App;

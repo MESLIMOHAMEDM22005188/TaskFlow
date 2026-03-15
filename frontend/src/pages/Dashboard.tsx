@@ -38,12 +38,31 @@ export default function Dashboard(){
                     TaskFlow
                 </div>
 
-                <button
-                    className="theme-button"
-                    onClick={()=>setDark(!dark)}
-                >
-                    {dark ? "Light mode" : "Dark mode"}
-                </button>
+                <nav className="nav-menu">
+
+                    <div className="nav-item">Dashboard</div>
+                    <div className="nav-item">Objectifs</div>
+                    <div className="nav-item">Flow</div>
+                    <div className="nav-item">Profil</div>
+                    <div className="nav-item">Communauté</div>
+                    <div className="nav-item">Paramètres</div>
+
+                    <div className="nav-icons">
+
+                        <div className="nav-item nav-search">🔍</div>
+
+                        <div className="nav-item nav-notif">🔔</div>
+
+                        <button
+                            className="theme-button"
+                            onClick={()=>setDark(!dark)}
+                        >
+                            {dark ? "Light mode" : "Dark mode"}
+                        </button>
+
+                    </div>
+
+                </nav>
 
             </header>
 

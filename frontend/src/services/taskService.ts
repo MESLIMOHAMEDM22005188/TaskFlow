@@ -8,10 +8,18 @@ function getHeaders() {
     }
 }
 
+async function handleResponse(res: Response) {
+    if (!res.ok) {
+        const text = await res.text()
+        throw new Error(`HTTP ${res.status}: ${text}`)
+    }
+    return res.json()
+}
+
 // TASKS
 export async function getTasks() {
     const res = await fetch(`${API}/api/tasks`, { headers: getHeaders() })
-    return res.json()
+    return handleResponse(res)
 }
 
 export async function createTask(data: {
@@ -27,14 +35,15 @@ export async function createTask(data: {
         headers: getHeaders(),
         body: JSON.stringify(data)
     })
-    return res.json()
+    return handleResponse(res)
 }
 
 export async function deleteTask(id: number) {
-    await fetch(`${API}/api/tasks/${id}`, {
+    const res = await fetch(`${API}/api/tasks/${id}`, {
         method: "DELETE",
         headers: getHeaders()
     })
+    return handleResponse(res)
 }
 
 export async function completeTask(id: number) {
@@ -42,20 +51,21 @@ export async function completeTask(id: number) {
         method: "POST",
         headers: getHeaders()
     })
-    return res.json()
+    return handleResponse(res)
 }
 
 export async function uncompleteTask(id: number) {
-    await fetch(`${API}/api/tasks/${id}/complete`, {
+    const res = await fetch(`${API}/api/tasks/${id}/complete`, {
         method: "DELETE",
         headers: getHeaders()
     })
+    return handleResponse(res)
 }
 
 // THEMES
 export async function getThemes() {
     const res = await fetch(`${API}/api/themes`, { headers: getHeaders() })
-    return res.json()
+    return handleResponse(res)
 }
 
 export async function createTheme(data: {
@@ -68,16 +78,33 @@ export async function createTheme(data: {
         headers: getHeaders(),
         body: JSON.stringify(data)
     })
-    return res.json()
+    return handleResponse(res)
 }
 
 export async function deleteTheme(id: number) {
-    await fetch(`${API}/api/themes/${id}`, {
+    const res = await fetch(`${API}/api/themes/${id}`, {
         method: "DELETE",
         headers: getHeaders()
     })
+    return handleResponse(res)
 }
 
+// PROFIL
+export async function getProfil(): Promise<Profil> {
+    const res = await fetch(`${API}/api/profil`, { headers: getHeaders() })
+    return handleResponse(res)
+}
+
+export async function updateProfil(data: { username: string, bio: string }) {
+    const res = await fetch(`${API}/api/profil`, {
+        method: "PUT",
+        headers: getHeaders(),
+        body: JSON.stringify(data)
+    })
+    return handleResponse(res)
+}
+
+// TYPES
 export type Task = {
     id: number
     title: string
@@ -93,4 +120,17 @@ export type Theme = {
     name: string
     emoji: string | null
     color: string
+}
+
+export type Profil = {
+    id: number
+    email: string
+    username: string | null
+    bio: string | null
+    avatar_url: string | null
+    stats: {
+        tasksCompleted: number
+        themesCreated: number
+        communityPosts: number
+    }
 }

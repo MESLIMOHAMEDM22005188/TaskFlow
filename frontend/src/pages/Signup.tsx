@@ -7,31 +7,30 @@ export default function Signup() {
 
     const navigate = useNavigate();
 
-    const [email,setEmail] = useState("");
-    const [password,setPassword] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [username, setUsername] = useState("");
 
-    const handleSignup = async (e:any)=>{
+    const handleSignup = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        try{
-
-            await api.post("/auth/signup",{
+        try {
+            await api.post("/auth/signup", {
                 email,
-                password
+                password,
+                username
             });
 
             alert("Account created");
-
             navigate("/login");
 
-        }catch(err){
+        } catch (err) {
             console.error(err);
             alert("Signup failed");
         }
     };
 
-    return(
-
+    return (
         <div className="auth-container">
 
             <form className="auth-card" onSubmit={handleSignup}>
@@ -40,10 +39,18 @@ export default function Signup() {
 
                 <input
                     className="auth-input"
+                    type="text"
+                    placeholder="Username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                />
+
+                <input
+                    className="auth-input"
                     type="email"
                     placeholder="Email"
                     value={email}
-                    onChange={(e)=>setEmail(e.target.value)}
+                    onChange={(e) => setEmail(e.target.value)}
                 />
 
                 <input
@@ -51,7 +58,7 @@ export default function Signup() {
                     type="password"
                     placeholder="Password"
                     value={password}
-                    onChange={(e)=>setPassword(e.target.value)}
+                    onChange={(e) => setPassword(e.target.value)}
                 />
 
                 <button className="auth-button" type="submit">
@@ -65,7 +72,7 @@ export default function Signup() {
                 <button
                     type="button"
                     className="auth-secondary"
-                    onClick={()=>navigate("/login")}
+                    onClick={() => navigate("/login")}
                 >
                     Login
                 </button>
@@ -73,6 +80,5 @@ export default function Signup() {
             </form>
 
         </div>
-
     );
 }

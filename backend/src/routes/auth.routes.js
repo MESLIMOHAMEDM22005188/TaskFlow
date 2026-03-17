@@ -6,13 +6,13 @@ const db = require("../config/db");
 const router = express.Router();
 
 router.post("/signup", async (req, res) => {
-    const { email, password } = req.body;
+    const { username, email, password } = req.body;
 
     const hashed = await bcrypt.hash(password, 10);
 
     await db.execute(
-        "INSERT INTO users (email, password) VALUES (?, ?)",
-        [email, hashed]
+        "INSERT INTO users (email, password, username) VALUES (?, ?, ?)",
+        [email, hashed, username || null],
     );
 
     res.json({ message: "User created" });

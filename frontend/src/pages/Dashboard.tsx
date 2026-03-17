@@ -83,14 +83,42 @@ export function Dashboard() {
                 )}
 
                 {showThemeForm && (
-                    <div className="theme-create">
-                        <input className="theme-input" placeholder="Theme name..." />
-                        <select className="theme-select">
-                            <option value="red">Sport</option>
-                            <option value="green">Spiritual</option>
-                            <option value="blue">Productivity</option>
-                        </select>
-                        <button className="main-button">Create Theme</button>
+                    <div className="theme-create-wrapper">
+                        <div className="theme-create">
+
+                            <div className="theme-field">
+                                <label className="theme-label">Theme name</label>
+                                <input
+                                    className="theme-input"
+                                    placeholder="Sport, Travail, Perso..."
+                                />
+                            </div>
+
+                            <div className="theme-field">
+                                <label className="theme-label">Icon or emoji</label>
+                                <input
+                                    className="theme-input"
+                                    placeholder="🏋️"
+                                    maxLength={2}
+                                />
+                            </div>
+
+                            <div className="theme-field">
+                                <label className="theme-label">Color</label>
+                                <div className="color-picker">
+                                    {["#ef4444", "#f59e0b", "#22c55e", "#3b82f6", "#a855f7", "#ec4899"].map(color => (
+                                        <div
+                                            key={color}
+                                            className="color-dot"
+                                            style={{ background: color }}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
+                            <button className="main-button">Create Theme</button>
+
+                        </div>
                     </div>
                 )}
 

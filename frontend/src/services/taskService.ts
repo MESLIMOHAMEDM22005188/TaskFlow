@@ -132,5 +132,21 @@ export type Profil = {
         tasksCompleted: number
         themesCreated: number
         communityPosts: number
+        activityDays: number
+        xp: number
+        division: string
+        top3Count: number
+        streak: number
     }
+    achievements: Achievement[]
+}
+export type Achievement = {
+    id: number
+    name: string
+    description: string
+    goal: number
+    level: number
+    type: string
+    progress: number
+    completed: boolean
 }

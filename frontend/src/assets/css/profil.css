@@ -1,142 +1,270 @@
-.profil-page{
-    min-height:100vh;
-    background:#0f172a;
-    color:white;
-    font-family:-apple-system,system-ui;
+/* PROFIL PAGE */
+
+.profil-page {
+    min-height: 100vh;
+    background: #0f172a;
+    color: white;
 }
 
-/* TOPBAR */
-
-.topbar{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    padding:25px 60px;
+.profil-main {
+    max-width: 800px;
+    margin: auto;
+    padding: 40px;
 }
 
-.logo{
-    font-size:20px;
-    font-weight:600;
-}
-
-.nav-menu{
-    display:flex;
-    align-items:center;
-    gap:24px;
-    margin-left:auto;
-}
-
-.nav-item{
-    cursor:pointer;
-    font-size:14px;
-    opacity:0.8;
-    transition:0.2s;
-}
-
-.nav-item:hover{
-    opacity:1;
-}
-
-.nav-icons{
-    display:flex;
-    align-items:center;
-    gap:14px;
-    margin-left:10px;
-}
-
-.nav-avatar img{
-    width:36px;
-    height:36px;
-    border-radius:50%;
-}
-
-/* MAIN */
-
-.profil-main{
-    max-width:800px;
-    margin:auto;
-    padding:40px;
-}
-
-.profil-title{
-    font-size:28px;
-    margin-bottom:30px;
+.profil-title {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 30px;
+    text-align: center;
 }
 
 /* CARD */
 
-.profil-card{
-    background:#1e293b;
-    padding:30px;
-    border-radius:14px;
-    display:flex;
-    gap:30px;
-    align-items:center;
-    margin-bottom:30px;
+.profil-card {
+    display: flex;
+    gap: 40px;
+    align-items: flex-start;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 20px;
+    padding: 30px;
+    margin-bottom: 30px;
 }
 
-/* AVATAR */
-
-.profil-avatar img{
-    width:120px;
-    height:120px;
-    border-radius:50%;
+.profil-avatar img {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #6366f1;
 }
 
 /* FORM */
 
-.profil-form{
-    flex:1;
-    display:flex;
-    flex-direction:column;
-    gap:10px;
+.profil-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+}
+
+.profil-form label {
+    font-size: 13px;
+    font-weight: 500;
+    opacity: 0.6;
+    margin-top: 6px;
 }
 
 .profil-form input,
-.profil-form textarea{
-    padding:10px;
-    border:none;
-    border-radius:8px;
-    background:#334155;
-    color:white;
+.profil-form textarea {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: white;
+    font-size: 14px;
+    outline: none;
+    transition: .2s;
+    font-family: -apple-system, system-ui;
 }
 
-.profil-form textarea{
-    resize:none;
-    height:80px;
+.profil-form input:focus,
+.profil-form textarea:focus {
+    border-color: #6366f1;
 }
 
-.profil-save{
-    margin-top:10px;
-    padding:12px;
-    border:none;
-    border-radius:10px;
-    background:#6366f1;
-    color:white;
-    cursor:pointer;
+.profil-form input:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.profil-form textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* BUTTONS */
+
+.profil-save {
+    background: #6366f1;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: .2s;
+    margin-top: 8px;
+}
+
+.profil-save:hover {
+    opacity: .9;
+    transform: translateY(-2px);
+}
+
+.profil-logout {
+    background: transparent;
+    border: 2px solid #ef4444;
+    color: #ef4444;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: .2s;
+    margin-top: 8px;
+}
+
+.profil-logout:hover {
+    background: rgba(239, 68, 68, 0.1);
+    transform: translateY(-2px);
 }
 
 /* STATS */
 
-.profil-stats{
-    display:flex;
-    gap:20px;
+.profil-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+    margin-bottom: 10px;
 }
 
-.stat-card{
-    flex:1;
-    background:#1e293b;
-    padding:20px;
-    border-radius:12px;
-    text-align:center;
+.stat-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 14px;
+    padding: 20px;
+    text-align: center;
+    transition: .2s;
 }
 
-.stat-card h3{
-    font-size:14px;
-    opacity:0.7;
+.stat-card:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.06);
 }
 
-.stat-card p{
-    font-size:22px;
-    margin-top:8px;
+.stat-card h3 {
+    font-size: 13px;
+    font-weight: 500;
+    opacity: 0.6;
+    margin-bottom: 10px;
+}
+
+.stat-card p {
+    font-size: 28px;
+    font-weight: 700;
+}
+
+/* XP SECTION */
+
+.profil-section-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    margin-top: 40px;
+    opacity: 0.9;
+}
+
+.profil-xp {
+    margin-top: 10px;
+}
+
+.xp-card p {
+    background: linear-gradient(90deg, #6366f1, #a855f7);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 700;
+}
+
+.division-badge {
+    font-weight: 700;
+    font-size: 20px;
+    transition: .2s;
+}
+
+/* ACHIEVEMENTS */
+
+.profil-achievements {
+    margin-top: 40px;
+}
+
+.achievement-card {
+    padding: 16px 20px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    margin-bottom: 12px;
+    transition: .2s;
+}
+
+.achievement-card:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.achievement-card.completed {
+    border-color: rgba(99, 102, 241, 0.4);
+    background: rgba(99, 102, 241, 0.05);
+}
+
+.achievement-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.achievement-level {
+    font-size: 12px;
+    font-weight: 700;
+    color: #6366f1;
+    background: rgba(99, 102, 241, 0.1);
+    padding: 3px 8px;
+    border-radius: 999px;
+}
+
+.achievement-name {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.achievement-progress-bar {
+    height: 6px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.achievement-progress-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #6366f1, #a855f7);
+    transition: width 0.4s ease;
+}
+
+.achievement-bottom {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    opacity: 0.6;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 600px) {
+    .profil-card {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .profil-main {
+        padding: 24px 16px;
+    }
+
+    .profil-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }

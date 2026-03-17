@@ -1,5 +1,5 @@
 import "../assets/css/dashboard.css"
-import { useDashboard} from "../services/Dashboard.ts"
+import { useDashboard } from "../services/Dashboard"  // ✅ pas de .ts
 
 export function Dashboard() {
 
@@ -10,10 +10,13 @@ export function Dashboard() {
         priority, setPriority,
         showTaskForm,
         showThemeForm,
-        handleToggleTaskForm,   // ✅ remplace setShowTaskForm
-        handleToggleThemeForm,  // ✅ remplace setShowThemeForm
+        handleToggleTaskForm,
+        handleToggleThemeForm,
         handleCreateTask,
         toggle,
+        doneTasks,
+        toggleDone,
+        deleteTask,
     } = useDashboard()
 
     return (
@@ -50,7 +53,6 @@ export function Dashboard() {
                     >
                         Create Task
                     </button>
-
                     <button
                         className={`main-button secondary ${showThemeForm ? "active" : ""}`}
                         onClick={handleToggleThemeForm}
@@ -60,49 +62,73 @@ export function Dashboard() {
                 </div>
 
                 {showTaskForm && (
-                    <div className="action-center">
-                        <input
-                            className="task-input"
-                            placeholder="Task title..."
-                            value={newTask}
-                            onChange={(e) => setNewTask(e.target.value)}
-                        />
-                        <select
-                            className="task-select"
-                            value={priority}
-                            onChange={(e) => setPriority(e.target.value)}
-                        >
-                            <option value="Easy">Easy</option>
-                            <option value="Medium">Medium</option>
-                            <option value="Hard">Hard</option>
-                        </select>
-                        <button className="main-button" onClick={handleCreateTask}>
-                            Confirm Task
-                        </button>
+                    <div className="theme-create-wrapper">
+                        <div className="theme-create">
+                            <div className="theme-field">
+                                <label className="theme-label">Task title</label>
+                                <input
+                                    className="theme-input"
+                                    placeholder="Task title..."
+                                    value={newTask}
+                                    onChange={(e) => setNewTask(e.target.value)}
+                                />
+                            </div>
+                            <div className="theme-field">
+                                <label className="theme-label">Theme</label>
+                                <select className="theme-select">
+                                    <option value="">No theme</option>
+                                    <option value="sport">🏋️ Sport</option>
+                                    <option value="spiritual">🕌 Spiritual</option>
+                                    <option value="productivity">💼 Productivity</option>
+                                </select>
+                            </div>
+                            <div className="theme-field">
+                                <label className="theme-label">Priority</label>
+                                <select
+                                    className="theme-select"
+                                    value={priority}
+                                    onChange={(e) => setPriority(e.target.value)}
+                                >
+                                    <option value="Low">Low</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="High">High</option>
+                                </select>
+                            </div>
+                            <div className="theme-field">
+                                <label className="theme-label">Frequency <span className="theme-label-hint">(daily by default)</span></label>
+                                <select className="theme-select">
+                                    <option value="daily">Daily</option>
+                                    <option value="weekly">Weekly</option>
+                                    <option value="monthly">Monthly</option>
+                                    <option value="once">One-time</option>
+                                </select>
+                            </div>
+                            <div className="theme-field">
+                                <label className="theme-label">Deadline <span className="theme-label-hint">(optional)</span></label>
+                                <input className="theme-input" type="date" />
+                            </div>
+                            <div className="theme-field">
+                                <label className="theme-label">Note <span className="theme-label-hint">(optional)</span></label>
+                                <input className="theme-input" placeholder="Why does this task matter..." />
+                            </div>
+                            <button className="main-button" onClick={handleCreateTask}>
+                                Confirm Task
+                            </button>
+                        </div>
                     </div>
                 )}
 
                 {showThemeForm && (
                     <div className="theme-create-wrapper">
                         <div className="theme-create">
-
                             <div className="theme-field">
                                 <label className="theme-label">Theme name</label>
-                                <input
-                                    className="theme-input"
-                                    placeholder="Sport, Travail, Perso..."
-                                />
+                                <input className="theme-input" placeholder="Sport, Travail, Perso..." />
                             </div>
-
                             <div className="theme-field">
                                 <label className="theme-label">Icon or emoji</label>
-                                <input
-                                    className="theme-input"
-                                    placeholder="🏋️"
-                                    maxLength={2}
-                                />
+                                <input className="theme-input" placeholder="🏋️" maxLength={2} />
                             </div>
-
                             <div className="theme-field">
                                 <label className="theme-label">Color</label>
                                 <div className="color-picker">
@@ -115,12 +141,59 @@ export function Dashboard() {
                                     ))}
                                 </div>
                             </div>
-
                             <button className="main-button">Create Theme</button>
-
                         </div>
                     </div>
                 )}
+
+                {/* PROGRESS BAR TOTAL */}
+                <div className="progress-wrapper">
+                    <div className="progress-header">
+                        <span className="progress-label">Total progress</span>
+                        <span className="progress-count">{doneTasks.length} / 3 tasks</span>
+                    </div>
+                    <div className="progress-bar">
+                        <div
+                            className="progress-fill"
+                            style={{ width: `${(doneTasks.length / 3) * 100}%` }}
+                        />
+                    </div>
+                </div>
+
+                {/* TASKS */}  // ✅ ids en number, plus de doublons en bas
+                {[
+                    { id: 1, title: "Workout session", color: "red", priority: "priority-high", priorityLabel: "High", type: "type-daily", typeLabel: "Daily", theme: "theme-red", themeLabel: "Sport" },
+                    { id: 2, title: "Read Quran", color: "green", priority: "priority-medium", priorityLabel: "Medium", type: "type-daily", typeLabel: "Daily", theme: "theme-green", themeLabel: "Spiritual" },
+                    { id: 3, title: "Review monthly goals", color: "blue", priority: "priority-low", priorityLabel: "Low", type: "type-monthly", typeLabel: "Monthly", theme: "theme-blue", themeLabel: "Productivity" },
+                ].map(task => (
+                    <div key={task.id} className={`task ${doneTasks.includes(task.id) ? "task-done" : ""}`}>
+                        <div className="task-left">
+                            <div className={`task-color ${task.color}`}></div>
+                            <div className="task-content">
+                                <span className="task-title">{task.title}</span>
+                                <div className="task-meta">
+                                    <span className={`badge ${task.priority}`}>{task.priorityLabel}</span>
+                                    <span className={`badge ${task.type}`}>{task.typeLabel}</span>
+                                    <span className={`badge ${task.theme}`}>{task.themeLabel}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="task-actions">
+                            <button
+                                className={`task-btn done-btn ${doneTasks.includes(task.id) ? "active" : ""}`}
+                                onClick={() => toggleDone(task.id)}
+                            >
+                                {doneTasks.includes(task.id) ? "↩ Undone" : "✓ Done"}
+                            </button>
+                            <button
+                                className="task-btn delete-btn"
+                                onClick={() => deleteTask(task.id)}
+                            >
+                                🗑
+                            </button>
+                        </div>
+                    </div>
+                ))}
 
                 <section className="themes">
                     <div className="theme-card red">
@@ -154,48 +227,6 @@ export function Dashboard() {
                         </div>
                     </div>
                 </section>
-
-                <div className="task">
-                    <div className="task-left">
-                        <div className="task-color red"></div>
-                        <div className="task-content">
-                            <span className="task-title">Workout session</span>
-                            <div className="task-meta">
-                                <span className="badge priority-high">High</span>
-                                <span className="badge type-daily">Daily</span>
-                                <span className="badge theme-red">Sport</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="task">
-                    <div className="task-left">
-                        <div className="task-color green"></div>
-                        <div className="task-content">
-                            <span className="task-title">Read Quran</span>
-                            <div className="task-meta">
-                                <span className="badge priority-medium">Medium</span>
-                                <span className="badge type-daily">Daily</span>
-                                <span className="badge theme-green">Spiritual</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="task">
-                    <div className="task-left">
-                        <div className="task-color blue"></div>
-                        <div className="task-content">
-                            <span className="task-title">Review monthly goals</span>
-                            <div className="task-meta">
-                                <span className="badge priority-low">Low</span>
-                                <span className="badge type-monthly">Monthly</span>
-                                <span className="badge theme-blue">Productivity</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
             </main>
 

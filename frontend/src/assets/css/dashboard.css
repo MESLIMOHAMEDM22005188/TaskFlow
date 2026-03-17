@@ -9,7 +9,15 @@
     min-height:100vh;
     transition:.3s;
 }
+.theme-select option {
+    background: #1e293b;
+    color: white;
+}
 
+.light .theme-select option {
+    background: #1e293b;
+    color: white;
+}
 /* DARK */
 
 .dark{
@@ -181,6 +189,113 @@
     color:white;
 }
 
+.theme-label-hint {
+    opacity: 0.4;
+    font-weight: 400;
+    font-size: 12px;
+}
+
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 40px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(10px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.dark .topbar {
+    background: rgba(15, 23, 42, 0.85);
+}
+
+.light .topbar {
+    background: rgba(244, 244, 247, 0.85);
+}
+
+.logo {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: #6366f1;
+}
+
+.nav-menu {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.nav-item {
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    opacity: 0.6;
+    transition: 0.2s;
+    padding: 7px 12px;
+    border-radius: 8px;
+}
+
+.nav-item:hover {
+    opacity: 1;
+    background: rgba(99, 102, 241, 0.1);
+    color: #6366f1;
+}
+
+.nav-focus {
+    background: #6366f1;
+    color: white;
+    opacity: 1;
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-weight: 600;
+}
+
+.nav-focus:hover {
+    background: #4f46e5;
+    color: white;
+}
+
+.nav-icons {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 16px;
+    padding-left: 16px;
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.nav-search,
+.nav-notif {
+    font-size: 16px;
+    opacity: 0.6;
+    padding: 7px 10px;
+    border-radius: 8px;
+    transition: 0.2s;
+}
+
+.nav-search:hover,
+.nav-notif:hover {
+    opacity: 1;
+    background: rgba(99, 102, 241, 0.1);
+}
+
+@media(max-width: 900px) {
+    .topbar {
+        padding: 16px 20px;
+    }
+
+    .nav-item {
+        font-size: 12px;
+        padding: 6px 8px;
+    }
+
+    .nav-menu {
+        gap: 2px;
+    }
+}
 .theme-select{
     padding:10px;
     border-radius:8px;

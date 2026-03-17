@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { createTask, getTasks } from "../services/taskService"
 import type { Task } from "../services/taskService"
-import { toggle, closeAll } from "../services/uiManager.ts" // ✅ bon chemin, pas services/
+import { toggle, closeAll } from "../services/uiManager"
 
 export function useDashboard() {
 
@@ -14,6 +14,7 @@ export function useDashboard() {
     const [priority, setPriority] = useState("Medium")
     const [showTaskForm, setShowTaskForm] = useState(false)
     const [showThemeForm, setShowThemeForm] = useState(false)
+    const [doneTasks, setDoneTasks] = useState<number[]>([]) // ✅ number[] et non string[]
 
     useEffect(() => {
         const fetchTasks = async () => {
@@ -27,7 +28,6 @@ export function useDashboard() {
         fetchTasks()
     }, [])
 
-    // ✅ ferme le thème si on ouvre la tâche et vice versa
     function handleToggleTaskForm() {
         setShowThemeForm(false)
         toggle(setShowTaskForm)
@@ -52,6 +52,19 @@ export function useDashboard() {
         }
     }
 
+    function toggleDone(taskId: number) {
+        setDoneTasks(prev =>
+            prev.includes(taskId)
+                ? prev.filter(id => id !== taskId)
+                : [...prev, taskId]
+        )
+    }
+
+    function deleteTask(taskId: number) {
+        setTasks(prev => prev.filter(t => t.id !== taskId))
+        setDoneTasks(prev => prev.filter(id => id !== taskId))
+    }
+
     return {
         navigate,
         dark, setDark,
@@ -60,9 +73,12 @@ export function useDashboard() {
         priority, setPriority,
         showTaskForm,
         showThemeForm,
-        handleToggleTaskForm,  // ✅ on expose les handlers, pas les setters bruts
+        handleToggleTaskForm,
         handleToggleThemeForm,
         handleCreateTask,
         toggle,
+        doneTasks,
+        toggleDone,
+        deleteTask,
     }
 }

@@ -1,12 +1,8 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import "../assets/css/dashboard.css"
-
-type Task = {
-    id:number
-    title:string
-    priority:string
-}
+import { createTask, getTasks } from "../services/taskService"
+import type { Task } from "../services/taskService"
 
 type Theme = {
     id:number
@@ -14,26 +10,62 @@ type Theme = {
     tasks:number
 }
 
-export default function Dashboard(){
+export function Dashboard() {
 
     const navigate = useNavigate()
 
-    const [dark,setDark] = useState(true)
+    const [dark, setDark] = useState(true)
 
-    const themes:Theme[] = [
-        { id:1,name:"Frontend",tasks:5 },
-        { id:2,name:"Backend",tasks:3 },
-        { id:3,name:"DevOps",tasks:2 }
+    const themes: Theme[] = [
+        {id: 1, name: "Frontend", tasks: 5},
+        {id: 2, name: "Backend", tasks: 3},
+        {id: 3, name: "DevOps", tasks: 2}
     ]
 
-    const [tasks] = useState<Task[]>([
-        { id:1,title:"Finish API authentication",priority:"Medium"},
-        { id:2,title:"Create signup page",priority:"Easy"}
-    ])
+    const [tasks, setTasks] = useState<Task[]>([])
+    const [newTask, setNewTask] = useState("")
+    const [priority, setPriority] = useState("Medium")
 
 
+    useEffect(() => {
 
-    return(
+        const fetchTasks = async () => {
+            try {
+                const data = await getTasks()
+                setTasks(data)
+            } catch (err) {
+                console.error(err)
+            }
+        }
+
+        fetchTasks()
+
+    }, [])
+
+    async function handleCreateTask() {
+
+        if (!newTask.trim()) return
+
+        try {
+
+            const task = await createTask({
+                title: newTask,
+                priority
+            })
+
+            setTasks([...tasks, task])
+
+            setNewTask("")
+            setPriority("Medium")
+
+        } catch (err) {
+            console.error(err)
+            alert("Failed to create task")
+        }
+
+    }
+
+    return (
 
         <div className={dark ? "dashboard dark" : "dashboard light"}>
 
@@ -45,43 +77,41 @@ export default function Dashboard(){
 
                 <nav className="nav-menu">
 
-                    <div className="nav-item" onClick={()=>navigate("/dashboard")}>
+                    <div className="nav-item" onClick={() => navigate("/dashboard")}>
                         Dashboard
                     </div>
 
-                    <div className="nav-item" onClick={()=>navigate("/objectifs")}>
+                    <div className="nav-item" onClick={() => navigate("/objectifs")}>
                         Objectifs
                     </div>
 
-                    <div className="nav-item" onClick={()=>navigate("/flow")}>
+                    <div className="nav-item" onClick={() => navigate("/flow")}>
                         Flow
                     </div>
 
-                    <div className="nav-item" onClick={()=>navigate("/profil")}>
+                    <div className="nav-item" onClick={() => navigate("/profil")}>
                         Profil
                     </div>
 
-                    <div className="nav-item" onClick={()=>navigate("/communaute")}>
+                    <div className="nav-item" onClick={() => navigate("/communaute")}>
                         Communauté
                     </div>
 
-                    <div className="nav-item" onClick={()=>navigate("/parametres")}>
+                    <div className="nav-item" onClick={() => navigate("/parametres")}>
                         Paramètres
+                    </div>
+                    <div className="nav-item nav-focus">
+                        ⚡ Focus
                     </div>
 
                     <div className="nav-icons">
 
-                        <div className="nav-item nav-search">
-                            🔍
-                        </div>
-
-                        <div className="nav-item nav-notif">
-                            🔔
-                        </div>
+                        <div className="nav-item nav-search">🔍</div>
+                        <div className="nav-item nav-notif">🔔</div>
 
                         <button
                             className="theme-button"
-                            onClick={()=>setDark(!dark)}
+                            onClick={() => setDark(!dark)}
                         >
                             {dark ? "Light mode" : "Dark mode"}
                         </button>
@@ -101,11 +131,27 @@ export default function Dashboard(){
 
                 <div className="action-center">
 
-                    <button className="main-button">
-                        Create Theme
-                    </button>
+                    <input
+                        className="task-input"
+                        placeholder="Task title..."
+                        value={newTask}
+                        onChange={(e) => setNewTask(e.target.value)}
+                    />
 
-                    <button className="main-button">
+                    <select
+                        className="task-select"
+                        value={priority}
+                        onChange={(e) => setPriority(e.target.value)}
+                    >
+                        <option value="Easy">Easy</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Hard">Hard</option>
+                    </select>
+
+                    <button
+                        className="main-button"
+                        onClick={handleCreateTask}
+                    >
                         Create Task
                     </button>
 
@@ -114,7 +160,7 @@ export default function Dashboard(){
 
                 <section className="themes">
 
-                    {themes.map(theme =>(
+                    {themes.map(theme => (
 
                         <div key={theme.id} className="theme-card">
 
@@ -125,9 +171,6 @@ export default function Dashboard(){
                             <div className="theme-count">
                                 {theme.tasks} tasks
                             </div>
-                            const [newTask,setNewTask] = useState("")
-                            const [priority,setPriority] = useState("Medium")
-
 
                         </div>
 
@@ -144,7 +187,7 @@ export default function Dashboard(){
 
                     <div className="task-list">
 
-                        {tasks.map(task =>(
+                        {tasks.map(task => (
 
                             <div key={task.id} className="task">
 

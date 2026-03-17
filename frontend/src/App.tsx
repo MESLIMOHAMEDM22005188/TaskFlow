@@ -3,7 +3,7 @@ import { Routes, Route } from "react-router-dom";
 import AuthChoice from "./pages/AuthChoice";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
-import Dashboard from "./pages/Dashboard";
+import {Dashboard} from "./pages/Dashboard";
 import Objectifs from "./pages/Objectifs";
 import Flow from "./pages/Flow";
 import Profil from "./pages/Profil";

@@ -89,6 +89,21 @@
 .main-button:hover{
     transform:translateY(-2px);
 }
+.main-button.secondary {
+    background: transparent;
+    border: 2px solid #6366f1;
+    color: #6366f1;
+}
+
+.main-button.secondary:hover {
+    background: rgba(99, 102, 241, 0.1);
+    transform: translateY(-2px);
+}
+
+.main-button.active {
+    opacity: 0.6;
+    transform: translateY(1px);
+}
 
 /* THEMES */
 
@@ -106,6 +121,110 @@
     cursor:pointer;
     transition:.2s;
 }
+/* CREATE THEME */
+
+.theme-create{
+    display:flex;
+    gap:10px;
+    margin-bottom:20px;
+}
+
+.theme-input{
+    padding:10px;
+    border-radius:8px;
+    border:1px solid rgba(255,255,255,0.1);
+    background:rgba(255,255,255,0.05);
+    color:white;
+}
+
+.theme-select{
+    padding:10px;
+    border-radius:8px;
+    border:1px solid rgba(255,255,255,0.1);
+    background:rgba(255,255,255,0.05);
+    color:white;
+}
+
+/* THEME CARDS */
+
+.themes{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+    gap:16px;
+    margin-bottom:30px;
+}
+
+.theme-card{
+    padding:18px;
+    border-radius:16px;
+    background:rgba(255,255,255,0.04);
+    backdrop-filter:blur(12px);
+    border:1px solid rgba(255,255,255,0.05);
+    transition:all 0.2s ease;
+}
+
+.theme-card:hover{
+    transform:translateY(-3px);
+    background:rgba(255,255,255,0.08);
+}
+
+/* HEADER */
+
+.theme-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:12px;
+}
+
+.theme-name{
+    font-size:16px;
+    font-weight:600;
+    color:#f9fafb;
+}
+
+.theme-badge{
+    font-size:12px;
+    padding:4px 8px;
+    border-radius:999px;
+    background:rgba(255,255,255,0.1);
+}
+
+/* STATS */
+
+.theme-stats{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-size:14px;
+    color:#cbd5f5;
+}
+
+/* DOT */
+
+.dot{
+    width:10px;
+    height:10px;
+    border-radius:50%;
+}
+
+/* COLORS */
+
+.theme-card.red{
+    border-left:4px solid #ef4444;
+}
+
+.theme-card.green{
+    border-left:4px solid #22c55e;
+}
+
+.theme-card.blue{
+    border-left:4px solid #3b82f6;
+}
+
+.dot.red{ background:#ef4444; }
+.dot.green{ background:#22c55e; }
+.dot.blue{ background:#3b82f6; }
 
 .light .theme-card{
     background:white;

@@ -19,7 +19,7 @@ export default function Profil() {
         communityPosts: 0,
         activityDays: 0,
         xp: 0,
-        division: "Fer III",
+        division: "Fer I",
         top3Count: 0,
         streak: 0
     })

@@ -75,10 +75,10 @@ router.get("/", async (req, res) => {
     const divRange = nextDiv ? nextDiv.min - currentDiv.min : 10000
     const progress = (xp - currentDiv.min) / divRange
 
-    let tier = "III"
-    if (progress >= 0.66) tier = "I"
-    else if (progress >= 0.33) tier = "II"
-
+    let tier = "I"
+    if (progress >= 0.75) tier = "IV"
+    else if (progress >= 0.50) tier = "III"
+    else if (progress >= 0.25) tier = "II"
     const noTierDivisions = ["Maître", "Grand Maître", "Challenger"]
     const division = noTierDivisions.includes(divisionName) ? divisionName : `${divisionName} ${tier}`
 

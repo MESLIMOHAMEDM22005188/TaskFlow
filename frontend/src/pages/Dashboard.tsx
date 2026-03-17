@@ -1,22 +1,32 @@
 import "../assets/css/dashboard.css"
-import { useDashboard } from "../services/Dashboard"  // ✅ pas de .ts
+import { useDashboard } from "../services/Dashboard"
 
 export function Dashboard() {
 
     const {
         navigate,
         dark, setDark,
+        tasks,
+        themes,
+        doneTasks,
         newTask, setNewTask,
         priority, setPriority,
+        themeId, setThemeId,
+        frequency, setFrequency,
+        deadline, setDeadline,
+        note, setNote,
+        themeName, setThemeName,
+        themeEmoji, setThemeEmoji,
+        themeColor, setThemeColor,
         showTaskForm,
         showThemeForm,
         handleToggleTaskForm,
         handleToggleThemeForm,
         handleCreateTask,
-        toggle,
-        doneTasks,
+        handleCreateTheme,
         toggleDone,
         deleteTask,
+        toggle,
     } = useDashboard()
 
     return (
@@ -75,11 +85,17 @@ export function Dashboard() {
                             </div>
                             <div className="theme-field">
                                 <label className="theme-label">Theme</label>
-                                <select className="theme-select">
+                                <select
+                                    className="theme-select"
+                                    value={themeId ?? ""}
+                                    onChange={(e) => setThemeId(e.target.value ? Number(e.target.value) : null)}
+                                >
                                     <option value="">No theme</option>
-                                    <option value="sport">🏋️ Sport</option>
-                                    <option value="spiritual">🕌 Spiritual</option>
-                                    <option value="productivity">💼 Productivity</option>
+                                    {themes.map(t => (
+                                        <option key={t.id} value={t.id}>
+                                            {t.emoji} {t.name}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
                             <div className="theme-field">
@@ -96,7 +112,11 @@ export function Dashboard() {
                             </div>
                             <div className="theme-field">
                                 <label className="theme-label">Frequency <span className="theme-label-hint">(daily by default)</span></label>
-                                <select className="theme-select">
+                                <select
+                                    className="theme-select"
+                                    value={frequency}
+                                    onChange={(e) => setFrequency(e.target.value)}
+                                >
                                     <option value="daily">Daily</option>
                                     <option value="weekly">Weekly</option>
                                     <option value="monthly">Monthly</option>
@@ -105,11 +125,21 @@ export function Dashboard() {
                             </div>
                             <div className="theme-field">
                                 <label className="theme-label">Deadline <span className="theme-label-hint">(optional)</span></label>
-                                <input className="theme-input" type="date" />
+                                <input
+                                    className="theme-input"
+                                    type="date"
+                                    value={deadline}
+                                    onChange={(e) => setDeadline(e.target.value)}
+                                />
                             </div>
                             <div className="theme-field">
                                 <label className="theme-label">Note <span className="theme-label-hint">(optional)</span></label>
-                                <input className="theme-input" placeholder="Why does this task matter..." />
+                                <input
+                                    className="theme-input"
+                                    placeholder="Why does this task matter..."
+                                    value={note}
+                                    onChange={(e) => setNote(e.target.value)}
+                                />
                             </div>
                             <button className="main-button" onClick={handleCreateTask}>
                                 Confirm Task
@@ -123,11 +153,22 @@ export function Dashboard() {
                         <div className="theme-create">
                             <div className="theme-field">
                                 <label className="theme-label">Theme name</label>
-                                <input className="theme-input" placeholder="Sport, Travail, Perso..." />
+                                <input
+                                    className="theme-input"
+                                    placeholder="Sport, Travail, Perso..."
+                                    value={themeName}
+                                    onChange={(e) => setThemeName(e.target.value)}
+                                />
                             </div>
                             <div className="theme-field">
                                 <label className="theme-label">Icon or emoji</label>
-                                <input className="theme-input" placeholder="🏋️" maxLength={2} />
+                                <input
+                                    className="theme-input"
+                                    placeholder="🏋️"
+                                    maxLength={2}
+                                    value={themeEmoji}
+                                    onChange={(e) => setThemeEmoji(e.target.value)}
+                                />
                             </div>
                             <div className="theme-field">
                                 <label className="theme-label">Color</label>
@@ -135,97 +176,88 @@ export function Dashboard() {
                                     {["#ef4444", "#f59e0b", "#22c55e", "#3b82f6", "#a855f7", "#ec4899"].map(color => (
                                         <div
                                             key={color}
-                                            className="color-dot"
+                                            className={`color-dot ${themeColor === color ? "selected" : ""}`}
                                             style={{ background: color }}
+                                            onClick={() => setThemeColor(color)}
                                         />
                                     ))}
                                 </div>
                             </div>
-                            <button className="main-button">Create Theme</button>
+                            <button className="main-button" onClick={handleCreateTheme}>
+                                Create Theme
+                            </button>
                         </div>
                     </div>
                 )}
 
-                {/* PROGRESS BAR TOTAL */}
+                {/* PROGRESS BAR */}
                 <div className="progress-wrapper">
                     <div className="progress-header">
                         <span className="progress-label">Total progress</span>
-                        <span className="progress-count">{doneTasks.length} / 3 tasks</span>
+                        <span className="progress-count">{doneTasks.length} / {tasks.length} tasks</span>
                     </div>
                     <div className="progress-bar">
                         <div
                             className="progress-fill"
-                            style={{ width: `${(doneTasks.length / 3) * 100}%` }}
+                            style={{ width: tasks.length ? `${(doneTasks.length / tasks.length) * 100}%` : "0%" }}
                         />
                     </div>
                 </div>
 
-                {/* TASKS */}  // ✅ ids en number, plus de doublons en bas
-                {[
-                    { id: 1, title: "Workout session", color: "red", priority: "priority-high", priorityLabel: "High", type: "type-daily", typeLabel: "Daily", theme: "theme-red", themeLabel: "Sport" },
-                    { id: 2, title: "Read Quran", color: "green", priority: "priority-medium", priorityLabel: "Medium", type: "type-daily", typeLabel: "Daily", theme: "theme-green", themeLabel: "Spiritual" },
-                    { id: 3, title: "Review monthly goals", color: "blue", priority: "priority-low", priorityLabel: "Low", type: "type-monthly", typeLabel: "Monthly", theme: "theme-blue", themeLabel: "Productivity" },
-                ].map(task => (
-                    <div key={task.id} className={`task ${doneTasks.includes(task.id) ? "task-done" : ""}`}>
-                        <div className="task-left">
-                            <div className={`task-color ${task.color}`}></div>
-                            <div className="task-content">
-                                <span className="task-title">{task.title}</span>
-                                <div className="task-meta">
-                                    <span className={`badge ${task.priority}`}>{task.priorityLabel}</span>
-                                    <span className={`badge ${task.type}`}>{task.typeLabel}</span>
-                                    <span className={`badge ${task.theme}`}>{task.themeLabel}</span>
+                {/* TASKS depuis la BDD */}
+                {tasks.map(task => {
+                    const theme = themes.find(t => t.id === task.theme_id)
+                    return (
+                        <div key={task.id} className={`task ${doneTasks.includes(task.id) ? "task-done" : ""}`}>
+                            <div className="task-left">
+                                <div className="task-color" style={{ background: theme?.color ?? "#6366f1" }}></div>
+                                <div className="task-content">
+                                    <span className="task-title">{task.title}</span>
+                                    <div className="task-meta">
+                                        <span className={`badge priority-${task.priority.toLowerCase()}`}>{task.priority}</span>
+                                        <span className={`badge type-${task.frequency}`}>{task.frequency}</span>
+                                        {theme && (
+                                            <span className="badge" style={{ background: `${theme.color}20`, color: theme.color }}>
+                                                {theme.emoji} {theme.name}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
+                            <div className="task-actions">
+                                <button
+                                    className={`task-btn done-btn ${doneTasks.includes(task.id) ? "active" : ""}`}
+                                    onClick={() => toggleDone(task.id)}
+                                >
+                                    {doneTasks.includes(task.id) ? "↩ Undone" : "✓ Done"}
+                                </button>
+                                <button
+                                    className="task-btn delete-btn"
+                                    onClick={() => deleteTask(task.id)}
+                                >
+                                    🗑
+                                </button>
+                            </div>
                         </div>
-                        <div className="task-actions">
-                            <button
-                                className={`task-btn done-btn ${doneTasks.includes(task.id) ? "active" : ""}`}
-                                onClick={() => toggleDone(task.id)}
-                            >
-                                {doneTasks.includes(task.id) ? "↩ Undone" : "✓ Done"}
-                            </button>
-                            <button
-                                className="task-btn delete-btn"
-                                onClick={() => deleteTask(task.id)}
-                            >
-                                🗑
-                            </button>
-                        </div>
-                    </div>
-                ))}
+                    )
+                })}
 
+                {/* THEMES depuis la BDD */}
                 <section className="themes">
-                    <div className="theme-card red">
-                        <div className="theme-top">
-                            <span className="theme-name">Sport</span>
-                            <span className="theme-badge">High Energy</span>
+                    {themes.map(theme => (
+                        <div key={theme.id} className="theme-card" style={{ borderLeft: `4px solid ${theme.color}` }}>
+                            <div className="theme-top">
+                                <span className="theme-name">{theme.emoji} {theme.name}</span>
+                                <span className="theme-badge" style={{ color: theme.color }}>
+                                    {tasks.filter(t => t.theme_id === theme.id).length} tasks
+                                </span>
+                            </div>
+                            <div className="theme-stats">
+                                <span>{tasks.filter(t => t.theme_id === theme.id && doneTasks.includes(t.id)).length} done</span>
+                                <span className="dot" style={{ background: theme.color }}></span>
+                            </div>
                         </div>
-                        <div className="theme-stats">
-                            <span>5 tasks</span>
-                            <span className="dot red"></span>
-                        </div>
-                    </div>
-                    <div className="theme-card green">
-                        <div className="theme-top">
-                            <span className="theme-name">Spiritual</span>
-                            <span className="theme-badge">Calm</span>
-                        </div>
-                        <div className="theme-stats">
-                            <span>3 tasks</span>
-                            <span className="dot green"></span>
-                        </div>
-                    </div>
-                    <div className="theme-card blue">
-                        <div className="theme-top">
-                            <span className="theme-name">Productivity</span>
-                            <span className="theme-badge">Focus</span>
-                        </div>
-                        <div className="theme-stats">
-                            <span>7 tasks</span>
-                            <span className="dot blue"></span>
-                        </div>
-                    </div>
+                    ))}
                 </section>
 
             </main>

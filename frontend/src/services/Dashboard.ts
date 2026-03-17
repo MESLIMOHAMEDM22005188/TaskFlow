@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { toggle, closeAll } from "../services/uiManager"
 import {
     getTasks, createTask, deleteTask as apiDeleteTask,
-    completeTask, uncompleteTask,
+    completeTask, uncompleteTask, getTodayCompletions,
     getThemes, createTheme
 } from "../services/taskService"
 import type { Task, Theme } from "../services/taskService"
@@ -33,11 +33,13 @@ export function useDashboard() {
 
 
 
+    // dans le useEffect :
     useEffect(() => {
-        Promise.all([getTasks(), getThemes()])
-            .then(([t, th]) => {
+        Promise.all([getTasks(), getThemes(), getTodayCompletions()])
+            .then(([t, th, completions]) => {
                 setTasks(t)
                 setThemes(th)
+                setDoneTasks(completions)
             })
             .catch(err => console.error("fetchAll error:", err))
     }, [])

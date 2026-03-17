@@ -22,6 +22,10 @@ export async function getTasks() {
     return handleResponse(res)
 }
 
+export async function getTodayCompletions(): Promise<number[]> {
+    const res = await fetch(`${API}/api/tasks/completions/today`, { headers: getHeaders() })
+    return handleResponse(res)
+}
 export async function createTask(data: {
     title: string
     priority: string

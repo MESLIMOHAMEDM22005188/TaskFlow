@@ -32,17 +32,19 @@ router.get("/", async (req, res) => {
         [req.userId]
     )
 
-    const [[{ streak }]] = await db.execute(`
+    const [streakRows] = await db.execute(`
         SELECT COUNT(*) as streak
         FROM (
-            SELECT completed_at,
-                   DATE_SUB(completed_at, INTERVAL ROW_NUMBER() OVER (ORDER BY completed_at) DAY) as grp
-            FROM (SELECT DISTINCT completed_at FROM task_completions WHERE user_id = ?) t
-        ) grouped
+                 SELECT completed_at,
+                        DATE_SUB(completed_at, INTERVAL ROW_NUMBER() OVER (ORDER BY completed_at) DAY) as grp
+                 FROM (SELECT DISTINCT completed_at FROM task_completions WHERE user_id = ?) t
+             ) grouped
         GROUP BY grp
         ORDER BY MAX(completed_at) DESC
-        LIMIT 1
+            LIMIT 1
     `, [req.userId])
+
+    const streak = streakRows.length > 0 ? streakRows[0].streak : 0
 
     const [achievements] = await db.execute(`
         SELECT 

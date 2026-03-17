@@ -179,37 +179,67 @@ export function Dashboard() {
                 </section>
 
 
-                <section className="tasks">
+                <div className="task">
 
-                    <h2 className="section-title">
-                        Tasks
-                    </h2>
+                    <div className="task-left">
 
-                    <div className="task-list">
+                        <div className="task-color red"></div>
 
-                        {tasks.map(task => (
+                        <div className="task-content">
+                            <span className="task-title">Workout session</span>
 
-                            <div key={task.id} className="task">
-
-                                <div className="task-left">
-
-                                    <div className="check"></div>
-
-                                    <span>{task.title}</span>
-
-                                </div>
-
-                                <div className="priority">
-                                    {task.priority}
-                                </div>
-
+                            <div className="task-meta">
+                                <span className="badge priority-high">High</span>
+                                <span className="badge type-daily">Daily</span>
+                                <span className="badge theme-red">Sport</span>
                             </div>
-
-                        ))}
+                        </div>
 
                     </div>
 
-                </section>
+                </div>
+
+
+                <div className="task">
+
+                    <div className="task-left">
+
+                        <div className="task-color green"></div>
+
+                        <div className="task-content">
+                            <span className="task-title">Read Quran</span>
+
+                            <div className="task-meta">
+                                <span className="badge priority-medium">Medium</span>
+                                <span className="badge type-daily">Daily</span>
+                                <span className="badge theme-green">Spiritual</span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div className="task">
+
+                    <div className="task-left">
+
+                        <div className="task-color blue"></div>
+
+                        <div className="task-content">
+                            <span className="task-title">Review monthly goals</span>
+
+                            <div className="task-meta">
+                                <span className="badge priority-low">Low</span>
+                                <span className="badge type-monthly">Monthly</span>
+                                <span className="badge theme-blue">Productivity</span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
 
             </main>
 

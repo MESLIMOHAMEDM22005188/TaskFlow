@@ -245,3 +245,156 @@ export async function deleteObjective(id: number) {
     })
     return handleResponse(res)
 }
+
+// TYPES
+export type FlowSettings = {
+    id: number
+    user_id: number
+    focus_duration: number
+    short_break: number
+    long_break: number
+    pomodoros_until_long: number
+    auto_start_break: boolean
+    ambient_sound: string
+    ambient_volume: number
+}
+
+export type FlowStats = {
+    todaySessions: number
+    todayMinutes: number
+    totalSessions: number
+    totalMinutes: number
+}
+
+export type FlowSession = {
+    id: number
+    task_id: number | null
+    duration_minutes: number
+    type: string
+    completed: boolean
+    xp_gained: number
+}
+
+// FUNCTIONS
+export async function getFlowSettings(): Promise<FlowSettings> {
+    const res = await fetch(`${API}/api/flow/settings`, { headers: getHeaders() })
+    return handleResponse(res)
+}
+
+export async function updateFlowSettings(data: Partial<FlowSettings>) {
+    const res = await fetch(`${API}/api/flow/settings`, {
+        method: "PUT",
+        headers: getHeaders(),
+        body: JSON.stringify(data)
+    })
+    return handleResponse(res)
+}
+
+export async function saveFlowSession(data: {
+    task_id?: number | null
+    duration_minutes: number
+    type: string
+    completed: boolean
+}) {
+    const res = await fetch(`${API}/api/flow/sessions`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify(data)
+    })
+    return handleResponse(res)
+}
+export async function changePassword(currentPassword: string, newPassword: string) {
+    const res = await fetch(`${API}/api/auth/change-password`, {
+        method: "PUT",
+        headers: getHeaders(),
+        body: JSON.stringify({ currentPassword, newPassword })
+    })
+    return handleResponse(res)
+}
+
+
+export async function getFlowStats(): Promise<FlowStats> {
+    const res = await fetch(`${API}/api/flow/stats`, { headers: getHeaders() })
+    return handleResponse(res)
+}
+
+// TYPES
+export type Post = {
+    id: number
+    content: string
+    type: string
+    likes_count: number
+    comments_count: number
+    liked_by_me: number
+    created_at: string
+    username: string
+    avatar_url: string | null
+    xp: number
+}
+
+export type Comment = {
+    id: number
+    post_id: number
+    content: string
+    created_at: string
+    username: string
+    avatar_url: string | null
+}
+
+export type LeaderboardUser = {
+    id: number
+    username: string
+    avatar_url: string | null
+    xp: number
+    tasks_this_week: number
+}
+
+// FUNCTIONS
+export async function getPosts(): Promise<Post[]> {
+    const res = await fetch(`${API}/api/community/posts`, { headers: getHeaders() })
+    return handleResponse(res)
+}
+
+export async function createPost(data: { content: string, type?: string, ref_id?: number }) {
+    const res = await fetch(`${API}/api/community/posts`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify(data)
+    })
+    return handleResponse(res)
+}
+
+export async function deletePost(id: number) {
+    const res = await fetch(`${API}/api/community/posts/${id}`, {
+        method: "DELETE",
+        headers: getHeaders()
+    })
+    return handleResponse(res)
+}
+
+export async function likePost(id: number) {
+    const res = await fetch(`${API}/api/community/posts/${id}/like`, {
+        method: "POST",
+        headers: getHeaders()
+    })
+    return handleResponse(res)
+}
+
+export async function getComments(postId: number): Promise<Comment[]> {
+    const res = await fetch(`${API}/api/community/posts/${postId}/comments`, { headers: getHeaders() })
+    return handleResponse(res)
+}
+
+export async function createComment(postId: number, content: string) {
+    const res = await fetch(`${API}/api/community/posts/${postId}/comments`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({ content })
+    })
+    return handleResponse(res)
+}
+
+export async function getLeaderboard(): Promise<LeaderboardUser[]> {
+    const res = await fetch(`${API}/api/community/leaderboard`, { headers: getHeaders() })
+    return handleResponse(res)
+}

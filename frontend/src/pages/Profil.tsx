@@ -53,8 +53,6 @@ export default function Profil() {
         localStorage.removeItem("token")
         navigate("/login")
     }
-
-    if (loading) return <div className="profil-page">Loading...</div>
     function getDivisionColor(division: string) {
         if (division.includes("Fer")) return "#9ca3af"
         if (division.includes("Bronze")) return "#cd7f32"
@@ -68,6 +66,8 @@ export default function Profil() {
         if (division.includes("Challenger")) return "#f97316"
         return "#6366f1"
     }
+    if (loading) return <div className="profil-page">Loading...</div>
+
     return (
         <div className="profil-page">
 

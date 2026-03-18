@@ -7,6 +7,8 @@ const taskRoutes = require('./src/routes/tasks.routes')   // ✅ sans 's'
 const themeRoutes = require('./src/routes/themes.routes') // ✅ sans 's'
 const profilRoutes = require('./src/routes/profil.routes')
 const objectiveRoutes = require('./src/routes/objective.routes')
+const flowRoutes = require('./src/routes/flow.routes')
+const communityRoutes = require('./src/routes/community.routes')
 
 const authMiddleware = require('./src/middleware/auth')
 
@@ -20,6 +22,8 @@ app.use('/api/tasks', authMiddleware, taskRoutes)
 app.use('/api/themes', authMiddleware, themeRoutes)
 app.use('/api/profil', authMiddleware, profilRoutes)
 app.use('/api/objectives', authMiddleware, objectiveRoutes)
+app.use('/api/flow', authMiddleware, flowRoutes)
+app.use('/api/community', authMiddleware, communityRoutes)
 
 
 app.listen(process.env.PORT || 3000, () => {

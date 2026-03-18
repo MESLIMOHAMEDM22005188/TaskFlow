@@ -1,155 +1,182 @@
-.settings-page{
-    min-height:100vh;
-    background:#0f172a;
-    color:white;
-    font-family:-apple-system,system-ui;
+.settings-page {
+    min-height: 100vh;
+    background: #0f172a;
+    color: white;
 }
 
-/* TOPBAR */
-
-.topbar{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    padding:25px 60px;
+.settings-main {
+    max-width: 700px;
+    margin: auto;
+    padding: 40px;
 }
 
-.logo{
-    font-size:20px;
-    font-weight:600;
+.settings-title {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 30px;
+    text-align: center;
 }
 
-.nav-menu{
-    display:flex;
-    align-items:center;
-    gap:24px;
-    margin-left:auto;
+.settings-section-title {
+    font-size: 16px;
+    font-weight: 600;
+    opacity: 0.6;
+    margin-bottom: 20px;
 }
 
-.nav-item{
-    cursor:pointer;
-    font-size:14px;
-    opacity:0.8;
-    transition:0.2s;
-}
+/* CARD */
 
-.nav-item:hover{
-    opacity:1;
-}
-
-.nav-icons{
-    display:flex;
-    align-items:center;
-    gap:14px;
-    margin-left:10px;
-}
-
-.nav-avatar img{
-    width:36px;
-    height:36px;
-    border-radius:50%;
-}
-
-/* MAIN */
-
-.settings-main{
-    max-width:700px;
-    margin:auto;
-    padding:40px;
-}
-
-.settings-title{
-    font-size:28px;
-    margin-bottom:30px;
-}
-
-/* CARDS */
-
-.settings-card{
-    background:#1e293b;
-    padding:24px;
-    border-radius:14px;
-    margin-bottom:20px;
+.settings-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
 /* ROW */
 
-.setting-row{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:20px;
+.setting-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* SWITCH */
-
-.switch{
-    position:relative;
-    display:inline-block;
-    width:42px;
-    height:22px;
+.setting-row:last-child {
+    border-bottom: none;
 }
 
-.switch input{
-    opacity:0;
-    width:0;
-    height:0;
+.setting-row h3 {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 4px;
 }
 
-.slider{
-    position:absolute;
-    cursor:pointer;
-    top:0;
-    left:0;
-    right:0;
-    bottom:0;
-    background:#475569;
-    transition:.3s;
-    border-radius:20px;
+.setting-row p {
+    font-size: 13px;
+    opacity: 0.5;
 }
 
-.slider:before{
-    position:absolute;
-    content:"";
-    height:16px;
-    width:16px;
-    left:3px;
-    bottom:3px;
-    background:white;
-    transition:.3s;
-    border-radius:50%;
+/* TOGGLE SWITCH */
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 48px;
+    height: 26px;
+    flex-shrink: 0;
 }
 
-input:checked + .slider{
-    background:#6366f1;
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
 }
 
-input:checked + .slider:before{
-    transform:translateX(20px);
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 999px;
+    transition: .3s;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 4px;
+    bottom: 4px;
+    background: white;
+    border-radius: 50%;
+    transition: .3s;
+}
+
+input:checked + .slider {
+    background: #6366f1;
+}
+
+input:checked + .slider:before {
+    transform: translateX(22px);
 }
 
 /* BUTTONS */
 
-.settings-button{
-    margin-top:10px;
-    display:block;
-    width:100%;
-    padding:12px;
-    border:none;
-    border-radius:10px;
-    background:#334155;
-    color:white;
-    cursor:pointer;
+.settings-button {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: .2s;
+    text-align: left;
 }
 
-.settings-button:hover{
-    background:#475569;
+.settings-button:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-1px);
 }
 
-.logout{
-    background:#ef4444;
+.settings-button.logout {
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #ef4444;
 }
 
-.logout:hover{
-    background:#dc2626;
+.settings-button.logout:hover {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 600px) {
+    .settings-main {
+        padding: 24px 16px;
+    }
+}
+.password-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.settings-input {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: white;
+    font-size: 14px;
+    outline: none;
+    transition: .2s;
+}
+
+.settings-input:focus {
+    border-color: #6366f1;
+}
+
+.password-error {
+    color: #ef4444;
+    font-size: 13px;
+}
+
+.password-success {
+    color: #22c55e;
+    font-size: 13px;
 }

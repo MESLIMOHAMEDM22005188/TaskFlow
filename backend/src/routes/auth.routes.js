@@ -18,6 +18,29 @@ router.post("/signup", async (req, res) => {
     res.json({ message: "User created" });
 });
 
+const authMiddleware = require("../middleware/auth")
+
+router.put("/change-password", authMiddleware, async (req, res) => {
+    const { currentPassword, newPassword } = req.body
+
+    const [rows] = await db.execute(
+        "SELECT * FROM users WHERE id = ?",
+        [req.userId]
+    )
+
+    if (rows.length === 0) return res.status(404).json({ message: "User not found" })
+
+    const match = await bcrypt.compare(currentPassword, rows[0].password)
+    if (!match) return res.status(401).json({ message: "Wrong current password" })
+
+    const hashed = await bcrypt.hash(newPassword, 10)
+    await db.execute(
+        "UPDATE users SET password = ? WHERE id = ?",
+        [hashed, req.userId]
+    )
+
+    res.json({ message: "Password updated" })
+})
 router.post("/login", async (req, res) => {
     const { email, password } = req.body;
 

@@ -1,5 +1,6 @@
 import "../assets/css/stats.css"
 import { useStats } from "../services/Stats"
+import type { HeatmapPeriod } from "../services/Stats"
 import {
     BarChart, Bar, LineChart, Line, RadarChart, Radar,
     PolarGrid, PolarAngleAxis, PieChart, Pie, Cell,
@@ -12,24 +13,30 @@ const PRIORITY_COLORS = {
     High: "#ef4444"
 }
 
+const DAY_LABELS = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"]
+
 export default function Stats() {
 
     const {
         navigate,
         loading,
         period, setPeriod,
+        heatmapPeriod, setHeatmapPeriod,
+        heatmapFrom, setHeatmapFrom,
         overview,
         tasksPerDay,
         xpOverTime,
         radarData,
         prioritySplit,
         focusPerDay,
-        last365Days,
+        getHeatmapDays,
         formatHour,
         getHeatmapColor,
     } = useStats()
 
     if (loading) return <div className="stats-page">Loading...</div>
+
+    const heatmapDays = getHeatmapDays()
 
     return (
         <div className="stats-page">
@@ -98,17 +105,58 @@ export default function Stats() {
 
                 {/* HEATMAP */}
                 <div className="stats-section">
-                    <h2 className="stats-section-title">📅 Activité — 365 derniers jours</h2>
-                    <div className="heatmap">
-                        {last365Days.map(day => (
-                            <div
-                                key={day.date}
-                                className="heatmap-cell"
-                                style={{ background: getHeatmapColor(day.count) }}
-                                title={`${day.date} — ${day.count} tâche${day.count > 1 ? "s" : ""}`}
+                    <div className="heatmap-header">
+                        <h2 className="stats-section-title">📅 Activité</h2>
+                        <div className="heatmap-filters">
+                            {([
+                                { value: "week", label: "7 jours" },
+                                { value: "month", label: "30 jours" },
+                                { value: "3months", label: "3 mois" },
+                                { value: "6months", label: "6 mois" },
+                                { value: "365", label: "1 an" },
+                                { value: "all", label: "Tout" },
+                            ] as { value: HeatmapPeriod, label: string }[]).map(p => (
+                                <button
+                                    key={p.value}
+                                    className={`period-btn ${heatmapPeriod === p.value && !heatmapFrom ? "active" : ""}`}
+                                    onClick={() => { setHeatmapPeriod(p.value); setHeatmapFrom("") }}
+                                >
+                                    {p.label}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="heatmap-date-picker">
+                            <label className="flow-label">Depuis :</label>
+                            <input
+                                type="date"
+                                className="theme-input"
+                                value={heatmapFrom}
+                                onChange={e => setHeatmapFrom(e.target.value)}
                             />
-                        ))}
+                        </div>
                     </div>
+
+                    <div className="heatmap-wrapper">
+                        <div className="heatmap-day-labels">
+                            {DAY_LABELS.map(d => (
+                                <span key={d} className="heatmap-day-label">{d}</span>
+                            ))}
+                        </div>
+                        <div className="heatmap">
+                            {heatmapDays.map(day => (
+                                <div
+                                    key={day.date}
+                                    className="heatmap-cell"
+                                    style={{
+                                        background: getHeatmapColor(day.count),
+                                        gridRow: day.dayOfWeek + 1
+                                    }}
+                                    title={`${day.date} — ${day.count} tâche${day.count > 1 ? "s" : ""}`}
+                                />
+                            ))}
+                        </div>
+                    </div>
+
                     <div className="heatmap-legend">
                         <span>Moins</span>
                         {[0, 2, 4, 6, 8].map(v => (
@@ -127,10 +175,7 @@ export default function Stats() {
                             <BarChart data={tasksPerDay}>
                                 <XAxis dataKey="date" tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11 }} tickFormatter={d => d.slice(5)} />
                                 <YAxis tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11 }} />
-                                <Tooltip
-                                    contentStyle={{ background: "#1e293b", border: "none", borderRadius: 8 }}
-                                    labelStyle={{ color: "white" }}
-                                />
+                                <Tooltip contentStyle={{ background: "#1e293b", border: "none", borderRadius: 8 }} labelStyle={{ color: "white" }} />
                                 <Bar dataKey="count" fill="#6366f1" radius={[4, 4, 0, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
@@ -143,10 +188,7 @@ export default function Stats() {
                             <LineChart data={xpOverTime}>
                                 <XAxis dataKey="period" tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11 }} />
                                 <YAxis tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11 }} />
-                                <Tooltip
-                                    contentStyle={{ background: "#1e293b", border: "none", borderRadius: 8 }}
-                                    labelStyle={{ color: "white" }}
-                                />
+                                <Tooltip contentStyle={{ background: "#1e293b", border: "none", borderRadius: 8 }} labelStyle={{ color: "white" }} />
                                 <Line type="monotone" dataKey="xp" stroke="#a855f7" strokeWidth={2} dot={false} />
                             </LineChart>
                         </ResponsiveContainer>
@@ -162,7 +204,8 @@ export default function Stats() {
                                 <Tooltip
                                     contentStyle={{ background: "#1e293b", border: "none", borderRadius: 8 }}
                                     labelStyle={{ color: "white" }}
-                                    formatter={(v) => [`${v ?? 0}min`, "Focus"]}                                />
+                                    formatter={(v) => [`${v ?? 0}min`, "Focus"]}
+                                />
                                 <Bar dataKey="minutes" fill="#22d3ee" radius={[4, 4, 0, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
@@ -173,26 +216,12 @@ export default function Stats() {
                         <h2 className="stats-section-title">🎯 Répartition priorités</h2>
                         <ResponsiveContainer width="100%" height={200}>
                             <PieChart>
-                                <Pie
-                                    data={prioritySplit}
-                                    dataKey="count"
-                                    nameKey="priority"
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={50}
-                                    outerRadius={80}
-                                >
+                                <Pie data={prioritySplit} dataKey="count" nameKey="priority" cx="50%" cy="50%" innerRadius={50} outerRadius={80}>
                                     {prioritySplit.map((entry, index) => (
-                                        <Cell
-                                            key={index}
-                                            fill={PRIORITY_COLORS[entry.priority as keyof typeof PRIORITY_COLORS] ?? "#6366f1"}
-                                        />
+                                        <Cell key={index} fill={PRIORITY_COLORS[entry.priority as keyof typeof PRIORITY_COLORS] ?? "#6366f1"} />
                                     ))}
                                 </Pie>
-                                <Tooltip
-                                    contentStyle={{ background: "#1e293b", border: "none", borderRadius: 8 }}
-                                    labelStyle={{ color: "white" }}
-                                />
+                                <Tooltip contentStyle={{ background: "#1e293b", border: "none", borderRadius: 8 }} labelStyle={{ color: "white" }} />
                             </PieChart>
                         </ResponsiveContainer>
                         <div className="priority-legend">
@@ -215,28 +244,10 @@ export default function Stats() {
                         <ResponsiveContainer width="100%" height={350}>
                             <RadarChart data={radarData}>
                                 <PolarGrid stroke="rgba(255,255,255,0.1)" />
-                                <PolarAngleAxis
-                                    dataKey="theme"
-                                    tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 13 }}
-                                />
-                                <Radar
-                                    name="Tâches"
-                                    dataKey="tasks"
-                                    stroke="#6366f1"
-                                    fill="#6366f1"
-                                    fillOpacity={0.3}
-                                />
-                                <Radar
-                                    name="Complétées"
-                                    dataKey="completed"
-                                    stroke="#a855f7"
-                                    fill="#a855f7"
-                                    fillOpacity={0.3}
-                                />
-                                <Tooltip
-                                    contentStyle={{ background: "#1e293b", border: "none", borderRadius: 8 }}
-                                    labelStyle={{ color: "white" }}
-                                />
+                                <PolarAngleAxis dataKey="theme" tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 13 }} />
+                                <Radar name="Tâches" dataKey="tasks" stroke="#6366f1" fill="#6366f1" fillOpacity={0.3} />
+                                <Radar name="Complétées" dataKey="completed" stroke="#a855f7" fill="#a855f7" fillOpacity={0.3} />
+                                <Tooltip contentStyle={{ background: "#1e293b", border: "none", borderRadius: 8 }} labelStyle={{ color: "white" }} />
                             </RadarChart>
                         </ResponsiveContainer>
                     </div>

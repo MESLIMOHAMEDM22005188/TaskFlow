@@ -24,6 +24,7 @@ export function Dashboard() {
         handleToggleThemeForm,
         handleCreateTask,
         handleCreateTheme,
+        handleDeleteTheme,
         toggleDone,
         deleteTask,
         toggle,
@@ -39,6 +40,7 @@ export function Dashboard() {
                     <div className="nav-item" onClick={() => navigate("/objectifs")}>Objectifs</div>
                     <div className="nav-item" onClick={() => navigate("/flow")}>Flow</div>
                     <div className="nav-item" onClick={() => navigate("/stats")}>Stats</div>
+                    <div className="nav-item" onClick={() => navigate("/habitudes")}>Habitudes</div>
 
                     <div className="nav-item" onClick={() => navigate("/profil")}>Profil</div>
                     <div className="nav-item" onClick={() => navigate("/communaute")}>Communauté</div>
@@ -243,16 +245,22 @@ export function Dashboard() {
                         </div>
                     )
                 })}
-
-                {/* THEMES depuis la BDD */}
                 <section className="themes">
                     {themes.map(theme => (
                         <div key={theme.id} className="theme-card" style={{ borderLeft: `4px solid ${theme.color}` }}>
                             <div className="theme-top">
                                 <span className="theme-name">{theme.emoji} {theme.name}</span>
-                                <span className="theme-badge" style={{ color: theme.color }}>
-                                    {tasks.filter(t => t.theme_id === theme.id).length} tasks
-                                </span>
+                                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span className="theme-badge" style={{ color: theme.color }}>
+                        {tasks.filter(t => t.theme_id === theme.id).length} tasks
+                    </span>
+                                    <button
+                                        className="task-btn delete-btn"
+                                        onClick={() => handleDeleteTheme(theme.id)}
+                                    >
+                                        🗑
+                                    </button>
+                                </div>
                             </div>
                             <div className="theme-stats">
                                 <span>{tasks.filter(t => t.theme_id === theme.id && doneTasks.includes(t.id)).length} done</span>

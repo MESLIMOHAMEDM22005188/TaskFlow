@@ -10,6 +10,7 @@ import type {
 } from "./taskService"
 
 type Period = "week" | "month" | "year"
+export type HeatmapPeriod = "week" | "month" | "3months" | "6months" | "365" | "all"
 
 export function useStats() {
 
@@ -17,6 +18,8 @@ export function useStats() {
 
     const [loading, setLoading] = useState(true)
     const [period, setPeriod] = useState<Period>("week")
+    const [heatmapPeriod, setHeatmapPeriod] = useState<HeatmapPeriod>("365")
+    const [heatmapFrom, setHeatmapFrom] = useState("")
 
     const [overview, setOverview] = useState<StatsOverview>({
         totalTasks: 0,
@@ -73,28 +76,61 @@ export function useStats() {
         return "#6366f1"
     }
 
-    const heatmapMap: Record<string, number> = {}
-    heatmap.forEach(h => { heatmapMap[h.date] = h.count })
+    function getHeatmapDays(): { date: string, count: number, dayOfWeek: number }[] {
+        const heatmapMap: Record<string, number> = {}
+        heatmap.forEach(h => { heatmapMap[h.date] = h.count })
 
-    const last365Days: { date: string, count: number }[] = []
-    for (let i = 364; i >= 0; i--) {
-        const d = new Date()
-        d.setDate(d.getDate() - i)
-        const key = d.toISOString().split("T")[0]
-        last365Days.push({ date: key, count: heatmapMap[key] ?? 0 })
+        const now = new Date()
+        let start: Date
+
+        if (heatmapFrom) {
+            start = new Date(heatmapFrom)
+        } else if (heatmapPeriod === "week") {
+            start = new Date()
+            start.setDate(now.getDate() - 7)
+        } else if (heatmapPeriod === "month") {
+            start = new Date()
+            start.setMonth(now.getMonth() - 1)
+        } else if (heatmapPeriod === "3months") {
+            start = new Date()
+            start.setMonth(now.getMonth() - 3)
+        } else if (heatmapPeriod === "6months") {
+            start = new Date()
+            start.setMonth(now.getMonth() - 6)
+        } else if (heatmapPeriod === "all") {
+            start = new Date("2024-01-01")
+        } else {
+            start = new Date()
+            start.setDate(now.getDate() - 365)
+        }
+
+        const days: { date: string, count: number, dayOfWeek: number }[] = []
+        const current = new Date(start)
+        while (current <= now) {
+            const key = current.toISOString().split("T")[0]
+            days.push({
+                date: key,
+                count: heatmapMap[key] ?? 0,
+                dayOfWeek: current.getDay()
+            })
+            current.setDate(current.getDate() + 1)
+        }
+        return days
     }
 
     return {
         navigate,
         loading,
         period, setPeriod,
+        heatmapPeriod, setHeatmapPeriod,
+        heatmapFrom, setHeatmapFrom,
         overview,
         tasksPerDay,
         xpOverTime,
         radarData,
         prioritySplit,
         focusPerDay,
-        last365Days,
+        getHeatmapDays,
         formatHour,
         getHeatmapColor,
     }

@@ -7,6 +7,7 @@ import {
     getThemes, createTheme
 } from "../services/taskService"
 import type { Task, Theme } from "../services/taskService"
+import { deleteTheme as apiDeleteTheme} from "../services/taskService";
 
 export function useDashboard() {
 
@@ -113,6 +114,11 @@ export function useDashboard() {
         setTasks(prev => prev.filter(t => t.id !== taskId))
         setDoneTasks(prev => prev.filter(id => id !== taskId))
     }
+    async function handleDeleteTheme(themeId: number) {
+        await apiDeleteTheme(themeId)
+        setThemes(prev => prev.filter(t => t.id !== themeId))
+    }
+
 
     return {
         navigate,
@@ -138,5 +144,6 @@ export function useDashboard() {
         toggleDone,
         deleteTask: handleDeleteTask,
         toggle,
+        handleDeleteTheme,
     }
 }

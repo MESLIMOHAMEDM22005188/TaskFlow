@@ -10,32 +10,33 @@ router.get("/", async (req, res) => {
         [req.userId]
     )
 
-    // Pour chaque habitude, calcule le streak et les infos
-    const result = []
-    for (const habit of habits) {
-        const [logs] = await db.execute(
-            "SELECT * FROM habit_logs WHERE habit_id = ? ORDER BY logged_at DESC",
-            [habit.id]
-        )
+    if (habits.length === 0) return res.json([])
 
+    const habitIds = habits.map(h => h.id)
+    const placeholders = habitIds.map(() => "?").join(",")
+
+    const [allLogs] = await db.execute(
+        `SELECT * FROM habit_logs WHERE habit_id IN (${placeholders}) ORDER BY logged_at DESC`,
+        habitIds
+    )
+
+    const today = new Date().toISOString().split("T")[0]
+
+    const result = habits.map(habit => {
+        const logs = allLogs.filter(l => l.habit_id === habit.id)
         const successLogs = logs.filter(l => l.type === "success").map(l => l.logged_at.toISOString().split("T")[0])
         const lastRelapse = logs.find(l => l.type === "relapse")
 
-        // Calcul streak
         let streak = 0
-        const today = new Date()
+        const now = new Date()
         for (let i = 0; i <= 365; i++) {
-            const d = new Date(today)
-            d.setDate(today.getDate() - i)
+            const d = new Date(now)
+            d.setDate(now.getDate() - i)
             const key = d.toISOString().split("T")[0]
-            if (successLogs.includes(key)) {
-                streak++
-            } else if (i > 0) {
-                break
-            }
+            if (successLogs.includes(key)) streak++
+            else if (i > 0) break
         }
 
-        // Meilleur streak
         let bestStreak = 0
         let tempStreak = 0
         const sortedLogs = [...successLogs].sort()
@@ -43,43 +44,39 @@ router.get("/", async (req, res) => {
             if (i === 0) {
                 tempStreak = 1
             } else {
-                const prev = new Date(sortedLogs[i - 1])
-                const curr = new Date(sortedLogs[i])
-                const diff = (curr.getTime() - prev.getTime()) / 86400000
-                if (diff === 1) {
-                    tempStreak++
-                } else {
-                    bestStreak = Math.max(bestStreak, tempStreak)
-                    tempStreak = 1
-                }
+                const diff = (new Date(sortedLogs[i]).getTime() - new Date(sortedLogs[i - 1]).getTime()) / 86400000
+                if (diff === 1) tempStreak++
+                else { bestStreak = Math.max(bestStreak, tempStreak); tempStreak = 1 }
             }
         }
         bestStreak = Math.max(bestStreak, tempStreak)
 
-        const doneToday = successLogs.includes(today.toISOString().split("T")[0])
+        const todayCount = successLogs.filter(d => d === today).length
         const relapseCount = logs.filter(l => l.type === "relapse").length
 
-        result.push({
+        return {
             ...habit,
             streak,
             bestStreak,
-            doneToday,
+            doneToday: todayCount >= (habit.times_per_day ?? 1),
+            todayCount,
             relapseCount,
             lastRelapse: lastRelapse?.logged_at ?? null,
             totalSuccess: successLogs.length
-        })
-    }
+        }
+    })
 
     res.json(result)
 })
 
-// POST créer une habitude
+// POST créer une habitude ✅ avec times_per_day et start_date
 router.post("/", async (req, res) => {
     const {
         name, type, category, emoji, color,
         frequency, difficulty, reminder_time,
         is_private, motivation, triggers,
-        relapse_plan, danger_level
+        relapse_plan, danger_level,
+        times_per_day, start_date
     } = req.body
 
     const [result] = await db.execute(`
@@ -87,42 +84,46 @@ router.post("/", async (req, res) => {
             user_id, name, type, category, emoji, color,
             frequency, difficulty, reminder_time,
             is_private, motivation, triggers,
-            relapse_plan, danger_level
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            relapse_plan, danger_level, times_per_day, start_date
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
         req.userId, name, type || "build", category || "other",
         emoji || null, color || "#6366f1", frequency || "daily",
         difficulty || "medium", reminder_time || null,
         is_private || false, motivation || null,
         triggers || null, relapse_plan || null,
-        danger_level || "low"
+        danger_level || "low", times_per_day || 1,
+        start_date || null
     ])
 
     const [rows] = await db.execute("SELECT * FROM habits WHERE id = ?", [result.insertId])
-    res.json({ ...rows[0], streak: 0, bestStreak: 0, doneToday: false, relapseCount: 0 })
+    res.json({ ...rows[0], streak: 0, bestStreak: 0, doneToday: false, todayCount: 0, relapseCount: 0 })
 })
 
-// PUT modifier une habitude
+// PUT modifier une habitude ✅ avec times_per_day et start_date
 router.put("/:id", async (req, res) => {
     const {
         name, category, emoji, color,
         frequency, difficulty, reminder_time,
         is_private, motivation, triggers,
-        relapse_plan, danger_level
+        relapse_plan, danger_level,
+        times_per_day, start_date
     } = req.body
 
     await db.execute(`
         UPDATE habits SET
-            name = ?, category = ?, emoji = ?, color = ?,
-            frequency = ?, difficulty = ?, reminder_time = ?,
-            is_private = ?, motivation = ?, triggers = ?,
-            relapse_plan = ?, danger_level = ?
+                          name = ?, category = ?, emoji = ?, color = ?,
+                          frequency = ?, difficulty = ?, reminder_time = ?,
+                          is_private = ?, motivation = ?, triggers = ?,
+                          relapse_plan = ?, danger_level = ?,
+                          times_per_day = ?, start_date = ?
         WHERE id = ? AND user_id = ?
     `, [
         name, category, emoji, color,
         frequency, difficulty, reminder_time || null,
         is_private, motivation, triggers,
         relapse_plan, danger_level,
+        times_per_day || 1, start_date || null,
         req.params.id, req.userId
     ])
 
@@ -143,18 +144,16 @@ router.delete("/:id", async (req, res) => {
 router.post("/:id/success", async (req, res) => {
     const { note } = req.body
 
-    try {
-        await db.execute(
-            "INSERT INTO habit_logs (habit_id, user_id, type, note) VALUES (?, ?, 'success', ?)",
-            [req.params.id, req.userId, note || null]
-        )
-    } catch {
-        return res.status(400).json({ message: "Already logged today" })
-    }
+    const [habits] = await db.execute("SELECT * FROM habits WHERE id = ?", [req.params.id])
+    if (habits.length === 0) return res.status(404).json({ message: "Habit not found" })
+
+    await db.execute(
+        "INSERT INTO habit_logs (habit_id, user_id, type, note) VALUES (?, ?, 'success', ?)",
+        [req.params.id, req.userId, note || null]
+    )
 
     // XP selon difficulté
     const xpMap = { easy: 5, medium: 15, hard: 30, extreme: 50 }
-    const [habits] = await db.execute("SELECT * FROM habits WHERE id = ?", [req.params.id])
     const xp = xpMap[habits[0]?.difficulty] ?? 15
 
     await db.execute(
@@ -163,14 +162,14 @@ router.post("/:id/success", async (req, res) => {
     )
 
     // Vérifie milestones
-    const [logs] = await db.execute(
-        "SELECT * FROM habit_logs WHERE habit_id = ? AND type = 'success' ORDER BY logged_at DESC",
+    const [[{ count }]] = await db.execute(
+        "SELECT COUNT(*) as count FROM habit_logs WHERE habit_id = ? AND type = 'success'",
         [req.params.id]
     )
 
     const milestones = [7, 30, 90, 180, 365]
     for (const days of milestones) {
-        if (logs.length === days) {
+        if (count === days) {
             const [existing] = await db.execute(
                 "SELECT * FROM habit_milestones WHERE habit_id = ? AND days = ?",
                 [req.params.id, days]
@@ -187,7 +186,7 @@ router.post("/:id/success", async (req, res) => {
     res.json({ message: "Success logged", xpGained: xp })
 })
 
-// POST log relapse
+// POST log relapse ✅ corrigé
 router.post("/:id/relapse", async (req, res) => {
     const { note } = req.body
 
@@ -202,7 +201,7 @@ router.post("/:id/relapse", async (req, res) => {
 // DELETE undone today
 router.delete("/:id/success", async (req, res) => {
     await db.execute(
-        "DELETE FROM habit_logs WHERE habit_id = ? AND user_id = ? AND type = 'success' AND logged_at = CURRENT_DATE",
+        "DELETE FROM habit_logs WHERE habit_id = ? AND user_id = ? AND type = 'success' AND logged_at = CURRENT_DATE LIMIT 1",
         [req.params.id, req.userId]
     )
     res.json({ message: "Success removed" })
@@ -211,7 +210,7 @@ router.delete("/:id/success", async (req, res) => {
 // GET heatmap d'une habitude
 router.get("/:id/heatmap", async (req, res) => {
     const [logs] = await db.execute(`
-        SELECT 
+        SELECT
             DATE_FORMAT(logged_at, '%Y-%m-%d') as date,
             type
         FROM habit_logs

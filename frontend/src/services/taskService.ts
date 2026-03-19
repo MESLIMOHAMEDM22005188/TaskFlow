@@ -117,6 +117,10 @@ export type Task = {
     theme_id: number | null
     deadline: string | null
     note: string | null
+    times_per_day: number
+    start_date: string | null
+    todayCount: number
+
 }
 
 export type Theme = {
@@ -484,5 +488,125 @@ export async function getFocusPerDay(period: "week" | "month" | "year"): Promise
 
 export async function getHeatmap(): Promise<TaskPerDay[]> {
     const res = await fetch(`${API}/api/stats/heatmap`, { headers: getHeaders() })
+    return handleResponse(res)
+}// TYPES
+export type Habit = {
+    id: number
+    user_id: number
+    name: string
+    type: "build" | "quit"
+    category: string
+    emoji: string | null
+    color: string
+    frequency: string
+    difficulty: string
+    reminder_time: string | null
+    is_private: boolean
+    motivation: string | null
+    triggers: string | null
+    relapse_plan: string | null
+    danger_level: string
+    is_active: boolean
+    created_at: string
+    streak: number
+    bestStreak: number
+    doneToday: boolean
+    relapseCount: number
+    lastRelapse: string | null
+    totalSuccess: number
+}
+
+export type HabitLog = {
+    date: string
+    type: "success" | "relapse"
+}
+
+export type HabitMilestone = {
+    id: number
+    days: number
+    reached_at: string
+}
+
+// FUNCTIONS
+export async function getHabits(): Promise<Habit[]> {
+    const res = await fetch(`${API}/api/habits`, { headers: getHeaders() })
+    return handleResponse(res)
+}
+
+export async function createHabit(data: {
+    name: string
+    type: string
+    category: string
+    emoji?: string
+    color?: string
+    frequency?: string
+    difficulty?: string
+    reminder_time?: string
+    is_private?: boolean
+    motivation?: string
+    triggers?: string
+    relapse_plan?: string
+    danger_level?: string
+    times_per_day?: number
+    start_date?: string
+}) {
+    const res = await fetch(`${API}/api/habits`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify(data)
+    })
+    return handleResponse(res)
+}
+
+export async function updateHabit(id: number, data: Partial<Habit>) {
+    const res = await fetch(`${API}/api/habits/${id}`, {
+        method: "PUT",
+        headers: getHeaders(),
+        body: JSON.stringify(data)
+    })
+    return handleResponse(res)
+}
+
+export async function deleteHabit(id: number) {
+    const res = await fetch(`${API}/api/habits/${id}`, {
+        method: "DELETE",
+        headers: getHeaders()
+    })
+    return handleResponse(res)
+}
+
+export async function logHabitSuccess(id: number, note?: string) {
+    const res = await fetch(`${API}/api/habits/${id}/success`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({ note })
+    })
+    return handleResponse(res)
+}
+
+export async function logHabitRelapse(id: number, note?: string) {
+    const res = await fetch(`${API}/api/habits/${id}/relapse`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({ note })
+    })
+    return handleResponse(res)
+}
+
+export async function undoHabitSuccess(id: number) {
+    const res = await fetch(`${API}/api/habits/${id}/success`, {
+        method: "DELETE",
+        headers: getHeaders()
+    })
+    return handleResponse(res)
+}
+
+export async function getHabitHeatmap(id: number): Promise<HabitLog[]> {
+    const res = await fetch(`${API}/api/habits/${id}/heatmap`, { headers: getHeaders() })
+    return handleResponse(res)
+}
+
+export async function getHabitMilestones(id: number): Promise<HabitMilestone[]> {
+    const res = await fetch(`${API}/api/habits/${id}/milestones`, { headers: getHeaders() })
     return handleResponse(res)
 }

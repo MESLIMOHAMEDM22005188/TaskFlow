@@ -6,7 +6,7 @@ import Signup from "./pages/Signup";
 import {Dashboard} from "./pages/Dashboard";
 import Objectifs from "./pages/Objectifs";
 import Flow from "./pages/Flow";
-import Profil from "./pages/Profil";
+import {Flow as Profil} from "./pages/Profil";
 import Communaute from "./pages/Communaute";
 import Parametres from "./pages/Parametres";
 

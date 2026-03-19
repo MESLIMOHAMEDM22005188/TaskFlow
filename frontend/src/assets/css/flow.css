@@ -1,91 +1,372 @@
-.flow-page{
-    min-height:100vh;
-    background:#0f172a;
-    color:white;
-    font-family:-apple-system,system-ui;
+/* FLOW PAGE */
+
+.flow-page {
+    min-height: 100vh;
+    background: #0f172a;
+    color: white;
+    font-family: -apple-system, system-ui;
 }
 
-.topbar{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    padding:25px 60px;
+.flow-main {
+    max-width: 600px;
+    margin: auto;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;
 }
 
-.logo{
-    font-size:20px;
-    font-weight:600;
+/* MODE TABS */
+
+.flow-modes {
+    display: flex;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 6px;
+    border-radius: 12px;
 }
 
-.nav-menu{
-    display:flex;
-    align-items:center;
-    gap:24px;
-    margin-left:auto;
+.flow-mode-btn {
+    background: transparent;
+    border: none;
+    color: white;
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: .2s;
 }
 
-.nav-item{
-    cursor:pointer;
-    font-size:14px;
-    opacity:0.8;
-    transition:0.2s;
+.flow-mode-btn.active {
+    background: #6366f1;
+    opacity: 1;
 }
 
-.nav-item:hover{
-    opacity:1;
+.flow-mode-btn:hover {
+    opacity: 1;
 }
 
-.nav-icons{
-    display:flex;
-    align-items:center;
-    gap:14px;
-    margin-left:10px;
+/* TIMER */
+
+.flow-timer-wrapper {
+    position: relative;
+    width: 220px;
+    height: 220px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.nav-avatar img{
-    width:36px;
-    height:36px;
-    border-radius:50%;
+.flow-progress-ring {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
 }
 
-.flow-main{
-    max-width:700px;
-    margin:auto;
-    padding:40px;
+.ring-bg {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.06);
+    stroke-width: 8;
 }
 
-.flow-title{
-    font-size:28px;
-    margin-bottom:30px;
+.ring-fill {
+    fill: none;
+    stroke: #6366f1;
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1s linear;
 }
 
-.flow-list{
-    display:flex;
-    flex-direction:column;
-    gap:16px;
+.flow-timer-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    z-index: 1;
 }
 
-.flow-card{
-    display:flex;
-    gap:16px;
-    align-items:center;
-    padding:16px;
-    background:#1e293b;
-    border-radius:12px;
+.flow-time {
+    font-size: 52px;
+    font-weight: 700;
+    letter-spacing: -2px;
+    background: linear-gradient(90deg, #6366f1, #a855f7);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
-.flow-avatar img{
-    width:42px;
-    height:42px;
-    border-radius:50%;
+.flow-mode-label {
+    font-size: 13px;
+    opacity: 0.5;
+    font-weight: 500;
 }
 
-.flow-text{
-    font-size:14px;
+/* XP BADGE */
+
+.flow-xp-badge {
+    background: linear-gradient(90deg, #6366f1, #a855f7);
+    padding: 8px 20px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 15px;
+    animation: popIn 0.3s ease;
 }
 
-.flow-time{
-    font-size:12px;
-    opacity:0.6;
-    margin-top:4px;
+@keyframes popIn {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* CONTROLS */
+
+.flow-controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.flow-btn {
+    border: none;
+    cursor: pointer;
+    border-radius: 50%;
+    font-size: 20px;
+    transition: .2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.flow-btn.primary {
+    width: 64px;
+    height: 64px;
+    background: #6366f1;
+    color: white;
+    font-size: 24px;
+}
+
+.flow-btn.primary:hover {
+    background: #4f46e5;
+    transform: scale(1.05);
+}
+
+.flow-btn.secondary {
+    width: 44px;
+    height: 44px;
+    background: rgba(255, 255, 255, 0.08);
+    color: white;
+}
+
+.flow-btn.secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: scale(1.05);
+}
+
+/* POMODORO DOTS */
+
+.flow-pomodoros {
+    display: flex;
+    gap: 10px;
+}
+
+.pomodoro-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    transition: .3s;
+}
+
+.pomodoro-dot.done {
+    background: #6366f1;
+}
+
+/* TASK SECTION */
+
+.flow-task-section {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.flow-label {
+    font-size: 13px;
+    font-weight: 600;
+    opacity: 0.6;
+}
+
+.flow-select {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    color: white;
+    font-size: 14px;
+    outline: none;
+    cursor: pointer;
+    transition: .2s;
+}
+
+.flow-select:focus {
+    border-color: #6366f1;
+}
+
+.flow-select option {
+    background: #1e293b;
+    color: white;
+}
+
+.flow-selected-task {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: rgba(99, 102, 241, 0.08);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.flow-task-title {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* AMBIENT */
+
+.flow-ambient-section {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.flow-ambient-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.flow-ambient-btn {
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    color: white;
+    font-size: 13px;
+    cursor: pointer;
+    transition: .2s;
+}
+
+.flow-ambient-btn.active {
+    background: rgba(99, 102, 241, 0.2);
+    border-color: #6366f1;
+    color: #6366f1;
+}
+
+.flow-ambient-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.flow-volume {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.flow-range {
+    flex: 1;
+    accent-color: #6366f1;
+    cursor: pointer;
+}
+
+/* STATS */
+
+.flow-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    width: 100%;
+}
+
+.flow-stat {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    transition: .2s;
+}
+
+.flow-stat:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.flow-stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    background: linear-gradient(90deg, #6366f1, #a855f7);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.flow-stat-label {
+    font-size: 12px;
+    opacity: 0.5;
+    text-align: center;
+}
+
+/* SETTINGS */
+
+.flow-settings-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: .2s;
+    opacity: 0.6;
+}
+
+.flow-settings-btn:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.flow-settings-panel {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 600px) {
+    .flow-main {
+        padding: 24px 16px;
+    }
+
+    .flow-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .flow-modes {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
 }

@@ -398,3 +398,18 @@ export async function getLeaderboard(): Promise<LeaderboardUser[]> {
     const res = await fetch(`${API}/api/community/leaderboard`, { headers: getHeaders() })
     return handleResponse(res)
 }
+export async function uploadAvatar(file: File): Promise<string> {
+    const formData = new FormData()
+    formData.append("avatar", file)
+
+    const token = localStorage.getItem("token")
+    const res = await fetch(`${API}/api/upload/avatar`, {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${token}`
+        },
+        body: formData
+    })
+    const data = await handleResponse(res)
+    return data.avatar_url
+}

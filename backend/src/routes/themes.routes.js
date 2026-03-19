@@ -13,14 +13,32 @@ router.get("/", async (req, res) => {
 
 router.post("/", async (req, res) => {
     const { name, emoji, color } = req.body
+
     const [result] = await db.execute(
         "INSERT INTO themes (user_id, name, emoji, color) VALUES (?, ?, ?, ?)",
         [req.userId, name, emoji || null, color || "#6366f1"]
     )
+
     const [rows] = await db.execute("SELECT * FROM themes WHERE id = ?", [result.insertId])
+
+    // ✅ Compte le total de thèmes et met à jour le succès
+    const [[{ themesCount }]] = await db.execute(
+        "SELECT COUNT(*) as themesCount FROM themes WHERE user_id = ?",
+        [req.userId]
+    )
+
+    await db.execute(`
+        INSERT INTO user_achievements (user_id, achievement_id, progress, completed)
+        SELECT ?, a.id, ?, ? >= a.goal
+        FROM achievements a
+        WHERE a.type = 'themes'
+        ON DUPLICATE KEY UPDATE
+            progress = ?,
+            completed = ? >= a.goal
+    `, [req.userId, themesCount, themesCount, themesCount, themesCount])
+
     res.json(rows[0])
 })
-
 router.delete("/:id", async (req, res) => {
     await db.execute(
         "DELETE FROM themes WHERE id = ? AND user_id = ?",

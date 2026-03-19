@@ -6,7 +6,10 @@ const pool = mysql.createPool({
     user: process.env.DB_USER,
     password: process.env.DB_PASS,
     database: process.env.DB_NAME,
-    port: 3306
+    port: 3306,
+    connectionLimit: 3,      // ✅ max 3 connexions simultanées
+    waitForConnections: true, // ✅ attend au lieu de crash
+    queueLimit: 0             // ✅ file d'attente illimitée
 });
 
 module.exports = pool;

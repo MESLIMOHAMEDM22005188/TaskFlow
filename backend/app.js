@@ -13,7 +13,7 @@ const communityRoutes = require('./src/routes/community.routes')
 const uploadRoutes = require('./src/routes/upload.routes')
 const statsRoutes = require('./src/routes/stats.routes')
 const authMiddleware = require('./src/middleware/auth')
-
+const habitsRoutes = require('./src/routes/habits.routes')
 const app = express()
 
 app.use(cors())
@@ -29,6 +29,7 @@ app.use('/api/flow', authMiddleware, flowRoutes)
 app.use('/api/community', authMiddleware, communityRoutes)
 app.use('/api/upload', authMiddleware, uploadRoutes)
 app.use('/api/stats', authMiddleware, statsRoutes)
+app.use('/api/habits', authMiddleware, habitsRoutes)
 
 app.listen(process.env.PORT || 3000, () => {
     console.log(`Server running on port ${process.env.PORT || 3000}`)

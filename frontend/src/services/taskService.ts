@@ -508,12 +508,17 @@ export type Habit = {
     danger_level: string
     is_active: boolean
     created_at: string
+    times_per_day: number       // ✅ times pas time
+    start_date: string | null
     streak: number
     bestStreak: number
     doneToday: boolean
+    todayCount: number          // ✅ ajouté
     relapseCount: number
     lastRelapse: string | null
     totalSuccess: number
+    sparkCount: number          // ✅ ajouté
+    hadSparkYesterday: boolean  // ✅ ajouté
 }
 
 export type HabitLog = {
@@ -575,7 +580,12 @@ export async function deleteHabit(id: number) {
     return handleResponse(res)
 }
 
-export async function logHabitSuccess(id: number, note?: string) {
+export async function logHabitSuccess(id: number, note?: string): Promise<{
+    xpGained: number
+    isSpark: boolean
+    todayCount: number
+    isFullDay: boolean
+}> {
     const res = await fetch(`${API}/api/habits/${id}/success`, {
         method: "POST",
         headers: getHeaders(),

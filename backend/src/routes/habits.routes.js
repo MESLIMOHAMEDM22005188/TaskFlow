@@ -54,6 +54,13 @@ router.get("/", async (req, res) => {
         const todayCount = successLogs.filter(d => d === today).length
         const relapseCount = logs.filter(l => l.type === "relapse").length
 
+        const yesterday = new Date()
+        yesterday.setDate(yesterday.getDate() - 1)
+        const yesterdayKey = yesterday.toISOString().split("T")[0]
+        const yesterdayCount = successLogs.filter(d => d === yesterdayKey).length
+        const hadSparkYesterday = yesterdayCount > 0 && yesterdayCount < (habit.times_per_day ?? 1)
+
+
         return {
             ...habit,
             streak,
@@ -62,7 +69,9 @@ router.get("/", async (req, res) => {
             todayCount,
             relapseCount,
             lastRelapse: lastRelapse?.logged_at ?? null,
-            totalSuccess: successLogs.length
+            totalSuccess: successLogs.length,
+            sparkCount: habits.spark_count ?? 0,
+            hadSparkYesterday
         }
     })
 
@@ -147,45 +156,72 @@ router.post("/:id/success", async (req, res) => {
     const [habits] = await db.execute("SELECT * FROM habits WHERE id = ?", [req.params.id])
     if (habits.length === 0) return res.status(404).json({ message: "Habit not found" })
 
+    const habit = habits[0]
+    const timesPerDay = habit.times_per_day ?? 1
+
     await db.execute(
         "INSERT INTO habit_logs (habit_id, user_id, type, note) VALUES (?, ?, 'success', ?)",
         [req.params.id, req.userId, note || null]
     )
 
-    // XP selon difficulté
+    // Compte les succès du jour
+    const [[{ todayCount }]] = await db.execute(
+        "SELECT COUNT(*) as todayCount FROM habit_logs WHERE habit_id = ? AND user_id = ? AND type = 'success' AND logged_at = CURRENT_DATE",
+        [req.params.id, req.userId]
+    )
+
+    const isFullDay = todayCount >= timesPerDay
     const xpMap = { easy: 5, medium: 15, hard: 30, extreme: 50 }
-    const xp = xpMap[habits[0]?.difficulty] ?? 15
+    const fullXp = xpMap[habit.difficulty] ?? 15
 
-    await db.execute(
-        "UPDATE users SET xp = xp + ? WHERE id = ?",
-        [xp, req.userId]
-    )
+    let xpGained = 0
+    let isSpark = false
 
-    // Vérifie milestones
-    const [[{ count }]] = await db.execute(
-        "SELECT COUNT(*) as count FROM habit_logs WHERE habit_id = ? AND type = 'success'",
-        [req.params.id]
-    )
+    if (isFullDay) {
+        // Journée complète — XP complet + reset sparks
+        xpGained = fullXp
+        await db.execute(
+            "UPDATE habits SET spark_count = 0 WHERE id = ?",
+            [req.params.id]
+        )
+    } else if (todayCount === 1) {
+        // Premier clic du jour — XP partiel (20% du total)
+        xpGained = Math.round(fullXp * 0.2)
+        isSpark = true
+    }
 
-    const milestones = [7, 30, 90, 180, 365]
-    for (const days of milestones) {
-        if (count === days) {
-            const [existing] = await db.execute(
-                "SELECT * FROM habit_milestones WHERE habit_id = ? AND days = ?",
-                [req.params.id, days]
-            )
-            if (existing.length === 0) {
-                await db.execute(
-                    "INSERT INTO habit_milestones (habit_id, user_id, days) VALUES (?, ?, ?)",
-                    [req.params.id, req.userId, days]
+    if (xpGained > 0) {
+        await db.execute(
+            "UPDATE users SET xp = xp + ? WHERE id = ?",
+            [xpGained, req.userId]
+        )
+    }
+
+    // Vérifie milestones uniquement si journée complète
+    if (isFullDay) {
+        const [[{ count }]] = await db.execute(
+            "SELECT COUNT(DISTINCT logged_at) as count FROM habit_logs WHERE habit_id = ? AND type = 'success'",
+            [req.params.id]
+        )
+        const milestones = [7, 30, 90, 180, 365]
+        for (const days of milestones) {
+            if (count === days) {
+                const [existing] = await db.execute(
+                    "SELECT * FROM habit_milestones WHERE habit_id = ? AND days = ?",
+                    [req.params.id, days]
                 )
+                if (existing.length === 0) {
+                    await db.execute(
+                        "INSERT INTO habit_milestones (habit_id, user_id, days) VALUES (?, ?, ?)",
+                        [req.params.id, req.userId, days]
+                    )
+                }
             }
         }
     }
 
-    res.json({ message: "Success logged", xpGained: xp })
+    res.json({ message: "Success logged", xpGained, isSpark, todayCount, isFullDay })
 })
-
 // POST log relapse ✅ corrigé
 router.post("/:id/relapse", async (req, res) => {
     const { note } = req.body

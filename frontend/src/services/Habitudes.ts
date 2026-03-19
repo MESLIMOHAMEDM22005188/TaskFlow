@@ -18,7 +18,6 @@ export function useHabitudes() {
     const [successNote, setSuccessNote] = useState("")
     const [lastXp, setLastXp] = useState<{ id: number, xp: number } | null>(null)
 
-    // Form states
     const [name, setName] = useState("")
     const [type, setType] = useState<"build" | "quit">("build")
     const [category, setCategory] = useState("other")
@@ -31,6 +30,8 @@ export function useHabitudes() {
     const [triggers, setTriggers] = useState("")
     const [relapsePlan, setRelapsePlan] = useState("")
     const [dangerLevel, setDangerLevel] = useState("low")
+    const [timesPerDay, setTimesPerDay] = useState(1)   // ✅ en haut
+    const [startDate, setStartDate] = useState("")       // ✅ en haut
 
     useEffect(() => {
         getHabits()
@@ -54,6 +55,8 @@ export function useHabitudes() {
         setTriggers("")
         setRelapsePlan("")
         setDangerLevel("low")
+        setTimesPerDay(1)   // ✅
+        setStartDate("")    // ✅
     }
 
     async function handleCreateHabit() {
@@ -67,7 +70,9 @@ export function useHabitudes() {
                 motivation: motivation || undefined,
                 triggers: type === "quit" ? triggers || undefined : undefined,
                 relapse_plan: type === "quit" ? relapsePlan || undefined : undefined,
-                danger_level: type === "quit" ? dangerLevel : "low"
+                danger_level: type === "quit" ? dangerLevel : "low",
+                times_per_day: timesPerDay,
+                start_date: type === "quit" ? startDate || undefined : undefined
             })
             setHabits(prev => [habit, ...prev])
             resetForm()
@@ -83,13 +88,17 @@ export function useHabitudes() {
             const result = await logHabitSuccess(id, successNote || undefined)
             setHabits(prev => prev.map(h => h.id === id ? {
                 ...h,
-                doneToday: true,
-                streak: h.streak + 1,
-                totalSuccess: h.totalSuccess + 1
+                todayCount: result.todayCount,
+                doneToday: result.isFullDay,
+                streak: result.isFullDay ? h.streak + 1 : h.streak,
+                totalSuccess: result.isFullDay ? h.totalSuccess + 1 : h.totalSuccess,
+                sparkCount: result.isSpark ? h.sparkCount + 1 : 0
             } : h))
-            setLastXp({ id, xp: result.xpGained })
+            if (result.xpGained > 0) {
+                setLastXp({ id, xp: result.xpGained })
+                setTimeout(() => setLastXp(null), 3000)
+            }
             setSuccessNote("")
-            setTimeout(() => setLastXp(null), 3000)
         } catch (err) {
             console.error(err)
         }
@@ -101,6 +110,7 @@ export function useHabitudes() {
             setHabits(prev => prev.map(h => h.id === id ? {
                 ...h,
                 doneToday: false,
+                todayCount: Math.max(0, h.todayCount - 1),
                 streak: Math.max(0, h.streak - 1),
                 totalSuccess: Math.max(0, h.totalSuccess - 1)
             } : h))
@@ -136,7 +146,6 @@ export function useHabitudes() {
 
     const buildHabits = habits.filter(h => h.type === "build")
     const quitHabits = habits.filter(h => h.type === "quit")
-
     const MILESTONES = [7, 30, 90, 180, 365]
 
     function getNextMilestone(streak: number): number | null {
@@ -168,6 +177,8 @@ export function useHabitudes() {
         relapseHabitId, setRelapseHabitId,
         relapseNote, setRelapseNote,
         successNote, setSuccessNote,
+        timesPerDay, setTimesPerDay,
+        startDate, setStartDate,
         lastXp,
         name, setName,
         type, setType,

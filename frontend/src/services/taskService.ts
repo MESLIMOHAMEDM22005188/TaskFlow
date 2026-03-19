@@ -526,6 +526,11 @@ export type HabitLog = {
     type: "success" | "relapse"
 }
 
+export async function getNotifications() {
+    const res = await fetch(`${API}/api/notifications`, { headers: getHeaders() })
+    return handleResponse(res)
+}
+
 export type HabitMilestone = {
     id: number
     days: number

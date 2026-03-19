@@ -35,13 +35,22 @@ export function useCommunaute() {
     async function handleCreatePost() {
         if (!newPost.trim()) return
         try {
-            const post = await createPost({ content: newPost, type: postType })
-            setPosts(prev => [post, ...prev])
+            await createPost({ content: newPost, type: postType })
+            await refreshFeed() // 🔥 IMPORTANT
             setNewPost("")
             setShowPostForm(false)
         } catch (err) {
             console.error(err)
             alert("Failed to create post")
+        }
+    }
+    async function refreshFeed() {
+        try {
+            const [p, l] = await Promise.all([getPosts(), getLeaderboard()])
+            setPosts(p)
+            setLeaderboard(l)
+        } catch (err) {
+            console.error(err)
         }
     }
 
@@ -56,12 +65,8 @@ export function useCommunaute() {
 
     async function handleLike(id: number) {
         try {
-            const result = await likePost(id)
-            setPosts(prev => prev.map(p => p.id === id ? {
-                ...p,
-                liked_by_me: result.liked ? 1 : 0,
-                likes_count: result.liked ? p.likes_count + 1 : p.likes_count - 1
-            } : p))
+            await likePost(id)
+            await refreshFeed() // 🔥 évite incohérence
         } catch (err) {
             console.error(err)
         }

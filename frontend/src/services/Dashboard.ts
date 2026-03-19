@@ -1,23 +1,33 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { toggle, closeAll } from "../services/uiManager"
+import { toggle, closeAll } from "./uiManager.ts"
+
 import {
-    getTasks, createTask, deleteTask as apiDeleteTask,
-    completeTask, uncompleteTask, getTodayCompletions,
-    getThemes, createTheme
+    getTasks,
+    createTask,
+    deleteTask as apiDeleteTask,
+    completeTask,
+    uncompleteTask,
+    getTodayCompletions,
+    getThemes,
+    createTheme,
+    deleteTheme as apiDeleteTheme,
+    getNotifications
 } from "../services/taskService"
-import type { Task, Theme } from "../services/taskService"
-import { deleteTheme as apiDeleteTheme} from "../services/taskService";
+
+import type { Task, Theme } from "./taskService.ts"
+
 
 export function useDashboard() {
 
     const navigate = useNavigate()
 
     const [dark, setDark] = useState(true)
+
     const [tasks, setTasks] = useState<Task[]>([])
     const [themes, setThemes] = useState<Theme[]>([])
     const [doneTasks, setDoneTasks] = useState<number[]>([])
-
+    const [notifications, setNotifications] = useState<Notification[]>([])
     const [newTask, setNewTask] = useState("")
     const [priority, setPriority] = useState("Medium")
     const [themeId, setThemeId] = useState<number | null>(null)
@@ -32,15 +42,19 @@ export function useDashboard() {
     const [showTaskForm, setShowTaskForm] = useState(false)
     const [showThemeForm, setShowThemeForm] = useState(false)
 
-
-
-    // dans le useEffect :
+    // LOAD INITIAL DATA
     useEffect(() => {
-        Promise.all([getTasks(), getThemes(), getTodayCompletions()])
-            .then(([t, th, completions]) => {
+        Promise.all([
+            getTasks(),
+            getThemes(),
+            getTodayCompletions(),
+            getNotifications()
+        ])
+            .then(([t, th, completions, notif]) => {
                 setTasks(t)
                 setThemes(th)
                 setDoneTasks(completions)
+                setNotifications(notif)
             })
             .catch(err => console.error("fetchAll error:", err))
     }, [])
@@ -57,6 +71,7 @@ export function useDashboard() {
 
     async function handleCreateTask() {
         if (!newTask.trim()) return
+
         try {
             const task = await createTask({
                 title: newTask,
@@ -66,14 +81,19 @@ export function useDashboard() {
                 deadline: deadline || null,
                 note: note || null
             })
+
             setTasks(prev => [task, ...prev])
+
+            // reset
             setNewTask("")
             setPriority("Medium")
             setThemeId(null)
             setFrequency("daily")
             setDeadline("")
             setNote("")
+
             closeAll(setShowTaskForm, setShowThemeForm)
+
         } catch (err) {
             console.error(err)
             alert("Failed to create task")
@@ -82,68 +102,128 @@ export function useDashboard() {
 
     async function handleCreateTheme() {
         if (!themeName.trim()) return
+
         try {
             const theme = await createTheme({
                 name: themeName,
                 emoji: themeEmoji || undefined,
                 color: themeColor
             })
+
             setThemes(prev => [theme, ...prev])
+
+            // reset
             setThemeName("")
             setThemeEmoji("")
             setThemeColor("#6366f1")
+
             closeAll(setShowTaskForm, setShowThemeForm)
+
         } catch (err) {
             console.error(err)
             alert("Failed to create theme")
         }
     }
+    type Notification = {
+        id: number
+        message: string
+        created_at: string
+        read?: boolean
+    }
 
     async function toggleDone(taskId: number) {
-        if (doneTasks.includes(taskId)) {
-            await uncompleteTask(taskId)
-            setDoneTasks(prev => prev.filter(id => id !== taskId))
-        } else {
-            await completeTask(taskId)
-            setDoneTasks(prev => [...prev, taskId])
+        try {
+            if (doneTasks.includes(taskId)) {
+                await uncompleteTask(taskId)
+            } else {
+                await completeTask(taskId)
+            }
+
+            // reload clean state
+            const [t, completions] = await Promise.all([
+                getTasks(),
+                getTodayCompletions()
+            ])
+
+            setTasks(t)
+            setDoneTasks(completions)
+
+        } catch (err) {
+            console.error(err)
         }
     }
 
     async function handleDeleteTask(taskId: number) {
-        await apiDeleteTask(taskId)
-        setTasks(prev => prev.filter(t => t.id !== taskId))
-        setDoneTasks(prev => prev.filter(id => id !== taskId))
-    }
-    async function handleDeleteTheme(themeId: number) {
-        await apiDeleteTheme(themeId)
-        setThemes(prev => prev.filter(t => t.id !== themeId))
+        try {
+            await apiDeleteTask(taskId)
+
+            setTasks(prev => prev.filter(t => t.id !== taskId))
+            setDoneTasks(prev => prev.filter(id => id !== taskId))
+
+        } catch (err) {
+            console.error(err)
+        }
     }
 
+    async function handleDeleteTheme(themeId: number) {
+        try {
+            await apiDeleteTheme(themeId)
+            setThemes(prev => prev.filter(t => t.id !== themeId))
+        } catch (err) {
+            console.error(err)
+        }
+    }
 
     return {
         navigate,
-        dark, setDark,
+
+        dark,
+        setDark,
+
         tasks,
         themes,
         doneTasks,
-        newTask, setNewTask,
-        priority, setPriority,
-        themeId, setThemeId,
-        frequency, setFrequency,
-        deadline, setDeadline,
-        note, setNote,
-        themeName, setThemeName,
-        themeEmoji, setThemeEmoji,
-        themeColor, setThemeColor,
+        notifications,
+
+        newTask,
+        setNewTask,
+
+        priority,
+        setPriority,
+
+        themeId,
+        setThemeId,
+
+        frequency,
+        setFrequency,
+
+        deadline,
+        setDeadline,
+
+        note,
+        setNote,
+
+        themeName,
+        setThemeName,
+
+        themeEmoji,
+        setThemeEmoji,
+
+        themeColor,
+        setThemeColor,
+
         showTaskForm,
         showThemeForm,
+
         handleToggleTaskForm,
         handleToggleThemeForm,
+
         handleCreateTask,
         handleCreateTheme,
+
         toggleDone,
         deleteTask: handleDeleteTask,
-        toggle,
         handleDeleteTheme,
+
     }
 }

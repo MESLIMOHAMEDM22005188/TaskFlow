@@ -413,3 +413,76 @@ export async function uploadAvatar(file: File): Promise<string> {
     const data = await handleResponse(res)
     return data.avatar_url
 }
+// TYPES
+export type StatsOverview = {
+    totalTasks: number
+    totalXp: number
+    totalFocus: number
+    bestStreak: number
+    bestDay: string
+    bestHour: number | null
+}
+
+export type TaskPerDay = {
+    date: string
+    count: number
+}
+
+export type XpOverTime = {
+    period: string
+    xp: number
+}
+
+export type RadarData = {
+    theme: string
+    color: string
+    emoji: string
+    tasks: number
+    completed: number
+}
+
+export type PrioritySplit = {
+    priority: string
+    count: number
+}
+
+export type FocusPerDay = {
+    date: string
+    minutes: number
+}
+
+// FUNCTIONS
+export async function getStatsOverview(): Promise<StatsOverview> {
+    const res = await fetch(`${API}/api/stats/overview`, { headers: getHeaders() })
+    return handleResponse(res)
+}
+
+export async function getTasksPerDay(period: "week" | "month" | "year"): Promise<TaskPerDay[]> {
+    const res = await fetch(`${API}/api/stats/tasks-per-day?period=${period}`, { headers: getHeaders() })
+    return handleResponse(res)
+}
+
+export async function getXpOverTime(period: "week" | "month" | "year"): Promise<XpOverTime[]> {
+    const res = await fetch(`${API}/api/stats/xp-over-time?period=${period}`, { headers: getHeaders() })
+    return handleResponse(res)
+}
+
+export async function getRadarData(): Promise<RadarData[]> {
+    const res = await fetch(`${API}/api/stats/radar`, { headers: getHeaders() })
+    return handleResponse(res)
+}
+
+export async function getPrioritySplit(): Promise<PrioritySplit[]> {
+    const res = await fetch(`${API}/api/stats/priority-split`, { headers: getHeaders() })
+    return handleResponse(res)
+}
+
+export async function getFocusPerDay(period: "week" | "month" | "year"): Promise<FocusPerDay[]> {
+    const res = await fetch(`${API}/api/stats/focus-per-day?period=${period}`, { headers: getHeaders() })
+    return handleResponse(res)
+}
+
+export async function getHeatmap(): Promise<TaskPerDay[]> {
+    const res = await fetch(`${API}/api/stats/heatmap`, { headers: getHeaders() })
+    return handleResponse(res)
+}

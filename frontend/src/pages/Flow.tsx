@@ -10,7 +10,7 @@ const AMBIENT_SOUNDS = [
     { value: "fire", label: "🔥 Feu de camp" },
     { value: "cafe", label: "☕ Café" },
     { value: "wind", label: "💨 Vent" },
-    { value: "night", label: "🌙 Nuit" },
+    { value: "night", flowlabel: "🌙 Nuit" },
     { value: "river", label: "🏞 Rivière" },
     { value: "lofi", label: "🎵 Lofi" },
 ]
@@ -50,6 +50,7 @@ export default function Flow() {
                     <div className="nav-item" onClick={() => navigate("/dashboard")}>Dashboard</div>
                     <div className="nav-item" onClick={() => navigate("/objectifs")}>Objectifs</div>
                     <div className="nav-item" onClick={() => navigate("/flow")}>Flow</div>
+                    <div className="nav-item" onClick={() => navigate("/stats")}>Stats</div>
                     <div className="nav-item" onClick={() => navigate("/profil")}>Profil</div>
                     <div className="nav-item" onClick={() => navigate("/communaute")}>Communauté</div>
                     <div className="nav-item" onClick={() => navigate("/parametres")}>Paramètres</div>
@@ -61,7 +62,36 @@ export default function Flow() {
             </header>
 
             <main className="flow-main">
-
+                {/* MÉTHODE DE FOCUS */}
+                <div className="flow-methods">
+                    <label className="flow-label">Méthode</label>
+                    <div className="flow-method-buttons">
+                        {[
+                            { label: "🍅 Pomodoro", focus: 25, short: 5, long: 15 },
+                            { label: "⚡ 52/17", focus: 52, short: 17, long: 17 },
+                            { label: "🧠 Deep Work", focus: 90, short: 20, long: 20 },
+                            { label: "🔄 90/20", focus: 90, short: 20, long: 20 },
+                            { label: "⏱ 52/17 Ultra", focus: 52, short: 17, long: 30 },
+                            { label: "🎯 Timebox", focus: 45, short: 10, long: 15 },
+                            { label: "🌊 Flow State", focus: 120, short: 30, long: 30 },
+                            { label: "📚 Ultradian", focus: 90, short: 20, long: 20 },
+                        ].map(m => (
+                            <button
+                                key={m.label}
+                                className="flow-method-btn"
+                                onClick={() => handleSaveSettings({
+                                    ...settings,
+                                    focus_duration: m.focus,
+                                    short_break: m.short,
+                                    long_break: m.long,
+                                })}
+                            >
+                                {m.label}
+                                <span className="flow-method-duration">{m.focus}min</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
                 {/* MODE TABS */}
                 <div className="flow-modes">
                     <button

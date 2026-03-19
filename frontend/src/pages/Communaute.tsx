@@ -36,6 +36,7 @@ export default function Communaute() {
                     <div className="nav-item" onClick={() => navigate("/dashboard")}>Dashboard</div>
                     <div className="nav-item" onClick={() => navigate("/objectifs")}>Objectifs</div>
                     <div className="nav-item" onClick={() => navigate("/flow")}>Flow</div>
+                    <div className="nav-item" onClick={() => navigate("/stats")}>Stats</div>
                     <div className="nav-item" onClick={() => navigate("/profil")}>Profil</div>
                     <div className="nav-item" onClick={() => navigate("/communaute")}>Communauté</div>
                     <div className="nav-item" onClick={() => navigate("/parametres")}>Paramètres</div>

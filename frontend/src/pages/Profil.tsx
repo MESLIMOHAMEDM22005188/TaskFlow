@@ -1,318 +1,231 @@
-import { useState, useEffect, type ChangeEvent } from "react";
-import "../assets/css/flow.css";
-import { useFlow } from "../services/Flow";
+import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
+import "../assets/css/profil.css"
+import { getProfil, updateProfil, uploadAvatar } from "../services/taskService"
+import type { Achievement } from "../services/taskService"
 
-// Types
-type TimerMode = "focus" | "short_break" | "long_break";
-type AmbientSound = {
-    value: string;
-    label: string;
-};
-type FormSettings = {
-    focus_duration: number;
-    short_break: number;
-    long_break: number;
-    pomodoros_until_long: number;
-    auto_start_break: boolean;
-};
+export default function Profil() {
 
-const AMBIENT_SOUNDS: AmbientSound[] = [
-    { value: "none", label: "🔇 Silence" },
-    { value: "rain", label: "🌧 Pluie légère" },
-    { value: "heavy_rain", label: "⛈ Pluie forte" },
-    { value: "forest", label: "🌲 Forêt" },
-    { value: "waves", label: "🌊 Vagues" },
-    { value: "fire", label: "🔥 Feu de camp" },
-    { value: "cafe", label: "☕ Café" },
-    { value: "wind", label: "💨 Vent" },
-    { value: "night", label: "🌙 Nuit" },
-    { value: "river", label: "🏞 Rivière" },
-    { value: "lofi", label: "🎵 Lofi" },
-];
+    const navigate = useNavigate()
+    const [username, setUsername] = useState("")
+    const [bio, setBio] = useState("")
+    const [email, setEmail] = useState("")
+    const [loading, setLoading] = useState(true)
+    const [achievements, setAchievements] = useState<Achievement[]>([])
+    const [saved, setSaved] = useState(false)
+    const [avatar, setAvatar] = useState<string>("https://i.pravatar.cc/120")
+    const [stats, setStats] = useState({
+        tasksCompleted: 0,
+        themesCreated: 0,
+        communityPosts: 0,
+        activityDays: 0,
+        xp: 0,
+        division: "Fer I",
+        top3Count: 0,
+        streak: 0
+    })
 
-export function Flow() {
-    const {
-        navigate,
-        settings,
-        showSettings,
-        setShowSettings,
-        mode,
-        switchMode,
-        isRunning,
-        pomodoroCount,
-        minutes,
-        seconds,
-        progressPercent,
-        tasks,
-        selectedTaskId,
-        setSelectedTaskId,
-        stats,
-        ambientSound,
-        setAmbientSound,
-        ambientVolume,
-        setAmbientVolume,
-        lastXp,
-        handleStart,
-        handlePause,
-        handleReset,
-        handleSkip,
-        handleSaveSettings,
-    } = useFlow();
+    function getDivisionColor(division: string) {
+        if (division.includes("Fer")) return "#9ca3af"
+        if (division.includes("Bronze")) return "#cd7f32"
+        if (division.includes("Argent")) return "#94a3b8"
+        if (division.includes("Or")) return "#f59e0b"
+        if (division.includes("Platine")) return "#22d3ee"
+        if (division.includes("Émeraude")) return "#22c55e"
+        if (division.includes("Diamant")) return "#818cf8"
+        if (division.includes("Maître")) return "#a855f7"
+        if (division.includes("Grand Maître")) return "#ef4444"
+        if (division.includes("Challenger")) return "#f97316"
+        return "#6366f1"
+    }
 
-    // Tâche sélectionnée
-    const selectedTask = tasks.find((t) => t.id === selectedTaskId);
-
-    // Gestion des inputs des paramètres
-    const [formSettings, setFormSettings] = useState<FormSettings>({
-        focus_duration: 25,
-        short_break: 5,
-        long_break: 15,
-        pomodoros_until_long: 4,
-        auto_start_break: false,
-    });
-
-    // Mise à jour des paramètres locaux uniquement si `settings` change
     useEffect(() => {
-        if (settings) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setFormSettings((prev) => {
-                // Évite les mises à jour inutiles
-                if (
-                    prev.focus_duration === settings.focus_duration &&
-                    prev.short_break === settings.short_break &&
-                    prev.long_break === settings.long_break &&
-                    prev.pomodoros_until_long === settings.pomodoros_until_long &&
-                    prev.auto_start_break === settings.auto_start_break
-                ) {
-                    return prev; // Pas de changement, pas de re-rendu
-                }
-                return {
-                    focus_duration: settings.focus_duration,
-                    short_break: settings.short_break,
-                    long_break: settings.long_break,
-                    pomodoros_until_long: settings.pomodoros_until_long,
-                    auto_start_break: settings.auto_start_break,
-                };
-            });
+        getProfil()
+            .then(data => {
+                setUsername(data.username ?? "")
+                setBio(data.bio ?? "")
+                setEmail(data.email)
+                setStats(data.stats)
+                setAvatar(data.avatar_url ?? "https://i.pravatar.cc/120")
+                setLoading(false)
+                setAchievements(data.achievements ?? [])
+            })
+            .catch(err => console.error(err))
+    }, [])
+
+    async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0]
+        if (!file) return
+        try {
+            const url = await uploadAvatar(file)
+            setAvatar(url)
+        } catch (err) {
+            console.error(err)
+            alert("Failed to upload avatar")
         }
-    }, [settings]);
+    }
 
-    // Gestion des changements de formulaire
-    const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-        const {id, type, value, checked} = e.target;
-        setFormSettings((prev) => ({
-            ...prev,
-            [id]: type === "checkbox" ? checked : type === "number" ? Number(value) : value,
-        }));
-    };
+    async function handleSave() {
+        try {
+            await updateProfil({ username, bio })
+            setSaved(true)
+            setTimeout(() => setSaved(false), 2000)
+        } catch (err) {
+            console.error(err)
+            alert("Failed to save profile")
+        }
+    }
 
-    // Sauvegarde des paramètres
-    const saveSettings = () => {
-        handleSaveSettings({
-            ...formSettings,
-            ambient_sound: ambientSound,
-            ambient_volume: ambientVolume,
-        });
-    };
+    function handleLogout() {
+        localStorage.removeItem("token")
+        navigate("/login")
+    }
+
+    if (loading) return <div className="profil-page">Loading...</div>
 
     return (
-        <div className="flow-page">
-            {/* Header */}
+        <div className="profil-page">
+
             <header className="topbar">
                 <div className="logo">TaskFlow</div>
                 <nav className="nav-menu">
-                    {[
-                        {path: "/dashboard", label: "Dashboard"},
-                        {path: "/objectifs", label: "Objectifs"},
-                        {path: "/flow", label: "Flow"},
-                        {path: "/profil", label: "Profil"},
-                        {path: "/communaute", label: "Communauté"},
-                        {path: "/parametres", label: "Paramètres"},
-                    ].map((item) => (
-                        <div key={item.path} className="nav-item" onClick={() => navigate(item.path)}>
-                            {item.label}
-                        </div>
-                    ))}
+                    <div className="nav-item" onClick={() => navigate("/dashboard")}>Dashboard</div>
+                    <div className="nav-item" onClick={() => navigate("/objectifs")}>Objectifs</div>
+                    <div className="nav-item" onClick={() => navigate("/flow")}>Flow</div>
+                    <div className="nav-item" onClick={() => navigate("/stats")}>Stats</div>
+                    <div className="nav-item" onClick={() => navigate("/profil")}>Profil</div>
+                    <div className="nav-item" onClick={() => navigate("/communaute")}>Communauté</div>
+                    <div className="nav-item" onClick={() => navigate("/parametres")}>Paramètres</div>
                     <div className="nav-icons">
                         <div className="nav-item nav-search">🔍</div>
                         <div className="nav-item nav-notif">🔔</div>
+                        <div className="nav-avatar">
+                            <img src={avatar} alt="avatar" />
+                        </div>
                     </div>
                 </nav>
             </header>
 
-            {/* Main Content */}
-            <main className="flow-main">
-                {/* Mode Tabs */}
-                <div className="flow-modes">
-                    {[
-                        {mode: "focus" as TimerMode, label: "Focus"},
-                        {mode: "short_break" as TimerMode, label: "Pause courte"},
-                        {mode: "long_break" as TimerMode, label: "Pause longue"},
-                    ].map((tab) => (
-                        <button
-                            key={tab.mode}
-                            className={`flow-mode-btn ${mode === tab.mode ? "active" : ""}`}
-                            onClick={() => switchMode(tab.mode)}
-                        >
-                            {tab.label}
-                        </button>
-                    ))}
-                </div>
+            <main className="profil-main">
 
-                {/* Timer */}
-                <div className="flow-timer-wrapper">
-                    <svg className="flow-progress-ring" viewBox="0 0 200 200">
-                        <circle cx="100" cy="100" r="90" className="ring-bg"/>
-                        <circle
-                            cx="100"
-                            cy="100"
-                            r="90"
-                            className="ring-fill"
-                            strokeDasharray={`${2 * Math.PI * 90}`}
-                            strokeDashoffset={`${2 * Math.PI * 90 * (1 - progressPercent / 100)}`}
-                        />
-                    </svg>
-                    <div className="flow-timer-display">
-            <span className="flow-time">
-              {minutes}:{seconds.toString().padStart(2, "0")}
-            </span>
-                        <span className="flow-mode-label">
-              {mode === "focus" ? "Focus" : mode === "short_break" ? "Pause courte" : "Pause longue"}
-            </span>
-                    </div>
-                </div>
+                <h1 className="profil-title">Profile</h1>
 
-                {/* XP Notification */}
-                {lastXp && (
-                    <div className="flow-xp-badge">+{lastXp} XP 🎉</div>
-                )}
-
-                {/* Controls */}
-                <div className="flow-controls">
-                    <button className="flow-btn secondary" onClick={handleReset}>
-                        ↺
-                    </button>
-                    <button className="flow-btn primary" onClick={isRunning ? handlePause : handleStart}>
-                        {isRunning ? "⏸" : "▶"}
-                    </button>
-                    <button className="flow-btn secondary" onClick={handleSkip}>
-                        ⏭
-                    </button>
-                </div>
-
-                {/* Pomodoro Dots */}
-                <div className="flow-pomodoros">
-                    {Array.from({length: settings?.pomodoros_until_long ?? 4}).map((_, i) => (
-                        <div
-                            key={i}
-                            className={`pomodoro-dot ${i < pomodoroCount % (settings?.pomodoros_until_long ?? 4) ? "done" : ""}`}
-                        />
-                    ))}
-                </div>
-
-                {/* Task Selection */}
-                <div className="flow-task-section">
-                    <label className="flow-label">Tâche en cours</label>
-                    <select
-                        className="flow-select"
-                        value={selectedTaskId ?? ""}
-                        onChange={(e) => setSelectedTaskId(e.target.value ? Number(e.target.value) : null)}
-                    >
-                        <option value="">Aucune tâche sélectionnée</option>
-                        {tasks.map((t) => (
-                            <option key={t.id} value={t.id}>
-                                {t.title}
-                            </option>
-                        ))}
-                    </select>
-                    {selectedTask && (
-                        <div className="flow-selected-task">
-              <span className={`badge priority-${selectedTask.priority.toLowerCase()}`}>
-                {selectedTask.priority}
-              </span>
-                            <span className="flow-task-title">{selectedTask.title}</span>
-                        </div>
-                    )}
-                </div>
-
-                {/* Ambient Sound */}
-                <div className="flow-ambient-section">
-                    <label className="flow-label">Son d'ambiance</label>
-                    <div className="flow-ambient-buttons">
-                        {AMBIENT_SOUNDS.map((s) => (
-                            <button
-                                key={s.value}
-                                className={`flow-ambient-btn ${ambientSound === s.value ? "active" : ""}`}
-                                onClick={() => setAmbientSound(s.value)}
-                            >
-                                {s.label}
-                            </button>
-                        ))}
-                    </div>
-                    {ambientSound !== "none" && (
-                        <div className="flow-volume">
-                            <span>🔈</span>
+                <section className="profil-card">
+                    <div className="profil-avatar">
+                        <img src={avatar} alt="avatar" />
+                        <label className="avatar-upload-btn">
+                            📷
                             <input
-                                type="range"
-                                min={0}
-                                max={100}
-                                value={ambientVolume}
-                                onChange={(e) => setAmbientVolume(Number(e.target.value))}
-                                className="flow-range"
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                onChange={handleAvatarChange}
+                                style={{ display: "none" }}
                             />
-                            <span>🔊</span>
+                        </label>
+                    </div>
+                    <div className="profil-form">
+                        <label>Username</label>
+                        <input
+                            type="text"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                        />
+                        <label>Email</label>
+                        <input
+                            type="email"
+                            value={email}
+                            disabled
+                        />
+                        <label>Bio</label>
+                        <textarea
+                            value={bio}
+                            onChange={(e) => setBio(e.target.value)}
+                        />
+                        <button className="profil-save" onClick={handleSave}>
+                            {saved ? "✓ Saved!" : "Save profile"}
+                        </button>
+                        <label className="profil-save" style={{ textAlign: "center", cursor: "pointer" }}>
+                            📷 Changer la photo
+                            <input
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                onChange={handleAvatarChange}
+                                style={{ display: "none" }}
+                            />
+                        </label>
+                        <button className="profil-logout" onClick={handleLogout}>
+                            Logout
+                        </button>
+                    </div>
+                </section>
+
+                <section className="profil-stats">
+                    <div className="stat-card">
+                        <h3>Tasks completed</h3>
+                        <p>{stats.tasksCompleted}</p>
+                    </div>
+                    <div className="stat-card">
+                        <h3>Themes created</h3>
+                        <p>{stats.themesCreated}</p>
+                    </div>
+                    <div className="stat-card">
+                        <h3>Community posts</h3>
+                        <p>{stats.communityPosts}</p>
+                    </div>
+                </section>
+
+                <section className="profil-xp">
+                    <h2 className="profil-section-title">Statistiques</h2>
+                    <div className="profil-stats">
+                        <div className="stat-card">
+                            <h3>Jours d'activité</h3>
+                            <p>{stats.activityDays}</p>
                         </div>
-                    )}
-                </div>
-
-                {/* Stats */}
-                <div className="flow-stats">
-                    {[
-                        {label: "Sessions aujourd'hui", value: stats.todaySessions},
-                        {label: "Focus aujourd'hui", value: `${stats.todayMinutes}min`},
-                        {label: "Sessions totales", value: stats.totalSessions},
-                        {label: "Focus total", value: `${Math.round(stats.totalMinutes / 60)}h`},
-                    ].map((stat, index) => (
-                        <div key={index} className="flow-stat">
-                            <span className="flow-stat-value">{stat.value}</span>
-                            <span className="flow-stat-label">{stat.label}</span>
+                        <div className="stat-card xp-card">
+                            <h3>XP gagnés</h3>
+                            <p>{stats.xp.toLocaleString()}</p>
                         </div>
-                    ))}
-                </div>
+                        <div className="stat-card">
+                            <h3>Streak actuel</h3>
+                            <p>{stats.streak} 🔥</p>
+                        </div>
+                        <div className="stat-card">
+                            <h3>Division actuelle</h3>
+                            <p className="division-badge" style={{ color: getDivisionColor(stats.division) }}>
+                                {stats.division}
+                            </p>
+                        </div>
+                        <div className="stat-card">
+                            <h3>Fois dans le top 3</h3>
+                            <p>{stats.top3Count}</p>
+                        </div>
+                    </div>
+                </section>
 
-                {/* Settings */}
-                <button className="flow-settings-btn" onClick={() => setShowSettings(!showSettings)}>
-                    ⚙️ Paramètres du timer
-                </button>
-
-                {showSettings && (
-                    <div className="flow-settings-panel">
-                        {[
-                            {id: "focus_duration", label: "Durée focus (min)", type: "number"},
-                            {id: "short_break", label: "Pause courte (min)", type: "number"},
-                            {id: "long_break", label: "Pause longue (min)", type: "number"},
-                            {id: "pomodoros_until_long", label: "Pomodoros avant pause longue", type: "number"},
-                            {id: "auto_start_break", label: "Auto-start pause", type: "checkbox"},
-                        ].map((field) => (
-                            <div key={field.id} className="theme-field">
-                                <label className="theme-label" htmlFor={field.id}>
-                                    {field.label}
-                                </label>
-                                <input
-                                    id={field.id}
-                                    type={field.type}
-                                    checked={field.type === "checkbox" ? formSettings[field.id as keyof FormSettings] as boolean : undefined}
-                                    onChange={handleInputChange}
-                                    className="theme-input"
+                <section className="profil-achievements">
+                    <h2 className="profil-section-title">Succès</h2>
+                    {achievements.map(a => (
+                        <div key={a.id} className={`achievement-card ${a.completed ? "completed" : ""}`}>
+                            <div className="achievement-top">
+                                <span className="achievement-level">★ NIVEAU {a.level}</span>
+                                <span className="achievement-name">{a.name}</span>
+                            </div>
+                            <div className="achievement-progress-bar">
+                                <div
+                                    className="achievement-progress-fill"
+                                    style={{ width: `${Math.min((a.progress / a.goal) * 100, 100)}%` }}
                                 />
                             </div>
-                        ))}
-                        <button className="main-button" onClick={saveSettings}>
-                            Sauvegarder
-                        </button>
-                    </div>
-                )}
+                            <div className="achievement-bottom">
+                                <span className="achievement-desc">{a.description}</span>
+                                <span className="achievement-count">{a.progress}/{a.goal}</span>
+                            </div>
+                        </div>
+                    ))}
+                </section>
+
             </main>
+
         </div>
-    );
+    )
 }

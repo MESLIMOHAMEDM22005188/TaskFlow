@@ -1,12 +1,11 @@
 import { useNavigate } from "react-router-dom";
+import type {CSSProperties} from "react";
 
-export default function AuthChoice() {
-
+export function AuthChoice() {
     const navigate = useNavigate();
 
     return (
         <div style={container}>
-
             <h1 style={title}>TaskFlow</h1>
 
             <p style={subtitle}>
@@ -14,7 +13,6 @@ export default function AuthChoice() {
             </p>
 
             <div style={buttons}>
-
                 <button
                     style={login}
                     onClick={() => navigate("/login")}
@@ -28,14 +26,13 @@ export default function AuthChoice() {
                 >
                     Sign up
                 </button>
-
             </div>
-
         </div>
     );
 }
 
-const container = {
+// ✅ typage propre (évite erreurs TS)
+const container: CSSProperties = {
     height: "100vh",
     display: "flex",
     flexDirection: "column",
@@ -45,37 +42,38 @@ const container = {
     color: "white"
 };
 
-const title = {
+const title: CSSProperties = {
     fontSize: "48px",
     marginBottom: "10px"
 };
 
-const subtitle = {
+const subtitle: CSSProperties = {
     marginBottom: "40px",
     opacity: 0.8
 };
 
-const buttons = {
+const buttons: CSSProperties = {
     display: "flex",
     gap: "20px"
 };
 
-const login = {
+const baseButton: CSSProperties = {
     padding: "12px 30px",
     borderRadius: "8px",
     border: "none",
-    background: "#2563eb",
-    color: "white",
     fontSize: "16px",
-    cursor: "pointer"
+    cursor: "pointer",
+    transition: "0.2s ease"
 };
 
-const signup = {
-    padding: "12px 30px",
-    borderRadius: "8px",
-    border: "none",
+const login: CSSProperties = {
+    ...baseButton,
+    background: "#2563eb",
+    color: "white"
+};
+
+const signup: CSSProperties = {
+    ...baseButton,
     background: "#16a34a",
-    color: "white",
-    fontSize: "16px",
-    cursor: "pointer"
+    color: "white"
 };

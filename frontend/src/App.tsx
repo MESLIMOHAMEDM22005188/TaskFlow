@@ -12,7 +12,6 @@ import Habitudes from "./pages/Habitudes"
 import Communaute from "./pages/Communaute"
 import Parametres from "./pages/Parametres"
 import Stats from "./pages/Stats" // ✅ ajouté
-
 function App() {
     return (
         <Routes>
@@ -27,6 +26,7 @@ function App() {
             <Route path="/parametres" element={<Parametres />} />
             <Route path="/stats" element={<Stats />} />
             <Route path="/habitudes" element={<Habitudes />} />
+            <Route path="/historique" element={<Historique />} />
 
         </Routes>
     )

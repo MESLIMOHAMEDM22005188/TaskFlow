@@ -12,7 +12,7 @@ import {
     getThemes,
     createTheme,
     deleteTheme as apiDeleteTheme,
-    getNotifications
+
 } from "../services/taskService"
 
 import type { Task, Theme, TaskDailyState } from "../services/taskService.ts"
@@ -32,7 +32,7 @@ export function useDashboard() {
     const [tasks, setTasks] = useState<Task[]>([])
     const [themes, setThemes] = useState<Theme[]>([])
     const [dailyState, setDailyState] = useState<Map<number, TaskDailyState>>(new Map())
-    const [notifications, setNotifications] = useState<Notification[]>([])
+    const [notifications] = useState<Notification[]>([])
 
     const [newTask, setNewTask] = useState("")
     const [priority, setPriority] = useState("Medium")
@@ -62,13 +62,11 @@ export function useDashboard() {
             getTasks(),
             getThemes(),
             getTodayCompletions(),
-            getNotifications()
         ])
-            .then(([t, th, completions, notif]) => {
+            .then(([t, th, completions, ]) => {
                 setTasks(t)
                 setThemes(th)
                 setDailyState(buildDailyMap(completions))
-                setNotifications(notif)
             })
             .catch(err => console.error("fetchAll error:", err))
     }, [])

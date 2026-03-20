@@ -34,3 +34,5 @@ app.use('/api/habits', authMiddleware, habitsRoutes)
 app.listen(process.env.PORT || 3000, () => {
     console.log(`Server running on port ${process.env.PORT || 3000}`)
 })
+
+fetch('/api/tasks', {headers:{Authorization:`Bearer ${localStorage.getItem('token')}`}}).then(r=>r.json()).then(d=>console.log(d))

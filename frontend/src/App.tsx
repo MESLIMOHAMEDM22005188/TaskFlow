@@ -11,7 +11,8 @@ import Habitudes from "./pages/Habitudes"
 
 import Communaute from "./pages/Communaute"
 import Parametres from "./pages/Parametres"
-import Stats from "./pages/Stats" // ✅ ajouté
+import Stats from "./pages/Stats"
+import Historique from "./pages/Historique.tsx"; // ✅ ajouté
 function App() {
     return (
         <Routes>

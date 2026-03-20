@@ -1,6 +1,5 @@
 import "../assets/css/dashboard.css"
 import { useDashboard } from "../services/Dashboard"
-
 export function Dashboard() {
 
     const {
@@ -8,7 +7,7 @@ export function Dashboard() {
         dark, setDark,
         tasks,
         themes,
-        doneTasks,
+        dailyState,
         notifications,
 
         newTask, setNewTask,
@@ -17,6 +16,7 @@ export function Dashboard() {
         frequency, setFrequency,
         deadline, setDeadline,
         note, setNote,
+        completionTarget, setCompletionTarget,
 
         themeName, setThemeName,
         themeEmoji, setThemeEmoji,
@@ -34,6 +34,8 @@ export function Dashboard() {
         deleteTask
     } = useDashboard()
 
+    const doneTasks = tasks.filter(t => dailyState.get(t.id)?.done_today).length
+
     return (
         <div className={dark ? "dashboard dark" : "dashboard light"}>
 
@@ -48,13 +50,12 @@ export function Dashboard() {
                     <div className="nav-item" onClick={() => navigate("/habitudes")}>Habitudes</div>
                     <div className="nav-item" onClick={() => navigate("/profil")}>Profil</div>
                     <div className="nav-item" onClick={() => navigate("/communaute")}>Communauté</div>
+                    <div className="nav-item" onClick={() => navigate("/historique")}>Historique</div>
                     <div className="nav-item" onClick={() => navigate("/parametres")}>Paramètres</div>
 
                     <div className="nav-item nav-focus">⚡ Focus</div>
 
                     <div className="nav-icons">
-                        <div className="nav-item nav-search">🔍</div>
-
                         <div className="nav-item nav-notif">
                             🔔 {notifications.length > 0 && (
                             <span className="notif-badge">{notifications.length}</span>
@@ -166,6 +167,20 @@ export function Dashboard() {
                                 />
                             </div>
 
+                            <div className="theme-field">
+                                <label className="theme-label">
+                                    Completions required
+                                </label>
+                                <input
+                                    className="theme-input"
+                                    type="number"
+                                    min={1}
+                                    max={30}
+                                    value={completionTarget}
+                                    onChange={(e) => setCompletionTarget(Number(e.target.value))}
+                                />
+                            </div>
+
                             <button className="main-button" onClick={handleCreateTask}>
                                 Confirm Task
                             </button>
@@ -180,12 +195,14 @@ export function Dashboard() {
 
                             <input
                                 className="theme-input"
+                                placeholder="Theme name"
                                 value={themeName}
                                 onChange={(e) => setThemeName(e.target.value)}
                             />
 
                             <input
                                 className="theme-input"
+                                placeholder="Emoji"
                                 value={themeEmoji}
                                 onChange={(e) => setThemeEmoji(e.target.value)}
                             />
@@ -211,13 +228,13 @@ export function Dashboard() {
 
                 {/* PROGRESS */}
                 <div className="progress-wrapper">
-                    <span>{doneTasks.length} / {tasks.length}</span>
+                    <span>{doneTasks} / {tasks.length} done today</span>
                     <div className="progress-bar">
                         <div
                             className="progress-fill"
                             style={{
                                 width: tasks.length
-                                    ? `${(doneTasks.length / tasks.length) * 100}%`
+                                    ? `${(doneTasks / tasks.length) * 100}%`
                                     : "0%"
                             }}
                         />
@@ -227,9 +244,12 @@ export function Dashboard() {
                 {/* TASKS */}
                 {tasks.map(task => {
                     const theme = themes.find(t => t.id === task.theme_id)
+                    const state = dailyState.get(task.id)
+                    const todayCount = state?.today_count ?? 0
+                    const doneToday = state?.done_today ?? false
 
                     return (
-                        <div key={task.id} className={`task ${doneTasks.includes(task.id) ? "task-done" : ""}`}>
+                        <div key={task.id} className={`task ${doneToday ? "task-done" : ""}`}>
 
                             <div className="task-content">
                                 <span>{task.title}</span>
@@ -243,6 +263,12 @@ export function Dashboard() {
                                         {task.frequency}
                                     </span>
 
+                                    {task.completion_target > 1 && (
+                                        <span className="badge">
+                                            {todayCount} / {task.completion_target}
+                                        </span>
+                                    )}
+
                                     {theme && (
                                         <span style={{ color: theme.color }}>
                                             {theme.emoji} {theme.name}
@@ -253,7 +279,7 @@ export function Dashboard() {
 
                             <div className="task-actions">
                                 <button onClick={() => toggleDone(task.id)}>
-                                    {doneTasks.includes(task.id) ? "↩" : "✓"}
+                                    {doneToday ? "↩" : "✓"}
                                 </button>
 
                                 <button onClick={() => deleteTask(task.id)}>
@@ -268,25 +294,20 @@ export function Dashboard() {
                 {/* THEMES */}
                 <section className="themes">
                     {themes.map(theme => {
-
                         const themeTasks = tasks.filter(t => t.theme_id === theme.id)
-                        const done = themeTasks.filter(t => doneTasks.includes(t.id)).length
+                        const done = themeTasks.filter(t => dailyState.get(t.id)?.done_today).length
 
                         return (
                             <div key={theme.id} className="theme-card">
-
                                 <div>
                                     {theme.emoji} {theme.name}
                                 </div>
-
                                 <div>
-                                    {themeTasks.length} tasks • {done} done
+                                    {themeTasks.length} tasks • {done} done today
                                 </div>
-
                                 <button onClick={() => handleDeleteTheme(theme.id)}>
                                     🗑
                                 </button>
-
                             </div>
                         )
                     })}

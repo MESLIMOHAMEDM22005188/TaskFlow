@@ -15,25 +15,32 @@ import {
     getNotifications
 } from "../services/taskService"
 
-import type { Task, Theme } from "./taskService.ts"
+import type { Task, Theme, TaskDailyState } from "../services/taskService.ts"
 
+type Notification = {
+    id: number
+    message: string
+    created_at: string
+    read?: boolean
+}
 
 export function useDashboard() {
 
     const navigate = useNavigate()
 
     const [dark, setDark] = useState(true)
-
     const [tasks, setTasks] = useState<Task[]>([])
     const [themes, setThemes] = useState<Theme[]>([])
-    const [doneTasks, setDoneTasks] = useState<number[]>([])
+    const [dailyState, setDailyState] = useState<Map<number, TaskDailyState>>(new Map())
     const [notifications, setNotifications] = useState<Notification[]>([])
+
     const [newTask, setNewTask] = useState("")
     const [priority, setPriority] = useState("Medium")
     const [themeId, setThemeId] = useState<number | null>(null)
     const [frequency, setFrequency] = useState("daily")
     const [deadline, setDeadline] = useState("")
     const [note, setNote] = useState("")
+    const [completionTarget, setCompletionTarget] = useState(1)
 
     const [themeName, setThemeName] = useState("")
     const [themeEmoji, setThemeEmoji] = useState("")
@@ -42,7 +49,10 @@ export function useDashboard() {
     const [showTaskForm, setShowTaskForm] = useState(false)
     const [showThemeForm, setShowThemeForm] = useState(false)
 
-    // LOAD INITIAL DATA
+    function buildDailyMap(states: TaskDailyState[]): Map<number, TaskDailyState> {
+        return new Map(states.map(s => [s.task_id, s]))
+    }
+
     useEffect(() => {
         Promise.all([
             getTasks(),
@@ -53,7 +63,7 @@ export function useDashboard() {
             .then(([t, th, completions, notif]) => {
                 setTasks(t)
                 setThemes(th)
-                setDoneTasks(completions)
+                setDailyState(buildDailyMap(completions))
                 setNotifications(notif)
             })
             .catch(err => console.error("fetchAll error:", err))
@@ -71,7 +81,6 @@ export function useDashboard() {
 
     async function handleCreateTask() {
         if (!newTask.trim()) return
-
         try {
             const task = await createTask({
                 title: newTask,
@@ -79,21 +88,18 @@ export function useDashboard() {
                 theme_id: themeId,
                 frequency,
                 deadline: deadline || null,
-                note: note || null
+                note: note || null,
+                completion_target: completionTarget
             })
-
             setTasks(prev => [task, ...prev])
-
-            // reset
             setNewTask("")
             setPriority("Medium")
             setThemeId(null)
             setFrequency("daily")
             setDeadline("")
             setNote("")
-
+            setCompletionTarget(1)
             closeAll(setShowTaskForm, setShowThemeForm)
-
         } catch (err) {
             console.error(err)
             alert("Failed to create task")
@@ -102,52 +108,62 @@ export function useDashboard() {
 
     async function handleCreateTheme() {
         if (!themeName.trim()) return
-
         try {
             const theme = await createTheme({
                 name: themeName,
                 emoji: themeEmoji || undefined,
                 color: themeColor
             })
-
             setThemes(prev => [theme, ...prev])
-
-            // reset
             setThemeName("")
             setThemeEmoji("")
             setThemeColor("#6366f1")
-
             closeAll(setShowTaskForm, setShowThemeForm)
-
         } catch (err) {
             console.error(err)
             alert("Failed to create theme")
         }
     }
-    type Notification = {
-        id: number
-        message: string
-        created_at: string
-        read?: boolean
-    }
 
     async function toggleDone(taskId: number) {
         try {
-            if (doneTasks.includes(taskId)) {
-                await uncompleteTask(taskId)
+            const state = dailyState.get(taskId)
+            const isDone = state?.done_today ?? false
+
+            if (isDone) {
+                const { task } = await uncompleteTask(taskId)
+                setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...task } : t))
+                setDailyState(prev => {
+                    const next = new Map(prev)
+                    const current = next.get(taskId)
+                    if (current) {
+                        next.set(taskId, {
+                            ...current,
+                            today_count: Math.max(0, current.today_count - 1),
+                            done_today: false
+                        })
+                    }
+                    return next
+                })
             } else {
-                await completeTask(taskId)
+                const { task } = await completeTask(taskId)
+                if (task.status === "done") {
+                    setTasks(prev => prev.filter(t => t.id !== taskId))
+                } else {
+                    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...task } : t))
+                }
+                setDailyState(prev => {
+                    const next = new Map(prev)
+                    const current = next.get(taskId) ?? { task_id: taskId, today_count: 0, done_today: false }
+                    const newCount = current.today_count + 1
+                    next.set(taskId, {
+                        ...current,
+                        today_count: newCount,
+                        done_today: newCount >= task.completion_target
+                    })
+                    return next
+                })
             }
-
-            // reload clean state
-            const [t, completions] = await Promise.all([
-                getTasks(),
-                getTodayCompletions()
-            ])
-
-            setTasks(t)
-            setDoneTasks(completions)
-
         } catch (err) {
             console.error(err)
         }
@@ -156,10 +172,12 @@ export function useDashboard() {
     async function handleDeleteTask(taskId: number) {
         try {
             await apiDeleteTask(taskId)
-
             setTasks(prev => prev.filter(t => t.id !== taskId))
-            setDoneTasks(prev => prev.filter(id => id !== taskId))
-
+            setDailyState(prev => {
+                const next = new Map(prev)
+                next.delete(taskId)
+                return next
+            })
         } catch (err) {
             console.error(err)
         }
@@ -176,54 +194,29 @@ export function useDashboard() {
 
     return {
         navigate,
-
-        dark,
-        setDark,
-
+        dark, setDark,
         tasks,
         themes,
-        doneTasks,
+        dailyState,
         notifications,
-
-        newTask,
-        setNewTask,
-
-        priority,
-        setPriority,
-
-        themeId,
-        setThemeId,
-
-        frequency,
-        setFrequency,
-
-        deadline,
-        setDeadline,
-
-        note,
-        setNote,
-
-        themeName,
-        setThemeName,
-
-        themeEmoji,
-        setThemeEmoji,
-
-        themeColor,
-        setThemeColor,
-
+        newTask, setNewTask,
+        priority, setPriority,
+        themeId, setThemeId,
+        frequency, setFrequency,
+        deadline, setDeadline,
+        note, setNote,
+        completionTarget, setCompletionTarget,
+        themeName, setThemeName,
+        themeEmoji, setThemeEmoji,
+        themeColor, setThemeColor,
         showTaskForm,
         showThemeForm,
-
         handleToggleTaskForm,
         handleToggleThemeForm,
-
         handleCreateTask,
         handleCreateTheme,
-
         toggleDone,
         deleteTask: handleDeleteTask,
         handleDeleteTheme,
-
     }
 }

@@ -22,8 +22,10 @@ export async function getTasks() {
     return handleResponse(res)
 }
 
-export async function getTodayCompletions(): Promise<number[]> {
-    const res = await fetch(`${API}/api/tasks/completions/today`, { headers: getHeaders() })
+export async function getTodayCompletions(): Promise<TaskDailyState[]> {
+    const res = await fetch(`${API}/api/tasks/completions/today`, {
+        headers: getHeaders()
+    })
     return handleResponse(res)
 }
 export async function createTask(data: {
@@ -33,6 +35,7 @@ export async function createTask(data: {
     frequency?: string
     deadline?: string | null
     note?: string | null
+    completion_target?:  number
 }) {
     const res = await fetch(`${API}/api/tasks`, {
         method: "POST",
@@ -42,7 +45,7 @@ export async function createTask(data: {
     return handleResponse(res)
 }
 
-export async function deleteTask(id: number) {
+export async function deleteTask(id: number): Promise<{ message: string }> {
     const res = await fetch(`${API}/api/tasks/${id}`, {
         method: "DELETE",
         headers: getHeaders()
@@ -50,7 +53,14 @@ export async function deleteTask(id: number) {
     return handleResponse(res)
 }
 
-export async function completeTask(id: number) {
+export async function getTaskHistory(): Promise<TaskHistory[]> {
+    const res = await fetch(`${API}/api/tasks/history`, {
+        headers: getHeaders()
+    })
+    return handleResponse(res)
+}
+
+export async function completeTask(id: number): Promise<{ task: Task, xp: number }> {
     const res = await fetch(`${API}/api/tasks/${id}/complete`, {
         method: "POST",
         headers: getHeaders()
@@ -58,7 +68,7 @@ export async function completeTask(id: number) {
     return handleResponse(res)
 }
 
-export async function uncompleteTask(id: number) {
+export async function uncompleteTask(id: number): Promise<{ task: Task, xp: number }> {
     const res = await fetch(`${API}/api/tasks/${id}/complete`, {
         method: "DELETE",
         headers: getHeaders()
@@ -111,18 +121,51 @@ export async function updateProfil(data: { username: string, bio: string }) {
 // TYPES
 export type Task = {
     id: number
+    user_id: number
     title: string
     priority: string
     frequency: string
     theme_id: number | null
     deadline: string | null
     note: string | null
-    times_per_day: number
-    start_date: string | null
-    todayCount: number
+    completion_target: number
+    completions_count: number
+    status: "active" | "done" | "archived"
+    completed_at: string | null
+    archived_at: string | null
+    created_at: string
 
+    // champs joints depuis le GET /
+    today_count: number
+    done_today: boolean
+    theme_name: string | null
+    theme_emoji: string | null
+    theme_color: string | null
 }
 
+export type TaskDailyState = {
+    task_id: number
+    today_count: number
+    done_today: boolean
+}
+
+export type TaskHistory = {
+    id: number
+    title: string
+    status: "done" | "archived"
+    priority: string
+    frequency: string
+    completion_target: number
+    completions_count: number
+    total_completions: number
+    lifespan_days: number
+    created_at: string
+    completed_at: string | null
+    archived_at: string | null
+    theme_name: string | null
+    theme_emoji: string | null
+    theme_color: string | null
+}
 export type Theme = {
     id: number
     name: string

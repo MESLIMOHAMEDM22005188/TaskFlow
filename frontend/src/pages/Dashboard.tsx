@@ -168,19 +168,43 @@ export function Dashboard() {
                             </div>
 
                             <div className="theme-field">
-                                <label className="theme-label">
-                                    Completions required
-                                </label>
-                                <input
-                                    className="theme-input"
-                                    type="number"
-                                    min={1}
-                                    max={30}
-                                    value={completionTarget}
-                                    onChange={(e) => setCompletionTarget(Number(e.target.value))}
-                                />
+                                <label className="theme-label">Type de tâche</label>
+                                <select
+                                    className="theme-select"
+                                    value={completionTarget === 1 && frequency === "once" ? "once" : "recurring"}
+                                    onChange={(e) => {
+                                        if (e.target.value === "once") {
+                                            setFrequency("once")
+                                            setCompletionTarget(1)
+                                        } else {
+                                            setFrequency("daily")
+                                            setCompletionTarget(1)
+                                        }
+                                    }}
+                                >
+                                    <option value="once">One-time — à faire une fois</option>
+                                    <option value="recurring">Récurrente — revient chaque jour</option>
+                                </select>
                             </div>
 
+                            {/* Affiche le compteur seulement si récurrente */}
+                            {frequency !== "once" && (
+                                <>
+                                    <div className="theme-field">
+                                        <label className="theme-label">
+                                            Nombre de fois par jour
+                                        </label>
+                                        <input
+                                            className="theme-input"
+                                            type="number"
+                                            min={1}
+                                            max={30}
+                                            value={completionTarget}
+                                            onChange={(e) => setCompletionTarget(Number(e.target.value))}
+                                        />
+                                    </div>
+                                </>
+                            )}
                             <button className="main-button" onClick={handleCreateTask}>
                                 Confirm Task
                             </button>
@@ -278,15 +302,20 @@ export function Dashboard() {
                             </div>
 
                             <div className="task-actions">
-                                <button onClick={() => toggleDone(task.id)}>
+                                <button
+                                    className={`task-btn done-btn ${doneToday ? "active" : ""}`}
+                                    onClick={() => toggleDone(task.id)}
+                                >
                                     {doneToday ? "↩" : "✓"}
                                 </button>
 
-                                <button onClick={() => deleteTask(task.id)}>
+                                <button
+                                    className="task-btn delete-btn"
+                                    onClick={() => deleteTask(task.id)}
+                                >
                                     🗑
                                 </button>
                             </div>
-
                         </div>
                     )
                 })}

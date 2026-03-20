@@ -50,7 +50,11 @@ export function useDashboard() {
     const [showThemeForm, setShowThemeForm] = useState(false)
 
     function buildDailyMap(states: TaskDailyState[]): Map<number, TaskDailyState> {
-        return new Map(states.map(s => [s.task_id, s]))
+        return new Map(states.map(s => [s.task_id, {
+            ...s,
+            done_today: Boolean(s.done_today),
+            today_count: Number(s.today_count)
+        }]))
     }
 
     useEffect(() => {

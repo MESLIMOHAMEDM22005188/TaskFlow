@@ -39,12 +39,12 @@ router.get("/", async (req, res) => {
 // CREATE task
 router.post("/", async (req, res) => {
     try {
-        const { title, priority, theme_id, frequency, deadline, note } = req.body
+        const { title, priority, theme_id, frequency, deadline, note, completion_target } = req.body
 
         const [result] = await db.execute(
-            `INSERT INTO tasks 
-            (user_id, theme_id, title, priority, frequency, deadline, note) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO tasks
+             (user_id, theme_id, title, priority, frequency, deadline, note, completion_target)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 req.userId,
                 theme_id || null,
@@ -52,7 +52,8 @@ router.post("/", async (req, res) => {
                 priority || "Medium",
                 frequency || "daily",
                 deadline || null,
-                note || null
+                note || null,
+                completion_target || 1
             ]
         )
 
@@ -68,7 +69,6 @@ router.post("/", async (req, res) => {
         res.status(500).json({ message: "Error" })
     }
 })
-
 // DELETE task
 router.delete("/:id", async (req, res) => {
     try {

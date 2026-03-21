@@ -38,6 +38,7 @@ export default function Historique() {
                     <div className="nav-item" onClick={() => navigate("/communaute")}>Communauté</div>
                     <div className="nav-item" onClick={() => navigate("/historique")}>Historique</div>
                     <div className="nav-item" onClick={() => navigate("/parametres")}>Paramètres</div>
+
                     <div className="nav-item nav-focus">⚡ Focus</div>
                 </nav>
             </header>

@@ -93,9 +93,12 @@ export default function Profil() {
                     <div className="nav-item" onClick={() => navigate("/objectifs")}>Objectifs</div>
                     <div className="nav-item" onClick={() => navigate("/flow")}>Flow</div>
                     <div className="nav-item" onClick={() => navigate("/stats")}>Stats</div>
+                    <div className="nav-item" onClick={() => navigate("/habitudes")}>Habitudes</div>
                     <div className="nav-item" onClick={() => navigate("/profil")}>Profil</div>
                     <div className="nav-item" onClick={() => navigate("/communaute")}>Communauté</div>
+                    <div className="nav-item" onClick={() => navigate("/historique")}>Historique</div>
                     <div className="nav-item" onClick={() => navigate("/parametres")}>Paramètres</div>
+
                     <div className="nav-icons">
                         <div className="nav-item nav-search">🔍</div>
                         <div className="nav-item nav-notif">🔔</div>

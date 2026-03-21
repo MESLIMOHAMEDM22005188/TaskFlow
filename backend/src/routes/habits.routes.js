@@ -100,7 +100,8 @@ router.post("/", async (req, res) => {
         frequency, difficulty, reminder_time,
         is_private, motivation, triggers,
         relapse_plan, danger_level,
-        times_per_day, start_date
+        times_per_day, start_date,
+        theme_ids  // ← ajoute ça
     } = req.body
 
     const [result] = await db.execute(`
@@ -120,8 +121,21 @@ router.post("/", async (req, res) => {
         start_date || null
     ])
 
-    const [rows] = await db.execute("SELECT * FROM habits WHERE id = ?", [result.insertId])
-    res.json({ ...rows[0], streak: 0, bestStreak: 0, doneToday: false, todayCount: 0, relapseCount: 0, sparkCount: 0 })
+    const habitId = result.insertId
+
+    // ← insère les thèmes (max 3)
+    if (Array.isArray(theme_ids) && theme_ids.length > 0) {
+        const limitedThemes = theme_ids.slice(0, 3)
+        for (const themeId of limitedThemes) {
+            await db.execute(
+                "INSERT IGNORE INTO habit_themes (habit_id, theme_id) VALUES (?, ?)",
+                [habitId, themeId]
+            )
+        }
+    }
+
+    const [rows] = await db.execute("SELECT * FROM habits WHERE id = ?", [habitId])
+    res.json({ ...rows[0], streak: 0, bestStreak: 0, doneToday: false, todayCount: 0, relapseCount: 0, sparkCount: 0, theme_ids: theme_ids?.slice(0, 3) ?? [] })
 })
 
 // PUT modifier une habitude

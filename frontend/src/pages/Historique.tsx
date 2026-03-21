@@ -5,11 +5,35 @@ import type { TaskHistory } from "../services/taskService"
 import "../assets/css/dashboard.css"
 import "../assets/css/historique.css"
 
+const API = import.meta.env.VITE_API_URL
+
+function getHeaders() {
+    return {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`
+    }
+}
+
+async function restoreTask(id: number): Promise<void> {
+    await fetch(`${API}/api/tasks/${id}/restore`, {
+        method: "PUT",
+        headers: getHeaders()
+    })
+}
+
+async function deleteTaskPermanently(id: number): Promise<void> {
+    await fetch(`${API}/api/tasks/${id}/permanent`, {
+        method: "DELETE",
+        headers: getHeaders()
+    })
+}
+
 export default function Historique() {
     const navigate = useNavigate()
     const [tasks, setTasks] = useState<TaskHistory[]>([])
     const [filter, setFilter] = useState<"all" | "done" | "archived">("all")
     const [dark] = useState(true)
+    const [loadingId, setLoadingId] = useState<number | null>(null)
 
     useEffect(() => {
         getTaskHistory().then(setTasks).catch(console.error)
@@ -19,9 +43,34 @@ export default function Historique() {
 
     function formatDate(d: string | null) {
         if (!d) return "—"
-        return new Date(d).toLocaleDateString("fr-FR", {
-            day: "numeric", month: "short", year: "numeric"
-        })
+        return new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })
+    }
+
+    async function handleRestore(id: number) {
+        setLoadingId(id)
+        try {
+            await restoreTask(id)
+            setTasks(prev => prev.filter(t => t.id !== id))
+        } catch (err) {
+            console.error(err)
+            alert("Erreur lors de la restauration")
+        } finally {
+            setLoadingId(null)
+        }
+    }
+
+    async function handleDeletePermanently(id: number) {
+        if (!confirm("Supprimer définitivement cette tâche ?")) return
+        setLoadingId(id)
+        try {
+            await deleteTaskPermanently(id)
+            setTasks(prev => prev.filter(t => t.id !== id))
+        } catch (err) {
+            console.error(err)
+            alert("Erreur lors de la suppression")
+        } finally {
+            setLoadingId(null)
+        }
     }
 
     return (
@@ -38,7 +87,6 @@ export default function Historique() {
                     <div className="nav-item" onClick={() => navigate("/communaute")}>Communauté</div>
                     <div className="nav-item" onClick={() => navigate("/historique")}>Historique</div>
                     <div className="nav-item" onClick={() => navigate("/parametres")}>Paramètres</div>
-
                     <div className="nav-item nav-focus">⚡ Focus</div>
                 </nav>
             </header>
@@ -46,7 +94,6 @@ export default function Historique() {
             <main className="main">
                 <h1 className="title">Historique</h1>
 
-                {/* FILTRES */}
                 <div className="histo-filters">
                     {(["all", "done", "archived"] as const).map(f => (
                         <button
@@ -60,11 +107,8 @@ export default function Historique() {
                     <span className="histo-count">{filtered.length} tâche{filtered.length > 1 ? "s" : ""}</span>
                 </div>
 
-                {/* LISTE */}
                 {filtered.length === 0 ? (
-                    <div className="histo-empty">
-                        Aucune tâche ici pour l'instant.
-                    </div>
+                    <div className="histo-empty">Aucune tâche ici pour l'instant.</div>
                 ) : (
                     <div className="histo-list">
                         {filtered.map(task => (
@@ -80,10 +124,7 @@ export default function Historique() {
                                             {task.frequency}
                                         </span>
                                         {task.theme_name && (
-                                            <span
-                                                className="badge"
-                                                style={{ color: task.theme_color ?? undefined }}
-                                            >
+                                            <span className="badge" style={{ color: task.theme_color ?? undefined }}>
                                                 {task.theme_emoji} {task.theme_name}
                                             </span>
                                         )}
@@ -91,19 +132,30 @@ export default function Historique() {
 
                                     <div className="histo-meta">
                                         <span>📅 Créée le {formatDate(task.created_at)}</span>
-                                        {task.status === "done" && (
-                                            <span>✅ Terminée le {formatDate(task.completed_at)}</span>
-                                        )}
-                                        {task.status === "archived" && (
-                                            <span>🗃 Archivée le {formatDate(task.archived_at)}</span>
-                                        )}
+                                        {task.status === "done" && <span>✅ Terminée le {formatDate(task.completed_at)}</span>}
+                                        {task.status === "archived" && <span>🗃 Archivée le {formatDate(task.archived_at)}</span>}
                                         <span>⏱ {task.lifespan_days} jour{task.lifespan_days > 1 ? "s" : ""} de vie</span>
                                         <span>🔁 {task.total_completions} complétion{task.total_completions > 1 ? "s" : ""}</span>
                                     </div>
                                 </div>
 
-                                <div className="histo-status">
-                                    {task.status === "done" ? "✅" : "🗃"}
+                                <div className="histo-actions">
+                                    <button
+                                        className="histo-restore-btn"
+                                        onClick={() => handleRestore(task.id)}
+                                        disabled={loadingId === task.id}
+                                        title="Restaurer dans le dashboard"
+                                    >
+                                        {loadingId === task.id ? "..." : "↩ Restaurer"}
+                                    </button>
+                                    <button
+                                        className="histo-delete-btn"
+                                        onClick={() => handleDeletePermanently(task.id)}
+                                        disabled={loadingId === task.id}
+                                        title="Supprimer définitivement"
+                                    >
+                                        🗑
+                                    </button>
                                 </div>
 
                             </div>

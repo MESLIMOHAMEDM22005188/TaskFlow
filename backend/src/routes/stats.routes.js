@@ -32,16 +32,15 @@ router.get("/overview", async (req, res) => {
         ) streaks
     `, [req.userId])
 
-    const [[{ bestDay }]] = await db.execute(`
+    const [bestDayRows] = await db.execute(`
         SELECT DATE_FORMAT(completed_at, '%W') as bestDay
         FROM task_completions
         WHERE user_id = ?
         GROUP BY DAY(completed_at), DATE_FORMAT(completed_at, '%W')
         ORDER BY COUNT(*) DESC
-        LIMIT 1
+            LIMIT 1
     `, [req.userId])
-
-    const [[{ bestHour }]] = await db.execute(`
+    const [bestHourRows] = await db.execute(`
         SELECT HOUR(completed_at) as bestHour
         FROM task_completions
         WHERE user_id = ?
@@ -49,14 +48,13 @@ router.get("/overview", async (req, res) => {
         ORDER BY COUNT(*) DESC
             LIMIT 1
     `, [req.userId])
-
     res.json({
         totalTasks,
         totalXp,
         totalFocus,
         bestStreak: bestStreak ?? 0,
-        bestDay: bestDay ?? "—",
-        bestHour: bestHour ?? null
+        bestDay: bestDayRows[0]?.bestDay ?? "—",
+        bestHour: bestHourRows[0]?.bestHour ?? null
     })
 })
 
@@ -198,29 +196,50 @@ router.get("/radar", async (req, res) => {
     )
 
     const radarData = await Promise.all(themes.map(async theme => {
-        const [[{ taskCount }]] = await db.execute(
-            "SELECT COUNT(*) as taskCount FROM tasks WHERE user_id = ? AND theme_id = ?",
-            [req.userId, theme.id]
-        )
+
+        // Tâches via task_themes
+        const [[{ taskCount }]] = await db.execute(`
+            SELECT COUNT(*) as taskCount
+            FROM tasks t
+                     JOIN task_themes tt ON tt.task_id = t.id
+            WHERE t.user_id = ? AND tt.theme_id = ?
+        `, [req.userId, theme.id])
+
         const [[{ completedCount }]] = await db.execute(`
-            SELECT COUNT(*) as completedCount 
+            SELECT COUNT(*) as completedCount
             FROM task_completions tc
             JOIN tasks t ON t.id = tc.task_id
-            WHERE tc.user_id = ? AND t.theme_id = ?
+            JOIN task_themes tt ON tt.task_id = t.id
+            WHERE tc.user_id = ? AND tt.theme_id = ?
+        `, [req.userId, theme.id])
+
+        // Habitudes via habit_themes
+        const [[{ habitCount }]] = await db.execute(`
+            SELECT COUNT(*) as habitCount
+            FROM habits h
+                     JOIN habit_themes ht ON ht.habit_id = h.id
+            WHERE h.user_id = ? AND ht.theme_id = ? AND h.is_active = TRUE
+        `, [req.userId, theme.id])
+
+        const [[{ habitSuccessCount }]] = await db.execute(`
+            SELECT COUNT(DISTINCT DATE(hl.logged_at)) as habitSuccessCount
+            FROM habit_logs hl
+            JOIN habits h ON h.id = hl.habit_id
+            JOIN habit_themes ht ON ht.habit_id = h.id
+            WHERE hl.user_id = ? AND ht.theme_id = ? AND hl.type = 'success'
         `, [req.userId, theme.id])
 
         return {
             theme: theme.name,
             color: theme.color,
             emoji: theme.emoji,
-            tasks: taskCount,
-            completed: completedCount,
+            tasks: taskCount + habitCount,          // total activités
+            completed: completedCount + habitSuccessCount,  // total complétions
         }
     }))
 
     res.json(radarData)
 })
-
 // GET répartition par priorité
 router.get("/priority-split", async (req, res) => {
     const [rows] = await db.execute(`

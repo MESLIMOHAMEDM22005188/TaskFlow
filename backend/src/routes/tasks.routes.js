@@ -298,3 +298,32 @@ router.delete("/:id/complete", async (req, res) => {
     }
 })
 module.exports = router
+
+router.put("/:id/restore", async (req, res) => {
+    try {
+        const [result] = await db.execute(
+            "UPDATE tasks SET status = 'active', archived_at = NULL, completed_at = NULL WHERE id = ? AND user_id = ?",
+            [req.params.id, req.userId]
+        )
+        if (result.affectedRows === 0) return res.status(404).json({ message: "Task not found" })
+        const [[task]] = await db.execute("SELECT * FROM tasks WHERE id = ?", [req.params.id])
+        res.json(task)
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({ message: "Error restoring task" })
+    }
+})
+
+router.delete("/:id/permanent", async (req, res) => {
+    try {
+        const [result] = await db.execute(
+            "DELETE FROM tasks WHERE id = ? AND user_id = ?",
+            [req.params.id, req.userId]
+        )
+        if (result.affectedRows === 0) return res.status(404).json({ message: "Task not found" })
+        res.json({ message: "Task permanently deleted" })
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({ message: "Error deleting task" })
+    }
+})

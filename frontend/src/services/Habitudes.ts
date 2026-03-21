@@ -2,15 +2,17 @@ import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import {
     getHabits, createHabit, deleteHabit,
-    logHabitSuccess, logHabitRelapse, undoHabitSuccess
+    logHabitSuccess, logHabitRelapse, undoHabitSuccess,
+    getThemes
 } from "./taskService"
-import type { Habit } from "./taskService"
+import type { Habit, Theme } from "./taskService"
 
 export function useHabitudes() {
 
     const navigate = useNavigate()
 
     const [habits, setHabits] = useState<Habit[]>([])
+    const [themes, setThemes] = useState<Theme[]>([])
     const [loading, setLoading] = useState(true)
     const [showForm, setShowForm] = useState(false)
     const [relapseHabitId, setRelapseHabitId] = useState<number | null>(null)
@@ -30,17 +32,27 @@ export function useHabitudes() {
     const [triggers, setTriggers] = useState("")
     const [relapsePlan, setRelapsePlan] = useState("")
     const [dangerLevel, setDangerLevel] = useState("low")
-    const [timesPerDay, setTimesPerDay] = useState(1)   // ✅ en haut
-    const [startDate, setStartDate] = useState("")       // ✅ en haut
+    const [timesPerDay, setTimesPerDay] = useState(1)
+    const [startDate, setStartDate] = useState("")
+    const [themeIds, setThemeIds] = useState<number[]>([])  // ← multi-thèmes
 
     useEffect(() => {
-        getHabits()
-            .then(data => {
+        Promise.all([getHabits(), getThemes()])
+            .then(([data, th]) => {
                 setHabits(data)
+                setThemes(th)
                 setLoading(false)
             })
             .catch(err => console.error(err))
     }, [])
+
+    function toggleThemeSelection(id: number) {
+        setThemeIds(prev => {
+            if (prev.includes(id)) return prev.filter(t => t !== id)
+            if (prev.length >= 3) return prev
+            return [...prev, id]
+        })
+    }
 
     function resetForm() {
         setName("")
@@ -55,8 +67,9 @@ export function useHabitudes() {
         setTriggers("")
         setRelapsePlan("")
         setDangerLevel("low")
-        setTimesPerDay(1)   // ✅
-        setStartDate("")    // ✅
+        setTimesPerDay(1)
+        setStartDate("")
+        setThemeIds([])
     }
 
     async function handleCreateHabit() {
@@ -72,7 +85,8 @@ export function useHabitudes() {
                 relapse_plan: type === "quit" ? relapsePlan || undefined : undefined,
                 danger_level: type === "quit" ? dangerLevel : "low",
                 times_per_day: timesPerDay,
-                start_date: type === "quit" ? startDate || undefined : undefined
+                start_date: type === "quit" ? startDate || undefined : undefined,
+                theme_ids: themeIds
             })
             setHabits(prev => [habit, ...prev])
             resetForm()
@@ -83,32 +97,22 @@ export function useHabitudes() {
         }
     }
 
-// Dans useHabitudes.ts — remplacer handleSuccess par cette version
-
     async function handleSuccess(id: number) {
         try {
             const result = await logHabitSuccess(id, successNote || undefined)
-
             setHabits(prev => prev.map(h => {
                 if (h.id !== id) return h
-
-                // On fait confiance à la valeur serveur pour todayCount et isFullDay
-                // plutôt que d'incrémenter localement (évite la désynchronisation)
                 const newTodayCount = result.todayCount
                 const isDone = result.isFullDay
-
                 return {
                     ...h,
                     todayCount: newTodayCount,
                     doneToday: isDone,
-                    // On incrémente streak seulement si le serveur confirme isFullDay
-                    // ET que le streak n'a pas déjà été incrémenté (doneToday était false)
                     streak: isDone && !h.doneToday ? h.streak + 1 : h.streak,
                     totalSuccess: isDone && !h.doneToday ? h.totalSuccess + 1 : h.totalSuccess,
                     sparkCount: result.isSpark ? h.sparkCount + 1 : 0,
                 }
             }))
-
             if (result.xpGained > 0) {
                 setLastXp({ id, xp: result.xpGained })
                 setTimeout(() => setLastXp(null), 3000)
@@ -116,14 +120,9 @@ export function useHabitudes() {
             setSuccessNote("")
         } catch (err) {
             console.error(err)
-            // En cas d'erreur réseau, on resync depuis le serveur pour éviter
-            // que le state local soit dans un état incohérent
-            getHabits()
-                .then(data => setHabits(data))
-                .catch(e => console.error("Resync failed", e))
+            getHabits().then(data => setHabits(data)).catch(e => console.error("Resync failed", e))
         }
     }
-
 
     async function handleUndo(id: number) {
         try {
@@ -135,34 +134,27 @@ export function useHabitudes() {
                 streak: Math.max(0, h.streak - 1),
                 totalSuccess: Math.max(0, h.totalSuccess - 1)
             } : h))
-        } catch (err) {
-            console.error(err)
-        }
+        } catch (err) { console.error(err) }
     }
 
     async function handleRelapse(id: number) {
         try {
             await logHabitRelapse(id, relapseNote || undefined)
             setHabits(prev => prev.map(h => h.id === id ? {
-                ...h,
-                streak: 0,
+                ...h, streak: 0,
                 relapseCount: h.relapseCount + 1,
                 lastRelapse: new Date().toISOString()
             } : h))
             setRelapseHabitId(null)
             setRelapseNote("")
-        } catch (err) {
-            console.error(err)
-        }
+        } catch (err) { console.error(err) }
     }
 
     async function handleDelete(id: number) {
         try {
             await deleteHabit(id)
             setHabits(prev => prev.filter(h => h.id !== id))
-        } catch (err) {
-            console.error(err)
-        }
+        } catch (err) { console.error(err) }
     }
 
     const buildHabits = habits.filter(h => h.type === "build")
@@ -192,6 +184,7 @@ export function useHabitudes() {
         navigate,
         loading,
         habits,
+        themes,
         buildHabits,
         quitHabits,
         showForm, setShowForm,
@@ -200,6 +193,7 @@ export function useHabitudes() {
         successNote, setSuccessNote,
         timesPerDay, setTimesPerDay,
         startDate, setStartDate,
+        themeIds, toggleThemeSelection,
         lastXp,
         name, setName,
         type, setType,

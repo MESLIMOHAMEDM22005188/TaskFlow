@@ -21,7 +21,6 @@ const MILESTONES_LABELS: Record<number, string> = {
     365: "👑 365 jours",
 }
 
-// Addictions suggestions connues
 const ADDICTION_SUGGESTIONS = [
     { emoji: "🚬", name: "Cigarettes", category: "health", danger: "high", unit: "cigarettes/jour", defaultQty: 10 },
     { emoji: "🍺", name: "Alcool", category: "health", danger: "high", unit: "verres/jour", defaultQty: 3 },
@@ -37,7 +36,6 @@ const ADDICTION_SUGGESTIONS = [
     { emoji: "👁", name: "Pornographie", category: "mental", danger: "medium", unit: "fois/semaine", defaultQty: 7 },
 ]
 
-// Messages motivateurs doux avant rechute
 const RELAPSE_MOTIVATORS = [
     "Hey, c'est ok. Une rechute ne définit pas ton chemin. Tu as eu le courage de commencer, c'est déjà immense. 💙",
     "Chaque jour que tu as tenu compte. Vraiment. Une rechute, c'est juste une pause — pas un échec. 🌱",
@@ -48,12 +46,9 @@ const RELAPSE_MOTIVATORS = [
 
 function SoberCounter({ startDate, color }: { startDate: string; color: string }) {
     const [elapsed, setElapsed] = useState({ years: 0, months: 0, days: 0, hours: 0, minutes: 0, seconds: 0 })
-
     useEffect(() => {
         function calculate() {
-            const start = new Date(startDate)
-            const now = new Date()
-            const diff = now.getTime() - start.getTime()
+            const diff = new Date().getTime() - new Date(startDate).getTime()
             setElapsed({
                 years: Math.floor(diff / (86400000 * 365)),
                 months: Math.floor(diff / (86400000 * 30)) % 12,
@@ -67,7 +62,6 @@ function SoberCounter({ startDate, color }: { startDate: string; color: string }
         const interval = setInterval(calculate, 1000)
         return () => clearInterval(interval)
     }, [startDate])
-
     const units = [
         { value: elapsed.years, label: "ans" },
         { value: elapsed.months, label: "mois" },
@@ -76,7 +70,6 @@ function SoberCounter({ startDate, color }: { startDate: string; color: string }
         { value: elapsed.minutes, label: "minutes" },
         { value: elapsed.seconds, label: "secondes" },
     ]
-
     return (
         <div className="sober-counter">
             <p className="sober-title">🏆 Sobre depuis</p>
@@ -90,7 +83,6 @@ function SoberCounter({ startDate, color }: { startDate: string; color: string }
     )
 }
 
-// Heatmap style GitHub avec légende mois
 function SoberHeatmap({ habitId, color }: { habitId: number; color: string }) {
     const [logs, setLogs] = useState<{ date: string; type: string }[]>([])
     const [open, setOpen] = useState(false)
@@ -100,51 +92,33 @@ function SoberHeatmap({ habitId, color }: { habitId: number; color: string }) {
     function handleOpen() {
         setOpen(!open)
         if (!loaded) {
-            getHabitHeatmap(habitId)
-                .then(data => { setLogs(data); setLoaded(true) })
-                .catch(err => console.error(err))
+            getHabitHeatmap(habitId).then(data => { setLogs(data); setLoaded(true) }).catch(console.error)
         }
     }
 
     const logMap: Record<string, string> = {}
     logs.forEach(l => { logMap[l.date] = l.type })
 
-    // Build 52 semaines (364 jours)
     const weeks: { date: string; type: string | null; dayOfWeek: number }[][] = []
     let currentWeek: { date: string; type: string | null; dayOfWeek: number }[] = []
-
     for (let i = 363; i >= 0; i--) {
-        const d = new Date()
-        d.setDate(d.getDate() - i)
+        const d = new Date(); d.setDate(d.getDate() - i)
         const key = d.toISOString().split("T")[0]
-        const dow = d.getDay() // 0=dim
-        if (dow === 1 && currentWeek.length > 0) {
-            weeks.push(currentWeek)
-            currentWeek = []
-        }
+        const dow = d.getDay()
+        if (dow === 1 && currentWeek.length > 0) { weeks.push(currentWeek); currentWeek = [] }
         currentWeek.push({ date: key, type: logMap[key] ?? null, dayOfWeek: dow })
     }
     if (currentWeek.length > 0) weeks.push(currentWeek)
 
-    // Génère les labels de mois
     const monthLabels: { label: string; col: number }[] = []
     let lastMonth = -1
     weeks.forEach((week, wi) => {
         const firstDay = week[0]
         if (firstDay) {
             const m = new Date(firstDay.date).getMonth()
-            if (m !== lastMonth) {
-                monthLabels.push({ label: new Date(firstDay.date).toLocaleDateString("fr-FR", { month: "short" }), col: wi })
-                lastMonth = m
-            }
+            if (m !== lastMonth) { monthLabels.push({ label: new Date(firstDay.date).toLocaleDateString("fr-FR", { month: "short" }), col: wi }); lastMonth = m }
         }
     })
-
-    function getCellColor(type: string | null): string {
-        if (type === "success") return color
-        if (type === "relapse") return "#ef4444"
-        return "rgba(255,255,255,0.06)"
-    }
 
     const totalSuccess = logs.filter(l => l.type === "success").length
     const totalRelapse = logs.filter(l => l.type === "relapse").length
@@ -156,55 +130,35 @@ function SoberHeatmap({ habitId, color }: { habitId: number; color: string }) {
             </button>
             {open && (
                 <div className="sober-heatmap-container">
-                    {/* Stats rapides */}
                     <div className="sober-heatmap-stats">
                         <span style={{ color: "#22c55e" }}>✅ {totalSuccess} jours réussis</span>
                         <span style={{ color: "#ef4444" }}>↩ {totalRelapse} rechutes</span>
                         <span style={{ color: "rgba(255,255,255,0.4)" }}>sur 52 semaines</span>
                     </div>
-
-                    {/* Labels mois */}
                     <div className="sober-heatmap-months" style={{ gridTemplateColumns: `repeat(${weeks.length}, 14px)` }}>
                         {monthLabels.map((m, i) => (
                             <span key={i} className="sober-heatmap-month" style={{ gridColumn: m.col + 1 }}>{m.label}</span>
                         ))}
                     </div>
-
-                    {/* Labels jours */}
                     <div className="sober-heatmap-body">
                         <div className="sober-heatmap-days">
-                            <span>Lun</span>
-                            <span></span>
-                            <span>Mer</span>
-                            <span></span>
-                            <span>Ven</span>
-                            <span></span>
-                            <span>Dim</span>
+                            <span>Lun</span><span></span><span>Mer</span><span></span><span>Ven</span><span></span><span>Dim</span>
                         </div>
-
-                        {/* Grid des semaines */}
                         <div className="sober-heatmap-grid" style={{ gridTemplateColumns: `repeat(${weeks.length}, 14px)` }}>
                             {weeks.map((week, wi) =>
                                 [1, 2, 3, 4, 5, 6, 0].map(dow => {
                                     const day = week.find(d => d.dayOfWeek === dow)
+                                    const bg = day?.type === "success" ? color : day?.type === "relapse" ? "#ef4444" : "rgba(255,255,255,0.06)"
                                     return (
                                         <div
                                             key={`${wi}-${dow}`}
                                             className="sober-heatmap-cell"
-                                            style={{
-                                                background: day ? getCellColor(day.type) : "transparent",
-                                                opacity: day ? 1 : 0,
-                                                boxShadow: day?.type === "success" ? `0 0 4px ${color}66` : undefined,
-                                            }}
+                                            style={{ background: day ? bg : "transparent", opacity: day ? 1 : 0, boxShadow: day?.type === "success" ? `0 0 4px ${color}66` : undefined }}
                                             title={day ? `${day.date}${day.type === "success" ? " — ✅ Jour propre" : day.type === "relapse" ? " — ↩ Rechute" : ""}` : ""}
                                             onMouseEnter={e => {
                                                 if (day?.type) {
                                                     const rect = (e.target as HTMLElement).getBoundingClientRect()
-                                                    setTooltip({
-                                                        text: `${day.date} — ${day.type === "success" ? "✅ Jour propre" : "↩ Rechute"}`,
-                                                        x: rect.left,
-                                                        y: rect.top - 30,
-                                                    })
+                                                    setTooltip({ text: `${day.date} — ${day.type === "success" ? "✅ Jour propre" : "↩ Rechute"}`, x: rect.left, y: rect.top - 30 })
                                                 }
                                             }}
                                             onMouseLeave={() => setTooltip(null)}
@@ -214,8 +168,6 @@ function SoberHeatmap({ habitId, color }: { habitId: number; color: string }) {
                             )}
                         </div>
                     </div>
-
-                    {/* Légende */}
                     <div className="sober-heatmap-legend">
                         <span className="legend-less">Moins</span>
                         <div className="legend-cell" style={{ background: "rgba(255,255,255,0.06)" }} />
@@ -228,54 +180,37 @@ function SoberHeatmap({ habitId, color }: { habitId: number; color: string }) {
                             <span style={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }}>Rechute</span>
                         </div>
                     </div>
-
-                    {tooltip && (
-                        <div className="heatmap-tooltip" style={{ top: tooltip.y, left: tooltip.x }}>{tooltip.text}</div>
-                    )}
+                    {tooltip && <div className="heatmap-tooltip" style={{ top: tooltip.y, left: tooltip.x }}>{tooltip.text}</div>}
                 </div>
             )}
         </div>
     )
 }
 
-// Tracker de consommation quotidienne avec réduction valorisée
-function DailyConsumptionTracker({
-                                     habit,
-                                     onLogConsumption,
-                                 }: {
-    habit: Habit
-    onLogConsumption: (habitId: number, count: number) => void
-}) {
+function DailyConsumptionTracker({ habit, onLogConsumption }: { habit: Habit; onLogConsumption: (habitId: number, count: number) => void }) {
     const [todayCount, setTodayCount] = useState(0)
     const [isOpen, setIsOpen] = useState(false)
     const baseline = (habit as Habit & { baseline_qty?: number }).baseline_qty ?? habit.times_per_day ?? 5
     const unit = (habit as Habit & { unit?: string }).unit ?? "fois"
-
     const reduction = baseline - todayCount
     const pct = Math.max(0, Math.min(100, (reduction / baseline) * 100))
 
     function getMotivationMsg(): { msg: string; color: string } {
         if (todayCount === 0) return { msg: "🌟 Incroyable ! Zéro aujourd'hui. Tu es une force !", color: "#22c55e" }
-        if (todayCount < baseline * 0.25) return { msg: `💪 Impressionnant ! ${reduction} de moins que d'habitude. Tu avances !`, color: "#6366f1" }
+        if (todayCount < baseline * 0.25) return { msg: `💪 Impressionnant ! ${reduction} de moins que d'habitude.`, color: "#6366f1" }
         if (todayCount < baseline * 0.5) return { msg: `✨ Bien joué ! ${reduction} en moins, c'est déjà une belle victoire.`, color: "#3b82f6" }
-        if (todayCount < baseline) return { msg: `👏 Tu en as fait ${reduction} de moins qu'avant. Chaque réduction compte !`, color: "#f59e0b" }
-        if (todayCount === baseline) return { msg: `Comme d'habitude aujourd'hui. Demain, essaie d'en faire un de moins 🌱`, color: "rgba(255,255,255,0.5)" }
+        if (todayCount < baseline) return { msg: `👏 ${reduction} de moins qu'avant. Chaque réduction compte !`, color: "#f59e0b" }
+        if (todayCount === baseline) return { msg: `Comme d'habitude. Demain, essaie d'en faire un de moins 🌱`, color: "rgba(255,255,255,0.5)" }
         return { msg: `C'est ok. Tu remarques et tu tracked, c'est déjà courageux. 💙`, color: "#a855f7" }
     }
 
     const { msg, color: msgColor } = getMotivationMsg()
-
     return (
         <div className="consumption-tracker">
-            <button className="consumption-toggle" onClick={() => setIsOpen(!isOpen)}>
-                {isOpen ? "▲" : "▼"} Suivi de consommation aujourd'hui
-            </button>
+            <button className="consumption-toggle" onClick={() => setIsOpen(!isOpen)}>{isOpen ? "▲" : "▼"} Suivi de consommation aujourd'hui</button>
             {isOpen && (
                 <div className="consumption-body">
-                    <p className="consumption-baseline">
-                        Avant : <strong>{baseline} {unit}/jour</strong> — Objectif : <strong>0</strong> 🎯
-                    </p>
-
+                    <p className="consumption-baseline">Avant : <strong>{baseline} {unit}/jour</strong> — Objectif : <strong>0</strong> 🎯</p>
                     <div className="consumption-counter-row">
                         <button className="consumption-btn minus" onClick={() => setTodayCount(Math.max(0, todayCount - 1))}>−</button>
                         <div className="consumption-display">
@@ -284,152 +219,85 @@ function DailyConsumptionTracker({
                         </div>
                         <button className="consumption-btn plus" onClick={() => setTodayCount(todayCount + 1)}>+</button>
                     </div>
-
-                    {/* Barre de progression réduction */}
                     <div className="consumption-progress-wrapper">
                         <div className="consumption-progress-track">
-                            <div
-                                className="consumption-progress-fill"
-                                style={{ width: `${pct}%`, background: todayCount === 0 ? "#22c55e" : habit.color }}
-                            />
+                            <div className="consumption-progress-fill" style={{ width: `${pct}%`, background: todayCount === 0 ? "#22c55e" : habit.color }} />
                         </div>
                         <span className="consumption-pct">{Math.round(pct)}% de réduction</span>
                     </div>
-
                     <p className="consumption-motivation" style={{ color: msgColor }}>{msg}</p>
-
-                    <button
-                        className="consumption-log-btn"
-                        onClick={() => { onLogConsumption(habit.id, todayCount); setIsOpen(false) }}
-                    >
-                        💾 Enregistrer
-                    </button>
+                    <button className="consumption-log-btn" onClick={() => { onLogConsumption(habit.id, todayCount); setIsOpen(false) }}>💾 Enregistrer</button>
                 </div>
             )}
         </div>
     )
 }
 
-// Formulaire de rechute avec motivateur
-function RelapseForm({
-                         habit,
-                         relapseNote,
-                         setRelapseNote,
-                         onConfirm,
-                         onCancel,
-                     }: {
-    habit: Habit
-    relapseNote: string
-    setRelapseNote: (v: string) => void
-    onConfirm: () => void
-    onCancel: () => void
-}) {
+function RelapseForm({ habit, relapseNote, setRelapseNote, onConfirm, onCancel }: { habit: Habit; relapseNote: string; setRelapseNote: (v: string) => void; onConfirm: () => void; onCancel: () => void }) {
     const [motivator] = useState(() => RELAPSE_MOTIVATORS[Math.floor(Math.random() * RELAPSE_MOTIVATORS.length)])
     const [confirmed, setConfirmed] = useState(false)
-
     return (
         <div className="relapse-form enhanced">
-            {/* Motivateur bienveillant */}
             <div className="relapse-motivator">
                 <div className="relapse-motivator-icon">💙</div>
                 <p className="relapse-motivator-text">{motivator}</p>
-                <p className="relapse-streak-reminder">
-                    Tu as tenu <strong>{habit.streak} jours</strong> — ça, personne ne peut te l'enlever.
-                </p>
+                <p className="relapse-streak-reminder">Tu as tenu <strong>{habit.streak} jours</strong> — ça, personne ne peut te l'enlever.</p>
             </div>
-
             {!confirmed ? (
                 <div className="relapse-confirm-step">
                     <p className="relapse-confirm-question">Tu veux vraiment enregistrer une rechute ?</p>
                     <div className="relapse-form-actions">
-                        <button className="habit-btn relapse-confirm" onClick={() => setConfirmed(true)}>
-                            Oui, c'est arrivé
-                        </button>
-                        <button className="habit-btn success" onClick={onCancel}>
-                            Non, j'ai tenu 💪
-                        </button>
+                        <button className="habit-btn relapse-confirm" onClick={() => setConfirmed(true)}>Oui, c'est arrivé</button>
+                        <button className="habit-btn success" onClick={onCancel}>Non, j'ai tenu 💪</button>
                     </div>
                 </div>
             ) : (
                 <div className="relapse-note-step">
-                    <label className="theme-label" style={{ marginBottom: 6, display: "block" }}>
-                        Qu'est-ce qui s'est passé ? <span style={{ opacity: 0.5 }}>(optionnel — ça aide à comprendre)</span>
-                    </label>
-                    <textarea
-                        className="theme-input relapse-textarea"
-                        placeholder="Ex: j'étais stressé, j'avais une soirée... Pas de jugement ici."
-                        value={relapseNote}
-                        onChange={e => setRelapseNote(e.target.value)}
-                        rows={3}
-                    />
+                    <label className="theme-label" style={{ marginBottom: 6, display: "block" }}>Qu'est-ce qui s'est passé ? <span style={{ opacity: 0.5 }}>(optionnel)</span></label>
+                    <textarea className="theme-input relapse-textarea" placeholder="Ex: j'étais stressé..." value={relapseNote} onChange={e => setRelapseNote(e.target.value)} rows={3} />
                     <div className="relapse-form-actions">
                         <button className="habit-btn relapse-confirm" onClick={onConfirm}>Confirmer la rechute</button>
                         <button className="habit-btn" onClick={onCancel}>Annuler</button>
                     </div>
-                    <p className="relapse-tip">💡 Astuce : note tes déclencheurs, ça aide à les anticiper la prochaine fois.</p>
+                    <p className="relapse-tip">💡 Note tes déclencheurs, ça aide à les anticiper.</p>
                 </div>
             )}
         </div>
     )
 }
 
-// Habit heatmap standard (pour les bonnes habitudes)
 function HabitHeatmap({ habitId }: { habitId: number }) {
     const [logs, setLogs] = useState<{ date: string; type: string }[]>([])
     const [open, setOpen] = useState(false)
     const [loaded, setLoaded] = useState(false)
-
     function handleOpen() {
         setOpen(!open)
-        if (!loaded) {
-            getHabitHeatmap(habitId)
-                .then(data => { setLogs(data); setLoaded(true) })
-                .catch(err => console.error(err))
-        }
+        if (!loaded) { getHabitHeatmap(habitId).then(data => { setLogs(data); setLoaded(true) }).catch(console.error) }
     }
-
     const logMap: Record<string, string> = {}
     logs.forEach(l => { logMap[l.date] = l.type })
     const days = []
     for (let i = 364; i >= 0; i--) {
-        const d = new Date()
-        d.setDate(d.getDate() - i)
+        const d = new Date(); d.setDate(d.getDate() - i)
         const key = d.toISOString().split("T")[0]
         days.push({ date: key, type: logMap[key] ?? null, dayOfWeek: d.getDay() })
     }
-
-    function getCellColor(type: string | null): string {
-        if (type === "success") return "#22c55e"
-        if (type === "relapse") return "#ef4444"
-        return "rgba(255,255,255,0.05)"
-    }
-
     return (
         <div className="habit-heatmap-wrapper">
-            <button className="habit-heatmap-toggle" onClick={handleOpen}>
-                {open ? "▲ Masquer l'activité" : "▼ Voir l'activité"}
-            </button>
+            <button className="habit-heatmap-toggle" onClick={handleOpen}>{open ? "▲ Masquer l'activité" : "▼ Voir l'activité"}</button>
             {open && (
                 <>
                     <div className="habit-heatmap">
                         {days.map(day => (
-                            <div
-                                key={day.date}
-                                className="habit-heatmap-cell"
-                                style={{ background: getCellColor(day.type), gridRow: day.dayOfWeek + 1 }}
-                                title={`${day.date}${day.type ? ` — ${day.type}` : ""}`}
+                            <div key={day.date} className="habit-heatmap-cell"
+                                 style={{ background: day.type === "success" ? "#22c55e" : day.type === "relapse" ? "#ef4444" : "rgba(255,255,255,0.05)", gridRow: day.dayOfWeek + 1 }}
+                                 title={`${day.date}${day.type ? ` — ${day.type}` : ""}`}
                             />
                         ))}
                     </div>
                     <div className="habit-heatmap-legend">
-                        <div className="habit-heatmap-legend-item">
-                            <div style={{ width: 10, height: 10, borderRadius: 2, background: "#22c55e" }} />
-                            <span>Réussi</span>
-                        </div>
-                        <div className="habit-heatmap-legend-item">
-                            <div style={{ width: 10, height: 10, borderRadius: 2, background: "#ef4444" }} />
-                            <span>Rechute</span>
-                        </div>
+                        <div className="habit-heatmap-legend-item"><div style={{ width: 10, height: 10, borderRadius: 2, background: "#22c55e" }} /><span>Réussi</span></div>
+                        <div className="habit-heatmap-legend-item"><div style={{ width: 10, height: 10, borderRadius: 2, background: "#ef4444" }} /><span>Rechute</span></div>
                     </div>
                 </>
             )}
@@ -441,6 +309,7 @@ export default function Habitudes() {
     const {
         navigate, loading,
         buildHabits, quitHabits,
+        themes, themeIds, toggleThemeSelection,
         showForm, setShowForm,
         relapseHabitId, setRelapseHabitId,
         relapseNote, setRelapseNote,
@@ -469,34 +338,24 @@ export default function Habitudes() {
         getDangerColor,
     } = useHabitudes()
 
-    // State pour les suggestions d'addictions
     const [showSuggestions, setShowSuggestions] = useState(false)
-    // State pour le baseline qty par addiction
     const [baselineQty, setBaselineQty] = useState(5)
     const [baselineUnit, setBaselineUnit] = useState("fois/jour")
 
     function applySuggestion(s: typeof ADDICTION_SUGGESTIONS[0]) {
-        setName(s.name)
-        setEmoji(s.emoji)
-        setCategory(s.category)
-        setDangerLevel(s.danger)
-        setBaselineQty(s.defaultQty)
-        setBaselineUnit(s.unit)
-        setShowSuggestions(false)
-        setType("quit")
+        setName(s.name); setEmoji(s.emoji); setCategory(s.category)
+        setDangerLevel(s.danger); setBaselineQty(s.defaultQty)
+        setBaselineUnit(s.unit); setShowSuggestions(false); setType("quit")
     }
 
-    // Handler fictif pour log de consommation (à connecter à l'API)
     function handleLogConsumption(habitId: number, count: number) {
         console.log(`Log consommation habitude ${habitId}: ${count}`)
-        // TODO: appeler l'API
     }
 
     if (loading) return <div className="habitudes-page"><div className="habitudes-loading">Chargement...</div></div>
 
     return (
         <div className="habitudes-page">
-
             <header className="topbar">
                 <div className="logo">TaskFlow</div>
                 <nav className="nav-menu">
@@ -517,15 +376,12 @@ export default function Habitudes() {
             </header>
 
             <main className="habitudes-main">
-
                 <div className="habitudes-hero">
                     <h1 className="habitudes-title">Habitudes</h1>
                     <p className="habitudes-subtitle">Construis ta meilleure version, un jour à la fois.</p>
                 </div>
 
-                {lastXp && (
-                    <div className="habit-xp-badge">+{lastXp.xp} XP 🎉</div>
-                )}
+                {lastXp && <div className="habit-xp-badge">+{lastXp.xp} XP 🎉</div>}
 
                 <div className="action-center">
                     <button className={`main-button ${showForm ? "active" : ""}`} onClick={() => setShowForm(!showForm)}>
@@ -536,17 +392,11 @@ export default function Habitudes() {
                 {showForm && (
                     <div className="theme-create-wrapper">
                         <div className="theme-create">
-
                             <div className="habit-type-selector">
-                                <button className={`habit-type-btn ${type === "build" ? "active build" : ""}`} onClick={() => setType("build")}>
-                                    ✅ Bonne habitude
-                                </button>
-                                <button className={`habit-type-btn ${type === "quit" ? "active quit" : ""}`} onClick={() => setType("quit")}>
-                                    🚫 Addiction à abandonner
-                                </button>
+                                <button className={`habit-type-btn ${type === "build" ? "active build" : ""}`} onClick={() => setType("build")}>✅ Bonne habitude</button>
+                                <button className={`habit-type-btn ${type === "quit" ? "active quit" : ""}`} onClick={() => setType("quit")}>🚫 Addiction à abandonner</button>
                             </div>
 
-                            {/* Suggestions d'addictions connues */}
                             {type === "quit" && (
                                 <div className="addiction-suggestions-block">
                                     <button className="suggestions-toggle" onClick={() => setShowSuggestions(!showSuggestions)}>
@@ -558,9 +408,7 @@ export default function Habitudes() {
                                                 <button key={i} className="suggestion-pill" onClick={() => applySuggestion(s)}>
                                                     <span className="suggestion-emoji">{s.emoji}</span>
                                                     <span className="suggestion-name">{s.name}</span>
-                                                    <span className={`suggestion-danger ${s.danger}`}>
-                                                        {s.danger === "high" ? "🔴" : s.danger === "medium" ? "🟡" : "🟢"}
-                                                    </span>
+                                                    <span>{s.danger === "high" ? "🔴" : s.danger === "medium" ? "🟡" : "🟢"}</span>
                                                 </button>
                                             ))}
                                         </div>
@@ -573,12 +421,31 @@ export default function Habitudes() {
                                 <input className="theme-input" placeholder="Ex: Méditation quotidienne..." value={name} onChange={e => setName(e.target.value)} />
                             </div>
 
+                            {/* SÉLECTEUR MULTI-THÈMES */}
                             <div className="theme-field">
-                                <label className="theme-label">Catégorie</label>
-                                <select className="theme-select" value={category} onChange={e => setCategory(e.target.value)}>
-                                    {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-                                </select>
+                                <label className="theme-label">Thèmes <span className="theme-label-hint">(3 max)</span></label>
+                                <div className="theme-multi-picker">
+                                    {themes.map(t => (
+                                        <button
+                                            key={t.id}
+                                            type="button"
+                                            className={`theme-multi-btn ${themeIds.includes(t.id) ? "selected" : ""}`}
+                                            style={{
+                                                borderColor: themeIds.includes(t.id) ? t.color : "rgba(255,255,255,0.1)",
+                                                background: themeIds.includes(t.id) ? `${t.color}22` : "transparent",
+                                                color: themeIds.includes(t.id) ? t.color : "rgba(255,255,255,0.6)",
+                                            }}
+                                            onClick={() => toggleThemeSelection(t.id)}
+                                            disabled={!themeIds.includes(t.id) && themeIds.length >= 3}
+                                        >
+                                            {t.emoji} {t.name}
+                                            {themeIds.includes(t.id) && <span className="theme-multi-check"> ✓</span>}
+                                        </button>
+                                    ))}
+                                </div>
+                                {themeIds.length === 3 && <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", margin: "4px 0 0" }}>Maximum 3 thèmes atteint</p>}
                             </div>
+
 
                             <div className="habit-form-row">
                                 <div className="theme-field">
@@ -599,8 +466,8 @@ export default function Habitudes() {
                                 <div className="theme-field">
                                     <label className="theme-label">Fréquence</label>
                                     <select className="theme-select" value={frequency} onChange={e => setFrequency(e.target.value)}>
-                                        <option value="daily">Quotidienne — prochain : demain</option>
-                                        <option value="weekly">Hebdomadaire — prochain : dans une semaine</option>
+                                        <option value="daily">Quotidienne</option>
+                                        <option value="weekly">Hebdomadaire</option>
                                     </select>
                                 </div>
                                 <div className="theme-field">
@@ -621,37 +488,21 @@ export default function Habitudes() {
 
                             <div className="theme-field">
                                 <label className="theme-label">Ma motivation <span className="theme-label-hint">(optionnel)</span></label>
-                                <input className="theme-input" placeholder="Pourquoi cette habitude est importante pour moi..." value={motivation} onChange={e => setMotivation(e.target.value)} />
+                                <input className="theme-input" placeholder="Pourquoi cette habitude est importante..." value={motivation} onChange={e => setMotivation(e.target.value)} />
                             </div>
 
                             {type === "quit" && (
                                 <>
-                                    {/* Quantité de base — clé pour valoriser la réduction */}
                                     <div className="habit-form-row">
                                         <div className="theme-field">
-                                            <label className="theme-label">
-                                                Tu en faisais combien ? <span className="theme-label-hint">(avant de commencer)</span>
-                                            </label>
-                                            <input
-                                                className="theme-input"
-                                                type="number"
-                                                min={1}
-                                                max={100}
-                                                value={baselineQty}
-                                                onChange={e => setBaselineQty(Number(e.target.value))}
-                                            />
+                                            <label className="theme-label">Tu en faisais combien ? <span className="theme-label-hint">(avant)</span></label>
+                                            <input className="theme-input" type="number" min={1} max={100} value={baselineQty} onChange={e => setBaselineQty(Number(e.target.value))} />
                                         </div>
                                         <div className="theme-field">
                                             <label className="theme-label">Unité</label>
-                                            <input
-                                                className="theme-input"
-                                                placeholder="cigarettes/jour, verres/jour..."
-                                                value={baselineUnit}
-                                                onChange={e => setBaselineUnit(e.target.value)}
-                                            />
+                                            <input className="theme-input" placeholder="cigarettes/jour..." value={baselineUnit} onChange={e => setBaselineUnit(e.target.value)} />
                                         </div>
                                     </div>
-
                                     <div className="theme-field">
                                         <label className="theme-label">Sobre depuis <span className="theme-label-hint">(optionnel)</span></label>
                                         <input className="theme-input" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
@@ -666,11 +517,11 @@ export default function Habitudes() {
                                     </div>
                                     <div className="theme-field">
                                         <label className="theme-label">Mes déclencheurs <span className="theme-label-hint">(optionnel)</span></label>
-                                        <input className="theme-input" placeholder="Ex: Stress, ennui, solitude..." value={triggers} onChange={e => setTriggers(e.target.value)} />
+                                        <input className="theme-input" placeholder="Ex: Stress, ennui..." value={triggers} onChange={e => setTriggers(e.target.value)} />
                                     </div>
                                     <div className="theme-field">
                                         <label className="theme-label">Mon plan en cas de rechute <span className="theme-label-hint">(optionnel)</span></label>
-                                        <input className="theme-input" placeholder="Ex: Appeler un ami, faire du sport..." value={relapsePlan} onChange={e => setRelapsePlan(e.target.value)} />
+                                        <input className="theme-input" placeholder="Ex: Appeler un ami..." value={relapsePlan} onChange={e => setRelapsePlan(e.target.value)} />
                                     </div>
                                 </>
                             )}
@@ -694,16 +545,9 @@ export default function Habitudes() {
                         <h2 className="habitudes-section-title">✅ Habitudes</h2>
                         <span className="habitudes-count">{buildHabits.filter(h => h.doneToday).length}/{buildHabits.length} aujourd'hui</span>
                     </div>
-
-                    {buildHabits.length === 0 && (
-                        <div className="habitudes-empty">
-                            <p>Aucune habitude — crée ta première !</p>
-                        </div>
-                    )}
-
+                    {buildHabits.length === 0 && <div className="habitudes-empty"><p>Aucune habitude — crée ta première !</p></div>}
                     {buildHabits.map(habit => (
                         <div key={habit.id} className={`habit-card ${habit.doneToday ? "done" : ""}`} style={{ borderLeft: `4px solid ${habit.color}` }}>
-
                             <div className="habit-top">
                                 <div className="habit-left">
                                     <div className="habit-emoji-wrapper" style={{ background: `${habit.color}22` }}>
@@ -715,6 +559,10 @@ export default function Habitudes() {
                                             <span className="habit-badge" style={{ color: getDifficultyColor(habit.difficulty), background: `${getDifficultyColor(habit.difficulty)}22` }}>{habit.difficulty}</span>
                                             <span className="habit-badge">{CATEGORIES.find(c => c.value === habit.category)?.label}</span>
                                             {habit.times_per_day > 1 && <span className="habit-badge" style={{ color: habit.color, background: `${habit.color}22` }}>×{habit.times_per_day}/jour</span>}
+                                            {/* Thèmes */}
+                                            {(habit.themes ?? []).map(t => (
+                                                <span key={t.id} className="habit-badge" style={{ color: t.color, background: `${t.color}22` }}>{t.emoji} {t.name}</span>
+                                            ))}
                                             {habit.is_private && <span className="habit-badge">🔒</span>}
                                         </div>
                                     </div>
@@ -771,19 +619,13 @@ export default function Habitudes() {
                                         ✓ {habit.times_per_day > 1 ? `${habit.todayCount}/${habit.times_per_day}` : "Fait"} — Annuler
                                     </button>
                                 ) : (
-                                    <button
-                                        className="habit-btn success"
-                                        onClick={() => handleSuccess(habit.id)}
-                                        disabled={habit.todayCount >= habit.times_per_day}
-                                    >
+                                    <button className="habit-btn success" onClick={() => handleSuccess(habit.id)} disabled={habit.todayCount >= habit.times_per_day}>
                                         {habit.times_per_day > 1 ? `+ Faire (${habit.todayCount}/${habit.times_per_day})` : "✓ Fait aujourd'hui"}
                                     </button>
                                 )}
                                 <button className="habit-btn delete" onClick={() => handleDelete(habit.id)}>🗑</button>
                             </div>
-
                             <p className="habit-next">⏭ Prochain : {habit.frequency === "daily" ? "Demain" : "Dans une semaine"}</p>
-
                         </div>
                     ))}
                 </section>
@@ -794,16 +636,9 @@ export default function Habitudes() {
                         <h2 className="habitudes-section-title">🚫 Addictions</h2>
                         <span className="habitudes-count">{quitHabits.length} trackées</span>
                     </div>
-
-                    {quitHabits.length === 0 && (
-                        <div className="habitudes-empty">
-                            <p>Aucune addiction trackée — tu peux en ajouter une ci-dessus.</p>
-                        </div>
-                    )}
-
+                    {quitHabits.length === 0 && <div className="habitudes-empty"><p>Aucune addiction trackée.</p></div>}
                     {quitHabits.map(habit => (
                         <div key={habit.id} className="habit-card quit-card" style={{ borderLeft: `4px solid ${habit.color}` }}>
-
                             <div className="habit-top">
                                 <div className="habit-left">
                                     <div className="habit-emoji-wrapper" style={{ background: `${habit.color}22` }}>
@@ -812,10 +647,11 @@ export default function Habitudes() {
                                     <div>
                                         <h3 className="habit-name">{habit.name}</h3>
                                         <div className="habit-meta">
-                                            <span className="habit-badge" style={{ color: getDangerColor(habit.danger_level), background: `${getDangerColor(habit.danger_level)}22` }}>
-                                                ⚠️ {habit.danger_level}
-                                            </span>
+                                            <span className="habit-badge" style={{ color: getDangerColor(habit.danger_level), background: `${getDangerColor(habit.danger_level)}22` }}>⚠️ {habit.danger_level}</span>
                                             <span className="habit-badge">{CATEGORIES.find(c => c.value === habit.category)?.label}</span>
+                                            {(habit.themes ?? []).map(t => (
+                                                <span key={t.id} className="habit-badge" style={{ color: t.color, background: `${t.color}22` }}>{t.emoji} {t.name}</span>
+                                            ))}
                                             {habit.is_private && <span className="habit-badge">🔒</span>}
                                         </div>
                                     </div>
@@ -826,7 +662,6 @@ export default function Habitudes() {
                                 </div>
                             </div>
 
-                            {/* Milestone progress */}
                             {(() => {
                                 const next = getNextMilestone(habit.streak)
                                 if (!next) return <p className="habit-milestone-done">🏆 Tous les milestones atteints !</p>
@@ -845,16 +680,10 @@ export default function Habitudes() {
                                 )
                             })()}
 
-                            {/* Sober counter */}
                             {habit.start_date && <SoberCounter startDate={habit.start_date} color={habit.color} />}
-
-                            {/* Heatmap style GitHub amélioré */}
                             <SoberHeatmap habitId={habit.id} color={habit.color} />
-
-                            {/* Tracker consommation quotidienne */}
                             <DailyConsumptionTracker habit={habit} onLogConsumption={handleLogConsumption} />
 
-                            {/* Infos contextuelles */}
                             <div className="habit-info-grid">
                                 {habit.triggers && <p className="habit-info-item">⚡ <strong>Déclencheurs :</strong> {habit.triggers}</p>}
                                 {habit.relapse_plan && <p className="habit-info-item">🛡 <strong>Plan :</strong> {habit.relapse_plan}</p>}
@@ -866,15 +695,8 @@ export default function Habitudes() {
                                 <div className="habit-stat-pill danger">↩ {habit.relapseCount} rechutes</div>
                             </div>
 
-                            {/* Formulaire de rechute amélioré avec motivateur */}
                             {relapseHabitId === habit.id ? (
-                                <RelapseForm
-                                    habit={habit}
-                                    relapseNote={relapseNote}
-                                    setRelapseNote={setRelapseNote}
-                                    onConfirm={() => handleRelapse(habit.id)}
-                                    onCancel={() => setRelapseHabitId(null)}
-                                />
+                                <RelapseForm habit={habit} relapseNote={relapseNote} setRelapseNote={setRelapseNote} onConfirm={() => handleRelapse(habit.id)} onCancel={() => setRelapseHabitId(null)} />
                             ) : (
                                 <div className="habit-actions">
                                     <button className="habit-btn success" onClick={() => handleSuccess(habit.id)}>✓ Jour sans rechute</button>
@@ -882,11 +704,9 @@ export default function Habitudes() {
                                     <button className="habit-btn delete" onClick={() => handleDelete(habit.id)}>🗑</button>
                                 </div>
                             )}
-
                         </div>
                     ))}
                 </section>
-
             </main>
         </div>
     )

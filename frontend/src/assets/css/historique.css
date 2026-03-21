@@ -19,7 +19,37 @@
 .histo-title { font-size: 15px; font-weight: 600; letter-spacing: -0.2px; }
 .histo-meta { display: flex; gap: 20px; font-size: 12px; opacity: 0.45; flex-wrap: wrap; }
 .histo-meta span { display: flex; align-items: center; gap: 4px; }
-.histo-status { font-size: 18px; opacity: 0.5; margin-left: 16px; flex-shrink: 0; }
+
+/* Actions */
+.histo-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; margin-left: 16px; }
+
+.histo-restore-btn {
+    background: rgba(var(--accent-rgb), 0.15);
+    border: 1px solid rgba(var(--accent-rgb), 0.3);
+    color: var(--accent);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+.histo-restore-btn:hover { background: rgba(var(--accent-rgb), 0.3); }
+.histo-restore-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.histo-delete-btn {
+    background: rgba(239,68,68,0.08);
+    border: 1px solid rgba(239,68,68,0.2);
+    color: #ef4444;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.histo-delete-btn:hover { background: rgba(239,68,68,0.2); }
+.histo-delete-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .histo-empty { text-align: center; opacity: 0.35; font-size: 14px; padding: 80px 0; display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .histo-empty::before { content: "📭"; font-size: 40px; opacity: 0.6; }

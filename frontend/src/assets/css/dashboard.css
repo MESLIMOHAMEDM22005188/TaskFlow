@@ -157,6 +157,47 @@
 }
 .main-button.active { opacity: 0.6; transform: translateY(1px); }
 
+/* MULTI-THEME PICKER */
+.theme-multi-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.theme-multi-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: transparent;
+    color: rgba(255,255,255,0.6);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.theme-multi-btn:hover:not(:disabled) {
+    background: rgba(255,255,255,0.06);
+    color: white;
+}
+.theme-multi-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+.theme-multi-btn.selected {
+    font-weight: 600;
+}
+.theme-multi-check {
+    font-size: 11px;
+    margin-left: 2px;
+}
+
+/* THEME CARD — couleur dynamique */
+.theme-card {
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.08);
+}
 .theme-button {
     background: var(--accent);
     color: white;

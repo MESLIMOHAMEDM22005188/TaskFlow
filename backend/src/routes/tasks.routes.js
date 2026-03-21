@@ -17,11 +17,11 @@ router.get("/", async (req, res) => {
                 th.emoji as theme_emoji,
                 th.color as theme_color
             FROM tasks t
-            LEFT JOIN task_daily_state ds
-                ON ds.task_id = t.id
-                AND ds.user_id = ?
-                AND ds.date = ?
-            LEFT JOIN themes th ON th.id = t.theme_id
+                     LEFT JOIN task_daily_state ds
+                               ON ds.task_id = t.id
+                                   AND ds.user_id = ?
+                                   AND ds.date = ?
+                     LEFT JOIN themes th ON th.id = t.theme_id
             WHERE t.user_id = ? AND t.status IN ('active', 'done')
             ORDER BY
                 FIELD(t.priority, 'High', 'Medium', 'Low'),
@@ -29,44 +29,78 @@ router.get("/", async (req, res) => {
                 t.created_at DESC
         `, [req.userId, today, req.userId])
 
-        res.json(tasks)
+        if (tasks.length === 0) return res.json([])
+
+        // Charger les thèmes multi depuis task_themes
+        const taskIds = tasks.map(t => t.id)
+        const placeholders = taskIds.map(() => "?").join(",")
+        const [taskThemes] = await db.execute(`
+            SELECT tt.task_id, th.id, th.name, th.emoji, th.color
+            FROM task_themes tt
+            JOIN themes th ON th.id = tt.theme_id
+            WHERE tt.task_id IN (${placeholders})
+        `, taskIds)
+
+        const themesByTask = {}
+        taskThemes.forEach(tt => {
+            if (!themesByTask[tt.task_id]) themesByTask[tt.task_id] = []
+            themesByTask[tt.task_id].push({ id: tt.id, name: tt.name, emoji: tt.emoji, color: tt.color })
+        })
+
+        // Ajouter themes[] à chaque tâche
+        const result = tasks.map(t => ({
+            ...t,
+            themes: themesByTask[t.id] ?? []
+        }))
+
+        res.json(result)
 
     } catch (err) {
         console.error(err)
         res.status(500).json({ message: "Error fetching tasks" })
     }
 })
-// CREATE task
+
 router.post("/", async (req, res) => {
     try {
-        const { title, priority, theme_id, frequency, deadline, note, completion_target } = req.body
+        const { title, priority, theme_id, theme_ids, frequency, deadline, note, completion_target } = req.body
+
+        // Construire la liste des ids — priorité à theme_ids, fallback sur theme_id
+        const ids = Array.isArray(theme_ids) && theme_ids.length > 0
+            ? theme_ids.slice(0, 3)
+            : (theme_id ? [theme_id] : [])
+
+        // On garde theme_id sur la tâche pour la compatibilité
+        const mainThemeId = ids[0] ?? theme_id ?? null
 
         const [result] = await db.execute(
-            `INSERT INTO tasks
-             (user_id, theme_id, title, priority, frequency, deadline, note, completion_target)
+            `INSERT INTO tasks (user_id, theme_id, title, priority, frequency, deadline, note, completion_target)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
-                req.userId,
-                theme_id || null,
-                title,
-                priority || "Medium",
-                frequency || "daily",
-                deadline || null,
-                note || null,
-                completion_target || 1
-            ]
+            [req.userId, mainThemeId, title, priority || "Medium", frequency || "daily", deadline || null, note || null, completion_target || 1]
         )
 
-        const [rows] = await db.execute(
-            "SELECT * FROM tasks WHERE id = ?",
-            [result.insertId]
-        )
+        const taskId = result.insertId
 
-        res.json(rows[0])
+        // Insérer tous les thèmes dans task_themes
+        if (ids.length > 0) {
+            const themeValues = ids.map(tid => [taskId, tid])
+            await db.query("INSERT IGNORE INTO task_themes (task_id, theme_id) VALUES ?", [themeValues])
+        }
+
+        const [[task]] = await db.execute("SELECT * FROM tasks WHERE id = ?", [taskId])
+
+        const [themes] = ids.length > 0
+            ? await db.execute(
+                `SELECT id, name, emoji, color FROM themes WHERE id IN (${ids.map(() => "?").join(",")})`,
+                ids
+            )
+            : [[], []]
+
+        res.json({ ...task, themes })
 
     } catch (err) {
         console.error(err)
-        res.status(500).json({ message: "Error" })
+        res.status(500).json({ message: "Error creating task" })
     }
 })
 // DELETE task

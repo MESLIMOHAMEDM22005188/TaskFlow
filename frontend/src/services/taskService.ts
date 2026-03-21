@@ -32,10 +32,11 @@ export async function createTask(data: {
     title: string
     priority: string
     theme_id?: number | null
+    theme_ids?: number[]
     frequency?: string
     deadline?: string | null
     note?: string | null
-    completion_target?:  number
+    completion_target?: number
 }) {
     const res = await fetch(`${API}/api/tasks`, {
         method: "POST",
@@ -44,6 +45,7 @@ export async function createTask(data: {
     })
     return handleResponse(res)
 }
+
 
 export async function deleteTask(id: number): Promise<{ message: string }> {
     const res = await fetch(`${API}/api/tasks/${id}`, {
@@ -134,13 +136,13 @@ export type Task = {
     completed_at: string | null
     archived_at: string | null
     created_at: string
-
-    // champs joints depuis le GET /
     today_count: number
     done_today: boolean
     theme_name: string | null
     theme_emoji: string | null
     theme_color: string | null
+    // multi-thèmes — présent si chargé depuis task_themes
+    themes?: { id: number; name: string; emoji: string | null; color: string }[]
 }
 export async function joinGroup(groupId: number): Promise<{ joined: boolean }> {
     const res = await fetch(`${API}/api/community/groups/${groupId}/join`, {

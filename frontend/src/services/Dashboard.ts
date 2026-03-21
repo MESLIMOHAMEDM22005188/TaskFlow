@@ -1,28 +1,14 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { toggle, closeAll } from "./uiManager.ts"
-
 import {
-    getTasks,
-    createTask,
-    deleteTask as apiDeleteTask,
-    completeTask,
-    uncompleteTask,
-    getTodayCompletions,
-    getThemes,
-    createTheme,
-    deleteTheme as apiDeleteTheme,
-
+    getTasks, createTask, deleteTask as apiDeleteTask,
+    completeTask, uncompleteTask, getTodayCompletions,
+    getThemes, createTheme, deleteTheme as apiDeleteTheme,
 } from "../services/taskService"
-
 import type { Task, Theme, TaskDailyState } from "../services/taskService.ts"
 
-type Notification = {
-    id: number
-    message: string
-    created_at: string
-    read?: boolean
-}
+type Notification = { id: number; message: string; created_at: string; read?: boolean }
 
 export function useDashboard() {
 
@@ -34,14 +20,16 @@ export function useDashboard() {
     const [dailyState, setDailyState] = useState<Map<number, TaskDailyState>>(new Map())
     const [notifications] = useState<Notification[]>([])
 
+    // Form task
     const [newTask, setNewTask] = useState("")
     const [priority, setPriority] = useState("Medium")
-    const [themeId, setThemeId] = useState<number | null>(null)
+    const [themeIds, setThemeIds] = useState<number[]>([])
     const [frequency, setFrequency] = useState("daily")
     const [deadline, setDeadline] = useState("")
     const [note, setNote] = useState("")
     const [completionTarget, setCompletionTarget] = useState(1)
 
+    // Form theme
     const [themeName, setThemeName] = useState("")
     const [themeEmoji, setThemeEmoji] = useState("")
     const [themeColor, setThemeColor] = useState("#6366f1")
@@ -58,18 +46,22 @@ export function useDashboard() {
     }
 
     useEffect(() => {
-        Promise.all([
-            getTasks(),
-            getThemes(),
-            getTodayCompletions(),
-        ])
-            .then(([t, th, completions, ]) => {
+        Promise.all([getTasks(), getThemes(), getTodayCompletions()])
+            .then(([t, th, completions]) => {
                 setTasks(t)
                 setThemes(th)
                 setDailyState(buildDailyMap(completions))
             })
             .catch(err => console.error("fetchAll error:", err))
     }, [])
+
+    function toggleThemeSelection(id: number) {
+        setThemeIds(prev => {
+            if (prev.includes(id)) return prev.filter(t => t !== id)
+            if (prev.length >= 3) return prev
+            return [...prev, id]
+        })
+    }
 
     function handleToggleTaskForm() {
         setShowThemeForm(false)
@@ -82,17 +74,13 @@ export function useDashboard() {
     }
 
     async function handleCreateTask() {
-        if (themes.some(t => t.name.toLowerCase() === themeName.toLowerCase())) {
-            alert("Ce thème existe déjà !")
-            return
-        }
-
         if (!newTask.trim()) return
         try {
             const task = await createTask({
                 title: newTask,
                 priority,
-                theme_id: themeId,
+                theme_ids: themeIds,
+                theme_id: themeIds[0] ?? null,  // compat
                 frequency,
                 deadline: deadline || null,
                 note: note || null,
@@ -101,7 +89,7 @@ export function useDashboard() {
             setTasks(prev => [task, ...prev])
             setNewTask("")
             setPriority("Medium")
-            setThemeId(null)
+            setThemeIds([])
             setFrequency("daily")
             setDeadline("")
             setNote("")
@@ -116,11 +104,7 @@ export function useDashboard() {
     async function handleCreateTheme() {
         if (!themeName.trim()) return
         try {
-            const theme = await createTheme({
-                name: themeName,
-                emoji: themeEmoji || undefined,
-                color: themeColor
-            })
+            const theme = await createTheme({ name: themeName, emoji: themeEmoji || undefined, color: themeColor })
             setThemes(prev => [theme, ...prev])
             setThemeName("")
             setThemeEmoji("")
@@ -136,93 +120,59 @@ export function useDashboard() {
         try {
             const state = dailyState.get(taskId)
             const isDone = state?.done_today ?? false
-
             if (isDone) {
                 const { task } = await uncompleteTask(taskId)
                 setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...task } : t))
                 setDailyState(prev => {
                     const next = new Map(prev)
                     const current = next.get(taskId)
-                    if (current) {
-                        next.set(taskId, {
-                            ...current,
-                            today_count: Math.max(0, current.today_count - 1),
-                            done_today: false
-                        })
-                    }
+                    if (current) next.set(taskId, { ...current, today_count: Math.max(0, current.today_count - 1), done_today: false })
                     return next
                 })
             } else {
                 const { task } = await completeTask(taskId)
                 setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...task } : t))
-
                 setDailyState(prev => {
                     const next = new Map(prev)
                     const current = next.get(taskId) ?? { task_id: taskId, today_count: 0, done_today: false }
                     const newCount = current.today_count + 1
-                    next.set(taskId, {
-                        ...current,
-                        today_count: newCount,
-                        done_today: newCount >= task.completion_target
-                    })
+                    next.set(taskId, { ...current, today_count: newCount, done_today: newCount >= task.completion_target })
                     return next
                 })
             }
-        } catch (err) {
-            console.error(err)
-        }
+        } catch (err) { console.error(err) }
     }
 
     async function handleDeleteTask(taskId: number) {
         try {
             await apiDeleteTask(taskId)
             setTasks(prev => prev.filter(t => t.id !== taskId))
-            setDailyState(prev => {
-                const next = new Map(prev)
-                next.delete(taskId)
-                return next
-            })
-        } catch (err) {
-            console.error(err)
-        }
+            setDailyState(prev => { const next = new Map(prev); next.delete(taskId); return next })
+        } catch (err) { console.error(err) }
     }
 
-    async function handleDeleteTheme(themeId: number) {
+    async function handleDeleteTheme(id: number) {
         try {
-            await apiDeleteTheme(themeId)
-            setThemes(prev => prev.filter(t => t.id !== themeId))
-        } catch (err) {
-            console.error(err)
-        }
+            await apiDeleteTheme(id)
+            setThemes(prev => prev.filter(t => t.id !== id))
+        } catch (err) { console.error(err) }
     }
+
     async function handleArchiveTask(taskId: number) {
         try {
-            // TODO: Appelle ton API archiveTask ici
-            // await apiArchiveTask(taskId)
-
-            // Pour l'instant, cache juste la tâche :
+            await apiDeleteTask(taskId)
             setTasks(prev => prev.filter(t => t.id !== taskId))
-            setDailyState(prev => {
-                const next = new Map(prev)
-                next.delete(taskId)
-                return next
-            })
-        } catch (err) {
-            console.error(err)
-        }
+            setDailyState(prev => { const next = new Map(prev); next.delete(taskId); return next })
+        } catch (err) { console.error(err) }
     }
-
 
     return {
         navigate,
         dark, setDark,
-        tasks,
-        themes,
-        dailyState,
-        notifications,
+        tasks, themes, dailyState, notifications,
         newTask, setNewTask,
         priority, setPriority,
-        themeId, setThemeId,
+        themeIds, toggleThemeSelection,
         frequency, setFrequency,
         deadline, setDeadline,
         note, setNote,
@@ -230,12 +180,9 @@ export function useDashboard() {
         themeName, setThemeName,
         themeEmoji, setThemeEmoji,
         themeColor, setThemeColor,
-        showTaskForm,
-        showThemeForm,
-        handleToggleTaskForm,
-        handleToggleThemeForm,
-        handleCreateTask,
-        handleCreateTheme,
+        showTaskForm, showThemeForm,
+        handleToggleTaskForm, handleToggleThemeForm,
+        handleCreateTask, handleCreateTheme,
         toggleDone,
         deleteTask: handleDeleteTask,
         archiveTask: handleArchiveTask,

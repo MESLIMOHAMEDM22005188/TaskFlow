@@ -19,6 +19,7 @@ export function useHabitudes() {
     const [relapseNote, setRelapseNote] = useState("")
     const [successNote, setSuccessNote] = useState("")
     const [lastXp, setLastXp] = useState<{ id: number, xp: number } | null>(null)
+    const [loadingIds, setLoadingIds] = useState<Set<number>>(new Set())
 
     const [name, setName] = useState("")
     const [type, setType] = useState<"build" | "quit">("build")
@@ -34,7 +35,7 @@ export function useHabitudes() {
     const [dangerLevel, setDangerLevel] = useState("low")
     const [timesPerDay, setTimesPerDay] = useState(1)
     const [startDate, setStartDate] = useState("")
-    const [themeIds, setThemeIds] = useState<number[]>([])  // ← multi-thèmes
+    const [themeIds, setThemeIds] = useState<number[]>([])
 
     useEffect(() => {
         Promise.all([getHabits(), getThemes()])
@@ -55,21 +56,11 @@ export function useHabitudes() {
     }
 
     function resetForm() {
-        setName("")
-        setType("build")
-        setCategory("other")
-        setEmoji("")
-        setColor("#6366f1")
-        setFrequency("daily")
-        setDifficulty("medium")
-        setIsPrivate(false)
-        setMotivation("")
-        setTriggers("")
-        setRelapsePlan("")
-        setDangerLevel("low")
-        setTimesPerDay(1)
-        setStartDate("")
-        setThemeIds([])
+        setName(""); setType("build"); setCategory("other")
+        setEmoji(""); setColor("#6366f1"); setFrequency("daily")
+        setDifficulty("medium"); setIsPrivate(false); setMotivation("")
+        setTriggers(""); setRelapsePlan(""); setDangerLevel("low")
+        setTimesPerDay(1); setStartDate(""); setThemeIds([])
     }
 
     async function handleCreateHabit() {
@@ -98,18 +89,18 @@ export function useHabitudes() {
     }
 
     async function handleSuccess(id: number) {
+        if (loadingIds.has(id)) return
+        setLoadingIds(prev => new Set(prev).add(id))
         try {
             const result = await logHabitSuccess(id, successNote || undefined)
             setHabits(prev => prev.map(h => {
                 if (h.id !== id) return h
-                const newTodayCount = result.todayCount
-                const isDone = result.isFullDay
                 return {
                     ...h,
-                    todayCount: newTodayCount,
-                    doneToday: isDone,
-                    streak: isDone && !h.doneToday ? h.streak + 1 : h.streak,
-                    totalSuccess: isDone && !h.doneToday ? h.totalSuccess + 1 : h.totalSuccess,
+                    todayCount: result.todayCount,
+                    doneToday: result.isFullDay,
+                    streak: result.isFullDay && !h.doneToday ? h.streak + 1 : h.streak,
+                    totalSuccess: result.isFullDay && !h.doneToday ? h.totalSuccess + 1 : h.totalSuccess,
                     sparkCount: result.isSpark ? h.sparkCount + 1 : 0,
                 }
             }))
@@ -118,9 +109,14 @@ export function useHabitudes() {
                 setTimeout(() => setLastXp(null), 3000)
             }
             setSuccessNote("")
-        } catch (err) {
-            console.error(err)
-            getHabits().then(data => setHabits(data)).catch(e => console.error("Resync failed", e))
+        } catch (err: any) {
+            if (err?.message?.includes("400")) {
+                getHabits().then(data => setHabits(data))
+            } else {
+                console.error(err)
+            }
+        } finally {
+            setLoadingIds(prev => { const s = new Set(prev); s.delete(id); return s })
         }
     }
 
@@ -128,8 +124,7 @@ export function useHabitudes() {
         try {
             await undoHabitSuccess(id)
             setHabits(prev => prev.map(h => h.id === id ? {
-                ...h,
-                doneToday: false,
+                ...h, doneToday: false,
                 todayCount: Math.max(0, h.todayCount - 1),
                 streak: Math.max(0, h.streak - 1),
                 totalSuccess: Math.max(0, h.totalSuccess - 1)
@@ -165,11 +160,11 @@ export function useHabitudes() {
         return MILESTONES.find(m => m > streak) ?? null
     }
 
-    function getDifficultyColor(difficulty: string): string {
-        if (difficulty === "easy") return "#22c55e"
-        if (difficulty === "medium") return "#f59e0b"
-        if (difficulty === "hard") return "#ef4444"
-        if (difficulty === "extreme") return "#a855f7"
+    function getDifficultyColor(d: string): string {
+        if (d === "easy") return "#22c55e"
+        if (d === "medium") return "#f59e0b"
+        if (d === "hard") return "#ef4444"
+        if (d === "extreme") return "#a855f7"
         return "#6366f1"
     }
 
@@ -181,12 +176,9 @@ export function useHabitudes() {
     }
 
     return {
-        navigate,
-        loading,
-        habits,
-        themes,
-        buildHabits,
-        quitHabits,
+        navigate, loading,
+        habits, themes,
+        buildHabits, quitHabits,
         showForm, setShowForm,
         relapseHabitId, setRelapseHabitId,
         relapseNote, setRelapseNote,
@@ -194,7 +186,7 @@ export function useHabitudes() {
         timesPerDay, setTimesPerDay,
         startDate, setStartDate,
         themeIds, toggleThemeSelection,
-        lastXp,
+        lastXp, loadingIds,
         name, setName,
         type, setType,
         category, setCategory,
@@ -208,13 +200,10 @@ export function useHabitudes() {
         relapsePlan, setRelapsePlan,
         dangerLevel, setDangerLevel,
         handleCreateHabit,
-        handleSuccess,
-        handleUndo,
-        handleRelapse,
-        handleDelete,
+        handleSuccess, handleUndo,
+        handleRelapse, handleDelete,
         getNextMilestone,
-        getDifficultyColor,
-        getDangerColor,
+        getDifficultyColor, getDangerColor,
         MILESTONES,
     }
 }

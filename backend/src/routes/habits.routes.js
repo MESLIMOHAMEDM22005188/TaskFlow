@@ -188,13 +188,32 @@ router.post("/:id/success", async (req, res) => {
     const habit = habits[0]
     const timesPerDay = habit.times_per_day ?? 1
 
+    // ✅ Vérification AVANT d'insérer — bloque si déjà complet aujourd'hui
+    const [[{ todayCount: currentCount }]] = await db.execute(
+        `SELECT COUNT(*) as todayCount
+         FROM habit_logs
+         WHERE habit_id = ?
+           AND user_id = ?
+           AND type = 'success'
+           AND DATE(logged_at) = CURDATE()`,
+        [req.params.id, req.userId]
+    )
+
+    if (currentCount >= timesPerDay) {
+        return res.status(400).json({
+            message: "Already completed today",
+            todayCount: currentCount,
+            isFullDay: true
+        })
+    }
+
+    // Insert le log
     await db.execute(
         "INSERT INTO habit_logs (habit_id, user_id, type, note) VALUES (?, ?, 'success', ?)",
         [req.params.id, req.userId, note || null]
     )
 
-    // ✅ FIX: DATE(logged_at) = CURDATE() au lieu de logged_at = CURRENT_DATE
-    // CURRENT_DATE compare un DATETIME à une DATE, ce qui échoue si logged_at a une heure
+    // Recompte après insert
     const [[{ todayCount }]] = await db.execute(
         `SELECT COUNT(*) as todayCount
          FROM habit_logs
@@ -231,7 +250,6 @@ router.post("/:id/success", async (req, res) => {
     }
 
     if (isFullDay) {
-        // ✅ FIX: COUNT(DISTINCT DATE(logged_at)) pour compter les jours uniques réussis
         const [[{ count }]] = await db.execute(
             `SELECT COUNT(DISTINCT DATE(logged_at)) as count
              FROM habit_logs

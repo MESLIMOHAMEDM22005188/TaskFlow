@@ -703,6 +703,7 @@ export async function createHabit(data: {
     danger_level?: string
     times_per_day?: number
     start_date?: string
+    theme_ids?: string
 }) {
     const res = await fetch(`${API}/api/habits`, {
         method: "POST",

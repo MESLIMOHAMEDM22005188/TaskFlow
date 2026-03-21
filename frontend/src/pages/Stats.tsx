@@ -108,8 +108,7 @@ function XpChart({ data, period }: { data: { period: string; xp: number }[]; per
 export default function Stats() {
 
     const {
-        navigate,
-        loading,
+        navigate, loading,
         period, setPeriod,
         heatmapPeriod, setHeatmapPeriod,
         heatmapFrom, setHeatmapFrom,

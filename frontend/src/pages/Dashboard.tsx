@@ -231,8 +231,9 @@ export function Dashboard() {
                     const taskThemes = task.themes && task.themes.length > 0
                         ? task.themes
                         : task.theme_name
-                            ? [{ id: task.theme_id, name: task.theme_name, emoji: task.theme_emoji, color: task.theme_color }]
+                            ? [{ id: task.theme_id, name: task.theme_name, emoji: task.theme_emoji, color: task.theme_color ?? "#ffffff" }]
                             : []
+
 
                     return (
                         <div key={task.id} className={`task ${doneToday ? "task-done" : ""}`}>

@@ -1,30 +1,33 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import "../assets/css/parametres.css"
-import { changePassword } from "../services/taskService"
+import { changePassword, getPreferences, savePreferences } from "../services/taskService"
 
 // ── Helpers thème ────────────────────────────────────────────
-const BG_PRESETS: Record<string, { bg: string; card: string; surface: string }> = {
-    dark:       { bg: "#0f172a", card: "rgba(255,255,255,0.03)", surface: "rgba(255,255,255,0.06)" },
-    darker:     { bg: "#0a0a0f", card: "rgba(255,255,255,0.03)", surface: "rgba(255,255,255,0.05)" },
-    midnight:   { bg: "#020618", card: "rgba(255,255,255,0.04)", surface: "rgba(255,255,255,0.07)" },
-    slate:      { bg: "#1e293b", card: "rgba(255,255,255,0.05)", surface: "rgba(255,255,255,0.08)" },
-    charcoal:   { bg: "#111827", card: "rgba(255,255,255,0.04)", surface: "rgba(255,255,255,0.07)" },
-    warm:       { bg: "#1a1412", card: "rgba(255,255,255,0.04)", surface: "rgba(255,255,255,0.07)" },
+const BG_PRESETS: Record<string, { bg: string; card: string; surface: string; label: string }> = {
+    // Sombres neutres
+    obsidian:   { bg: "#0a0a0f", card: "rgba(255,255,255,0.035)", surface: "rgba(255,255,255,0.06)",  label: "Obsidienne" },
+    navy:       { bg: "#0f172a", card: "rgba(255,255,255,0.03)",  surface: "rgba(255,255,255,0.06)",  label: "Marine" },
+    charcoal:   { bg: "#18181b", card: "rgba(255,255,255,0.04)",  surface: "rgba(255,255,255,0.07)",  label: "Charbon" },
+    // Teintés froids
+    midnight:   { bg: "#050d1a", card: "rgba(99,120,255,0.06)",   surface: "rgba(99,120,255,0.1)",    label: "Minuit" },
+    abyss:      { bg: "#03111a", card: "rgba(0,150,200,0.06)",    surface: "rgba(0,150,200,0.1)",     label: "Abysses" },
+    forest:     { bg: "#071510", card: "rgba(34,197,94,0.05)",    surface: "rgba(34,197,94,0.09)",    label: "Forêt" },
+    // Teintés chauds
+    ember:      { bg: "#180d08", card: "rgba(239,100,68,0.06)",   surface: "rgba(239,100,68,0.1)",    label: "Braise" },
+    wine:       { bg: "#150812", card: "rgba(200,50,100,0.06)",   surface: "rgba(200,50,100,0.1)",    label: "Bordeaux" },
+    dusk:       { bg: "#130d1f", card: "rgba(168,85,247,0.06)",   surface: "rgba(168,85,247,0.1)",    label: "Crépuscule" },
 }
 
 function applyTheme(color: string, dark: boolean, bgKey: string) {
     const root = document.documentElement
     root.style.setProperty("--accent", color)
     root.style.setProperty("--accent-rgb", hexToRgb(color))
-    const preset = BG_PRESETS[bgKey] ?? BG_PRESETS.dark
-    root.style.setProperty("--bg", dark ? preset.bg : "#f4f4f7")
-    root.style.setProperty("--bg-card", dark ? preset.card : "rgba(0,0,0,0.03)")
+    const preset = BG_PRESETS[bgKey] ?? BG_PRESETS.navy
+    root.style.setProperty("--bg",         dark ? preset.bg      : "#f4f4f7")
+    root.style.setProperty("--bg-card",    dark ? preset.card    : "rgba(0,0,0,0.03)")
     root.style.setProperty("--bg-surface", dark ? preset.surface : "rgba(0,0,0,0.05)")
     root.classList.toggle("light-mode", !dark)
-    localStorage.setItem("accent_color", color)
-    localStorage.setItem("dark_mode", String(dark))
-    localStorage.setItem("bg_preset", bgKey)
 }
 
 function hexToRgb(hex: string): string {
@@ -101,32 +104,26 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export default function Parametres() {
     const navigate = useNavigate()
 
-    // Apparence
-    const [darkMode, setDarkMode] = useState(() => localStorage.getItem("dark_mode") !== "false")
-    const [accentColor, setAccentColor] = useState(() => localStorage.getItem("accent_color") ?? "#6366f1")
-    const [bgPreset, setBgPreset] = useState(() => localStorage.getItem("bg_preset") ?? "dark")
+    // Apparence — valeurs par défaut, écrasées dès le chargement API
+    const [loaded, setLoaded] = useState(false)
+    const [darkMode, setDarkMode] = useState(true)
+    const [accentColor, setAccentColor] = useState("#6366f1")
+    const [bgPreset, setBgPreset] = useState("navy")
     const [language, setLanguage] = useState("fr")
     const [compactMode, setCompactMode] = useState(false)
     const [reducedMotion, setReducedMotion] = useState(false)
 
     // Notifications
     const [notifs, setNotifs] = useState<NotifSettings>({
-        habits: true,
-        milestones: true,
-        community_likes: true,
-        community_comments: true,
-        flow_reminders: false,
-        weekly_recap: true,
-        relapse_support: true,
+        habits: true, milestones: true, community_likes: true,
+        community_comments: true, flow_reminders: false,
+        weekly_recap: true, relapse_support: true,
     })
 
     // Confidentialité
     const [privacy, setPrivacy] = useState<PrivacySettings>({
-        profile_public: true,
-        show_xp: true,
-        show_streaks: true,
-        default_posts_private: false,
-        default_habits_private: false,
+        profile_public: true, show_xp: true, show_streaks: true,
+        default_posts_private: false, default_habits_private: false,
         appear_in_leaderboard: true,
     })
 
@@ -147,11 +144,80 @@ export default function Parametres() {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
     const [deleteConfirmText, setDeleteConfirmText] = useState("")
     const [showDangerZone, setShowDangerZone] = useState(false)
+    const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle")
 
-    // Appliquer le thème à chaque changement
+    // Debounce ref
+    const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+    // ── Chargement initial depuis l'API ──────────────────────
+    useEffect(() => {
+        getPreferences().then(prefs => {
+            setDarkMode(!!prefs.dark_mode)
+            setAccentColor(prefs.accent_color)
+            setBgPreset(prefs.bg_preset)
+            setLanguage(prefs.language)
+            setCompactMode(!!prefs.compact_mode)
+            setReducedMotion(!!prefs.reduced_motion)
+            setNotifs({
+                habits: !!prefs.notif_habits,
+                milestones: !!prefs.notif_milestones,
+                community_likes: !!prefs.notif_community_likes,
+                community_comments: !!prefs.notif_community_comments,
+                flow_reminders: !!prefs.notif_flow_reminders,
+                weekly_recap: !!prefs.notif_weekly_recap,
+                relapse_support: !!prefs.notif_relapse_support,
+            })
+            setPrivacy({
+                profile_public: !!prefs.privacy_profile_public,
+                show_xp: !!prefs.privacy_show_xp,
+                show_streaks: !!prefs.privacy_show_streaks,
+                appear_in_leaderboard: !!prefs.privacy_appear_leaderboard,
+                default_posts_private: !!prefs.privacy_default_posts_private,
+                default_habits_private: !!prefs.privacy_default_habits_private,
+            })
+            setLoaded(true)
+        }).catch(() => setLoaded(true))
+    }, [])
+
+    // ── Appliquer le thème visuellement ─────────────────────
     useEffect(() => {
         applyTheme(accentColor, darkMode, bgPreset)
     }, [accentColor, darkMode, bgPreset])
+
+    // ── Sauvegarde auto avec debounce 800ms ─────────────────
+    useEffect(() => {
+        if (!loaded) return // ne pas sauvegarder avant le chargement initial
+        if (saveTimer.current) clearTimeout(saveTimer.current)
+        setSaveStatus("saving")
+        saveTimer.current = setTimeout(() => {
+            savePreferences({
+                accent_color: accentColor,
+                bg_preset: bgPreset,
+                dark_mode: darkMode,
+                compact_mode: compactMode,
+                reduced_motion: reducedMotion,
+                language,
+                notif_habits: notifs.habits,
+                notif_milestones: notifs.milestones,
+                notif_community_likes: notifs.community_likes,
+                notif_community_comments: notifs.community_comments,
+                notif_flow_reminders: notifs.flow_reminders,
+                notif_weekly_recap: notifs.weekly_recap,
+                notif_relapse_support: notifs.relapse_support,
+                privacy_profile_public: privacy.profile_public,
+                privacy_show_xp: privacy.show_xp,
+                privacy_show_streaks: privacy.show_streaks,
+                privacy_appear_leaderboard: privacy.appear_in_leaderboard,
+                privacy_default_posts_private: privacy.default_posts_private,
+                privacy_default_habits_private: privacy.default_habits_private,
+            }).then(() => setSaveStatus("saved"))
+                .catch(() => setSaveStatus("idle"))
+                .finally(() => setTimeout(() => setSaveStatus("idle"), 2000))
+        }, 800)
+    }, [
+        loaded, accentColor, bgPreset, darkMode, compactMode, reducedMotion,
+        language, notifs, privacy
+    ])
 
     function toggleNotif(key: keyof NotifSettings) {
         setNotifs(prev => ({ ...prev, [key]: !prev[key] }))
@@ -268,7 +334,11 @@ export default function Parametres() {
 
                 <div className="settings-hero">
                     <h1 className="settings-title">Paramètres</h1>
-                    <p className="settings-subtitle">Personnalise ton expérience TaskFlow</p>
+                    <p className="settings-subtitle">
+                        Personnalise ton expérience TaskFlow
+                        {saveStatus === "saving" && <span className="save-status saving"> · Sauvegarde...</span>}
+                        {saveStatus === "saved" && <span className="save-status saved"> · ✓ Sauvegardé</span>}
+                    </p>
                 </div>
 
                 {/* ── APPARENCE ── */}

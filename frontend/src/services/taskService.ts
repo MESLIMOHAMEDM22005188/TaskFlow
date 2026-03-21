@@ -562,6 +562,42 @@ export async function getXpOverTime(period: "week" | "month" | "year"): Promise<
 export async function getRadarData(): Promise<RadarData[]> {
     const res = await fetch(`${API}/api/stats/radar`, { headers: getHeaders() })
     return handleResponse(res)
+}// ── À ajouter dans taskService.ts ─────────────────────────────
+
+export type UserPreferences = {
+    accent_color: string
+    bg_preset: string
+    dark_mode: boolean
+    compact_mode: boolean
+    reduced_motion: boolean
+    language: string
+    notif_habits: boolean
+    notif_milestones: boolean
+    notif_community_likes: boolean
+    notif_community_comments: boolean
+    notif_flow_reminders: boolean
+    notif_weekly_recap: boolean
+    notif_relapse_support: boolean
+    privacy_profile_public: boolean
+    privacy_show_xp: boolean
+    privacy_show_streaks: boolean
+    privacy_appear_leaderboard: boolean
+    privacy_default_posts_private: boolean
+    privacy_default_habits_private: boolean
+}
+
+export async function getPreferences(): Promise<UserPreferences> {
+    const res = await fetch(`${API}/api/preferences`, { headers: getHeaders() })
+    return handleResponse(res)
+}
+
+export async function savePreferences(data: Partial<UserPreferences>): Promise<void> {
+    const res = await fetch(`${API}/api/preferences`, {
+        method: "PUT",
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+    })
+    return handleResponse(res)
 }
 
 export async function getPrioritySplit(): Promise<PrioritySplit[]> {

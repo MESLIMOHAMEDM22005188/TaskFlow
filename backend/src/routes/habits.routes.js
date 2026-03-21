@@ -24,33 +24,48 @@ router.get("/", async (req, res) => {
 
     const result = habits.map(habit => {
         const logs = allLogs.filter(l => l.habit_id === habit.id)
-        const successLogs = logs.filter(l => l.type === "success").map(l => l.logged_at.toISOString().split("T")[0])
+
+        // ✅ FIX: on déduplique par date (un log par jour, peu importe times_per_day)
+        // pour le calcul du streak et bestStreak
+        const successLogs = logs
+            .filter(l => l.type === "success")
+            .map(l => l.logged_at instanceof Date
+                ? l.logged_at.toISOString().split("T")[0]
+                : String(l.logged_at).split("T")[0]
+            )
+
+        // Dates uniques uniquement pour le streak
+        const uniqueSuccessDates = [...new Set(successLogs)]
+
         const lastRelapse = logs.find(l => l.type === "relapse")
 
+        // ✅ FIX: streak basé sur les dates uniques, pas le count total de logs
         let streak = 0
         const now = new Date()
         for (let i = 0; i <= 365; i++) {
             const d = new Date(now)
             d.setDate(now.getDate() - i)
             const key = d.toISOString().split("T")[0]
-            if (successLogs.includes(key)) streak++
+            if (uniqueSuccessDates.includes(key)) streak++
             else if (i > 0) break
         }
 
         let bestStreak = 0
         let tempStreak = 0
-        const sortedLogs = [...successLogs].sort()
-        for (let i = 0; i < sortedLogs.length; i++) {
+        const sortedUniqueDates = [...uniqueSuccessDates].sort()
+        for (let i = 0; i < sortedUniqueDates.length; i++) {
             if (i === 0) {
                 tempStreak = 1
             } else {
-                const diff = (new Date(sortedLogs[i]).getTime() - new Date(sortedLogs[i - 1]).getTime()) / 86400000
+                const diff = (new Date(sortedUniqueDates[i]).getTime() - new Date(sortedUniqueDates[i - 1]).getTime()) / 86400000
                 if (diff === 1) tempStreak++
                 else { bestStreak = Math.max(bestStreak, tempStreak); tempStreak = 1 }
             }
         }
         bestStreak = Math.max(bestStreak, tempStreak)
 
+        // ✅ FIX: todayCount = nombre de logs "success" aujourd'hui (pas dédupliqué —
+        // on veut savoir combien de fois l'user a cliqué aujourd'hui vs times_per_day)
         const todayCount = successLogs.filter(d => d === today).length
         const relapseCount = logs.filter(l => l.type === "relapse").length
 
@@ -60,7 +75,6 @@ router.get("/", async (req, res) => {
         const yesterdayCount = successLogs.filter(d => d === yesterdayKey).length
         const hadSparkYesterday = yesterdayCount > 0 && yesterdayCount < (habit.times_per_day ?? 1)
 
-
         return {
             ...habit,
             streak,
@@ -69,8 +83,9 @@ router.get("/", async (req, res) => {
             todayCount,
             relapseCount,
             lastRelapse: lastRelapse?.logged_at ?? null,
-            totalSuccess: successLogs.length,
-            sparkCount: habits.spark_count ?? 0,
+            totalSuccess: uniqueSuccessDates.length, // jours uniques réussis
+            // ✅ FIX: habit.spark_count (singulier) et non habits.spark_count
+            sparkCount: habit.spark_count ?? 0,
             hadSparkYesterday
         }
     })
@@ -78,7 +93,7 @@ router.get("/", async (req, res) => {
     res.json(result)
 })
 
-// POST créer une habitude ✅ avec times_per_day et start_date
+// POST créer une habitude
 router.post("/", async (req, res) => {
     const {
         name, type, category, emoji, color,
@@ -106,10 +121,10 @@ router.post("/", async (req, res) => {
     ])
 
     const [rows] = await db.execute("SELECT * FROM habits WHERE id = ?", [result.insertId])
-    res.json({ ...rows[0], streak: 0, bestStreak: 0, doneToday: false, todayCount: 0, relapseCount: 0 })
+    res.json({ ...rows[0], streak: 0, bestStreak: 0, doneToday: false, todayCount: 0, relapseCount: 0, sparkCount: 0 })
 })
 
-// PUT modifier une habitude ✅ avec times_per_day et start_date
+// PUT modifier une habitude
 router.put("/:id", async (req, res) => {
     const {
         name, category, emoji, color,
@@ -121,11 +136,11 @@ router.put("/:id", async (req, res) => {
 
     await db.execute(`
         UPDATE habits SET
-                          name = ?, category = ?, emoji = ?, color = ?,
-                          frequency = ?, difficulty = ?, reminder_time = ?,
-                          is_private = ?, motivation = ?, triggers = ?,
-                          relapse_plan = ?, danger_level = ?,
-                          times_per_day = ?, start_date = ?
+            name = ?, category = ?, emoji = ?, color = ?,
+            frequency = ?, difficulty = ?, reminder_time = ?,
+            is_private = ?, motivation = ?, triggers = ?,
+            relapse_plan = ?, danger_level = ?,
+            times_per_day = ?, start_date = ?
         WHERE id = ? AND user_id = ?
     `, [
         name, category, emoji, color,
@@ -164,9 +179,15 @@ router.post("/:id/success", async (req, res) => {
         [req.params.id, req.userId, note || null]
     )
 
-    // Compte les succès du jour
+    // ✅ FIX: DATE(logged_at) = CURDATE() au lieu de logged_at = CURRENT_DATE
+    // CURRENT_DATE compare un DATETIME à une DATE, ce qui échoue si logged_at a une heure
     const [[{ todayCount }]] = await db.execute(
-        "SELECT COUNT(*) as todayCount FROM habit_logs WHERE habit_id = ? AND user_id = ? AND type = 'success' AND logged_at = CURRENT_DATE",
+        `SELECT COUNT(*) as todayCount
+         FROM habit_logs
+         WHERE habit_id = ?
+           AND user_id = ?
+           AND type = 'success'
+           AND DATE(logged_at) = CURDATE()`,
         [req.params.id, req.userId]
     )
 
@@ -178,14 +199,12 @@ router.post("/:id/success", async (req, res) => {
     let isSpark = false
 
     if (isFullDay) {
-        // Journée complète — XP complet + reset sparks
         xpGained = fullXp
         await db.execute(
             "UPDATE habits SET spark_count = 0 WHERE id = ?",
             [req.params.id]
         )
     } else if (todayCount === 1) {
-        // Premier clic du jour — XP partiel (20% du total)
         xpGained = Math.round(fullXp * 0.2)
         isSpark = true
     }
@@ -197,10 +216,12 @@ router.post("/:id/success", async (req, res) => {
         )
     }
 
-    // Vérifie milestones uniquement si journée complète
     if (isFullDay) {
+        // ✅ FIX: COUNT(DISTINCT DATE(logged_at)) pour compter les jours uniques réussis
         const [[{ count }]] = await db.execute(
-            "SELECT COUNT(DISTINCT logged_at) as count FROM habit_logs WHERE habit_id = ? AND type = 'success'",
+            `SELECT COUNT(DISTINCT DATE(logged_at)) as count
+             FROM habit_logs
+             WHERE habit_id = ? AND type = 'success'`,
             [req.params.id]
         )
         const milestones = [7, 30, 90, 180, 365]
@@ -222,7 +243,8 @@ router.post("/:id/success", async (req, res) => {
 
     res.json({ message: "Success logged", xpGained, isSpark, todayCount, isFullDay })
 })
-// POST log relapse ✅ corrigé
+
+// POST log relapse
 router.post("/:id/relapse", async (req, res) => {
     const { note } = req.body
 
@@ -234,10 +256,17 @@ router.post("/:id/relapse", async (req, res) => {
     res.json({ message: "Relapse logged" })
 })
 
-// DELETE undone today
+// DELETE undo today's last success
 router.delete("/:id/success", async (req, res) => {
+    // ✅ FIX: DATE(logged_at) = CURDATE() ici aussi
     await db.execute(
-        "DELETE FROM habit_logs WHERE habit_id = ? AND user_id = ? AND type = 'success' AND logged_at = CURRENT_DATE LIMIT 1",
+        `DELETE FROM habit_logs
+         WHERE habit_id = ?
+           AND user_id = ?
+           AND type = 'success'
+           AND DATE(logged_at) = CURDATE()
+         ORDER BY logged_at DESC
+         LIMIT 1`,
         [req.params.id, req.userId]
     )
     res.json({ message: "Success removed" })

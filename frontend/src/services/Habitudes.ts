@@ -83,17 +83,32 @@ export function useHabitudes() {
         }
     }
 
+// Dans useHabitudes.ts — remplacer handleSuccess par cette version
+
     async function handleSuccess(id: number) {
         try {
             const result = await logHabitSuccess(id, successNote || undefined)
-            setHabits(prev => prev.map(h => h.id === id ? {
-                ...h,
-                todayCount: result.todayCount,
-                doneToday: result.isFullDay,
-                streak: result.isFullDay ? h.streak + 1 : h.streak,
-                totalSuccess: result.isFullDay ? h.totalSuccess + 1 : h.totalSuccess,
-                sparkCount: result.isSpark ? h.sparkCount + 1 : 0
-            } : h))
+
+            setHabits(prev => prev.map(h => {
+                if (h.id !== id) return h
+
+                // On fait confiance à la valeur serveur pour todayCount et isFullDay
+                // plutôt que d'incrémenter localement (évite la désynchronisation)
+                const newTodayCount = result.todayCount
+                const isDone = result.isFullDay
+
+                return {
+                    ...h,
+                    todayCount: newTodayCount,
+                    doneToday: isDone,
+                    // On incrémente streak seulement si le serveur confirme isFullDay
+                    // ET que le streak n'a pas déjà été incrémenté (doneToday était false)
+                    streak: isDone && !h.doneToday ? h.streak + 1 : h.streak,
+                    totalSuccess: isDone && !h.doneToday ? h.totalSuccess + 1 : h.totalSuccess,
+                    sparkCount: result.isSpark ? h.sparkCount + 1 : 0,
+                }
+            }))
+
             if (result.xpGained > 0) {
                 setLastXp({ id, xp: result.xpGained })
                 setTimeout(() => setLastXp(null), 3000)
@@ -101,8 +116,14 @@ export function useHabitudes() {
             setSuccessNote("")
         } catch (err) {
             console.error(err)
+            // En cas d'erreur réseau, on resync depuis le serveur pour éviter
+            // que le state local soit dans un état incohérent
+            getHabits()
+                .then(data => setHabits(data))
+                .catch(e => console.error("Resync failed", e))
         }
     }
+
 
     async function handleUndo(id: number) {
         try {

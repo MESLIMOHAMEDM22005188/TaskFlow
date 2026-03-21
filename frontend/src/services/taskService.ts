@@ -142,6 +142,13 @@ export type Task = {
     theme_emoji: string | null
     theme_color: string | null
 }
+export async function joinGroup(groupId: number): Promise<{ joined: boolean }> {
+    const res = await fetch(`${API}/api/community/groups/${groupId}/join`, {
+        method: "POST",
+        headers: getHeaders(),
+    })
+    return handleResponse(res)
+}
 
 export type TaskDailyState = {
     task_id: number
@@ -365,7 +372,6 @@ export async function getFlowStats(): Promise<FlowStats> {
     return handleResponse(res)
 }
 
-// TYPES
 export type Post = {
     id: number
     content: string
@@ -377,6 +383,10 @@ export type Post = {
     username: string
     avatar_url: string | null
     xp: number
+    // nouveaux champs
+    group_id: number | null
+    is_anonymous: boolean
+    anon_name: string | null
 }
 
 export type Comment = {
@@ -386,8 +396,9 @@ export type Comment = {
     created_at: string
     username: string
     avatar_url: string | null
+    is_anonymous: boolean
+    anon_name: string | null
 }
-
 export type LeaderboardUser = {
     id: number
     username: string
@@ -397,12 +408,27 @@ export type LeaderboardUser = {
 }
 
 // FUNCTIONS
-export async function getPosts(): Promise<Post[]> {
-    const res = await fetch(`${API}/api/community/posts`, { headers: getHeaders() })
+export async function getPosts(groupId?: number): Promise<Post[]> {
+    const url = groupId
+        ? `${API}/api/community/posts?group_id=${groupId}`
+        : `${API}/api/community/posts`
+    const res = await fetch(url, { headers: getHeaders() })
     return handleResponse(res)
 }
 
-export async function createPost(data: { content: string, type?: string, ref_id?: number }) {
+
+export async function getAnonymousPosts(): Promise<Post[]> {
+    const res = await fetch(`${API}/api/community/posts/anonymous`, { headers: getHeaders() })
+    return handleResponse(res)
+}
+
+export async function createPost(data: {
+    content: string
+    type?: string
+    ref_id?: number
+    group_id?: number
+    is_anonymous?: boolean
+}) {
     const res = await fetch(`${API}/api/community/posts`, {
         method: "POST",
         headers: getHeaders(),
@@ -432,17 +458,23 @@ export async function getComments(postId: number): Promise<Comment[]> {
     return handleResponse(res)
 }
 
-export async function createComment(postId: number, content: string) {
+export async function createComment(
+    postId: number,
+    content: string,
+    is_anonymous = false
+): Promise<Comment> {
     const res = await fetch(`${API}/api/community/posts/${postId}/comments`, {
         method: "POST",
         headers: getHeaders(),
-        body: JSON.stringify({ content })
+        body: JSON.stringify({ content, is_anonymous }),
     })
     return handleResponse(res)
 }
-
-export async function getLeaderboard(): Promise<LeaderboardUser[]> {
-    const res = await fetch(`${API}/api/community/leaderboard`, { headers: getHeaders() })
+export async function getLeaderboard(groupId?: number): Promise<LeaderboardUser[]> {
+    const url = groupId
+        ? `${API}/api/community/leaderboard?group_id=${groupId}`
+        : `${API}/api/community/leaderboard`
+    const res = await fetch(url, { headers: getHeaders() })
     return handleResponse(res)
 }
 export async function uploadAvatar(file: File): Promise<string> {
@@ -468,6 +500,19 @@ export type StatsOverview = {
     bestStreak: number
     bestDay: string
     bestHour: number | null
+}
+export type Group = {
+    id: number
+    name: string
+    description: string | null
+    emoji: string
+    category: string
+    is_private: boolean
+    created_by: number
+    created_at: string
+    member_count: number
+    post_count: number
+    is_member: number
 }
 
 export type TaskPerDay = {
@@ -585,7 +630,25 @@ export async function getHabits(): Promise<Habit[]> {
     const res = await fetch(`${API}/api/habits`, { headers: getHeaders() })
     return handleResponse(res)
 }
+export async function getGroups(): Promise<Group[]> {
+    const res = await fetch(`${API}/api/community/groups`, { headers: getHeaders() })
+    return handleResponse(res)
+}
 
+export async function createGroup(data: {
+    name: string
+    description?: string
+    emoji?: string
+    category?: string
+    is_private?: boolean
+}): Promise<Group> {
+    const res = await fetch(`${API}/api/community/groups`, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+    })
+    return handleResponse(res)
+}
 export async function createHabit(data: {
     name: string
     type: string

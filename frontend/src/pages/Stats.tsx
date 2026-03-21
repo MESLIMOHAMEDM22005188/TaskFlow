@@ -4,7 +4,8 @@ import type { HeatmapPeriod } from "../services/Stats"
 import {
     BarChart, Bar, LineChart, Line, RadarChart, Radar,
     PolarGrid, PolarAngleAxis, PieChart, Pie, Cell,
-    XAxis, YAxis, Tooltip, ResponsiveContainer
+    ComposedChart,
+    XAxis, YAxis, Tooltip, ResponsiveContainer, Legend
 } from "recharts"
 
 const PRIORITY_COLORS = {
@@ -14,6 +15,95 @@ const PRIORITY_COLORS = {
 }
 
 const DAY_LABELS = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"]
+
+const MONTHS = ["Jan", "Fév", "Mar", "Avr", "Mai", "Jun", "Jul", "Aoû", "Sep", "Oct", "Nov", "Déc"]
+
+type Period = "week" | "month" | "year"
+
+function formatXpLabel(period: string, p: Period): string {
+    if (p === "year") {
+        const [, month] = period.split("-")
+        return MONTHS[parseInt(month) - 1] ?? period
+    }
+    const parts = period.split("-")
+    return `${parts[2]}/${parts[1]}`
+}
+
+function enrichXp(data: { period: string; xp: number }[]) {
+    let cumul = 0
+    return data.map(d => {
+        cumul += Number(d.xp)
+        return { ...d, xp: Number(d.xp), xpCumul: cumul }
+    })
+}
+
+function XpChart({ data, period }: { data: { period: string; xp: number }[]; period: Period }) {
+    const enriched = enrichXp(data)
+    const hasData = enriched.some(d => d.xp > 0)
+
+    if (!hasData) {
+        return (
+            <div className="stats-empty-state">
+                <span className="stats-empty-icon">⚡</span>
+                <span>Aucun XP enregistré sur cette période</span>
+                <span className="stats-empty-hint">Complète des tâches, sessions Flow ou habitudes</span>
+            </div>
+        )
+    }
+
+    return (
+        <ResponsiveContainer width="100%" height={220}>
+            <ComposedChart data={enriched} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                <XAxis
+                    dataKey="period"
+                    tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11 }}
+                    tickFormatter={d => formatXpLabel(d, period)}
+                    interval="preserveStartEnd"
+                />
+                <YAxis
+                    yAxisId="daily"
+                    tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11 }}
+                    width={36}
+                />
+                <YAxis
+                    yAxisId="cumul"
+                    orientation="right"
+                    tick={{ fill: "rgba(168,85,247,0.45)", fontSize: 11 }}
+                    width={40}
+                />
+                <Tooltip
+                    contentStyle={{ background: "#1e293b", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8 }}
+                    labelStyle={{ color: "rgba(255,255,255,0.7)", marginBottom: 4 }}
+                    labelFormatter={d => formatXpLabel(d, period)}
+                    formatter={(value: number, name: string) => [
+                        `${Number(value).toLocaleString()} XP`,
+                        name === "xp" ? "Ce jour" : "Cumulé"
+                    ]}
+                />
+                <Legend
+                    formatter={v => v === "xp" ? "XP du jour" : "XP cumulé"}
+                    wrapperStyle={{ fontSize: 12, color: "rgba(255,255,255,0.45)" }}
+                />
+                <Bar
+                    yAxisId="daily"
+                    dataKey="xp"
+                    fill="#6366f1"
+                    radius={[3, 3, 0, 0]}
+                    maxBarSize={24}
+                    opacity={0.85}
+                />
+                <Line
+                    yAxisId="cumul"
+                    type="monotone"
+                    dataKey="xpCumul"
+                    stroke="#a855f7"
+                    strokeWidth={2}
+                    dot={false}
+                />
+            </ComposedChart>
+        </ResponsiveContainer>
+    )
+}
 
 export default function Stats() {
 
@@ -53,7 +143,6 @@ export default function Stats() {
                     <div className="nav-item" onClick={() => navigate("/communaute")}>Communauté</div>
                     <div className="nav-item" onClick={() => navigate("/historique")}>Historique</div>
                     <div className="nav-item" onClick={() => navigate("/parametres")}>Paramètres</div>
-
                     <div className="nav-icons">
                         <div className="nav-item nav-search">🔍</div>
                         <div className="nav-item nav-notif">🔔</div>
@@ -184,17 +273,10 @@ export default function Stats() {
                         </ResponsiveContainer>
                     </div>
 
-                    {/* XP OVER TIME */}
+                    {/* XP OVER TIME — ComposedChart barres + courbe cumulative */}
                     <div className="stats-section">
                         <h2 className="stats-section-title">⚡ XP gagnés</h2>
-                        <ResponsiveContainer width="100%" height={200}>
-                            <LineChart data={xpOverTime}>
-                                <XAxis dataKey="period" tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11 }} />
-                                <YAxis tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11 }} />
-                                <Tooltip contentStyle={{ background: "#1e293b", border: "none", borderRadius: 8 }} labelStyle={{ color: "white" }} />
-                                <Line type="monotone" dataKey="xp" stroke="#a855f7" strokeWidth={2} dot={false} />
-                            </LineChart>
-                        </ResponsiveContainer>
+                        <XpChart data={xpOverTime} period={period} />
                     </div>
 
                     {/* FOCUS PAR JOUR */}

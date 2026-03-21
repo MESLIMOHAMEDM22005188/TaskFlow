@@ -82,6 +82,11 @@ export function useDashboard() {
     }
 
     async function handleCreateTask() {
+        if (themes.some(t => t.name.toLowerCase() === themeName.toLowerCase())) {
+            alert("Ce thème existe déjà !")
+            return
+        }
+
         if (!newTask.trim()) return
         try {
             const task = await createTask({
@@ -149,11 +154,8 @@ export function useDashboard() {
                 })
             } else {
                 const { task } = await completeTask(taskId)
-                if (task.status === "done") {
-                    setTasks(prev => prev.filter(t => t.id !== taskId))
-                } else {
-                    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...task } : t))
-                }
+                setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...task } : t))
+
                 setDailyState(prev => {
                     const next = new Map(prev)
                     const current = next.get(taskId) ?? { task_id: taskId, today_count: 0, done_today: false }
@@ -193,6 +195,23 @@ export function useDashboard() {
             console.error(err)
         }
     }
+    async function handleArchiveTask(taskId: number) {
+        try {
+            // TODO: Appelle ton API archiveTask ici
+            // await apiArchiveTask(taskId)
+
+            // Pour l'instant, cache juste la tâche :
+            setTasks(prev => prev.filter(t => t.id !== taskId))
+            setDailyState(prev => {
+                const next = new Map(prev)
+                next.delete(taskId)
+                return next
+            })
+        } catch (err) {
+            console.error(err)
+        }
+    }
+
 
     return {
         navigate,
@@ -219,6 +238,7 @@ export function useDashboard() {
         handleCreateTheme,
         toggleDone,
         deleteTask: handleDeleteTask,
+        archiveTask: handleArchiveTask,
         handleDeleteTheme,
     }
 }

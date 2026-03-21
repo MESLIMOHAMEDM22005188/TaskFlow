@@ -189,7 +189,21 @@
     font-weight: 500;
     transition: .2s;
 }
+.theme-delete-btn {
+    background: transparent;
+    border: 1px solid #ff4d4d44;
+    color: #ff4d4d;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
 
+
+.theme-delete-btn:hover {
+    background: #ff4d4d22;
+}
 .theme-button:hover {
     opacity: .9;
 }
@@ -286,6 +300,11 @@
     opacity: 0.4;
     font-weight: 400;
     font-size: 12px;
+}
+.theme-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
 .theme-input {
@@ -534,28 +553,36 @@
 /* THEME CARDS */
 
 .themes {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
-    margin-bottom: 30px;
-    margin-top: 30px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 16px 0;
 }
-
 .theme-card {
-    padding: 18px;
-    border-radius: 16px;
-    background: rgba(255, 255, 255, 0.04);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    transition: all 0.2s ease;
-    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #1e1e2e;
+    border: 1px solid #2e2e3e;
+    border-radius: 12px;
+    padding: 14px 18px;
+    width: 280px;
+    transition: transform 0.2s, box-shadow 0.2s;
 }
 
+.theme-card-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
 .theme-card:hover {
-    transform: translateY(-3px);
-    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
 }
 
+.theme-emoji {
+    font-size: 28px;
+}
 .light .theme-card {
     background: white;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
@@ -572,11 +599,14 @@
     margin-bottom: 12px;
 }
 
+
 .theme-name {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 600;
-    color: #f9fafb;
+    color: #e0e0f0;
+    text-transform: capitalize;
 }
+
 
 .light .theme-name {
     color: #1f2937;
@@ -590,11 +620,8 @@
 }
 
 .theme-stats {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 14px;
-    opacity: 0.7;
+    font-size: 12px;
+    color: #888;
 }
 
 .dot {

@@ -31,7 +31,8 @@ export function Dashboard() {
         handleCreateTheme,
         handleDeleteTheme,
         toggleDone,
-        deleteTask
+        deleteTask,
+        archiveTask,
     } = useDashboard()
 
     const doneTasks = tasks.filter(t => dailyState.get(t.id)?.done_today).length
@@ -310,12 +311,21 @@ export function Dashboard() {
                                 </button>
 
                                 <button
+                                    className="task-btn archive-btn"
+                                    onClick={() => archiveTask(task.id)}
+                                    title="Archiver"
+                                >
+                                    🗃
+                                </button>
+
+                                <button
                                     className="task-btn delete-btn"
                                     onClick={() => deleteTask(task.id)}
                                 >
                                     🗑
                                 </button>
                             </div>
+
                         </div>
                     )
                 })}
@@ -323,24 +333,26 @@ export function Dashboard() {
                 {/* THEMES */}
                 <section className="themes">
                     {themes.map(theme => {
-                        const themeTasks = tasks.filter(t => t.theme_id === theme.id)
+                        const themeTasks = tasks.filter(t => Number(t.theme_id) === Number(theme.id))
                         const done = themeTasks.filter(t => dailyState.get(t.id)?.done_today).length
 
                         return (
                             <div key={theme.id} className="theme-card">
-                                <div>
-                                    {theme.emoji} {theme.name}
+                                <div className="theme-card-left">
+                                    <span className="theme-emoji">{theme.emoji}</span>
+                                    <div className="theme-info">
+                                        <span className="theme-name">{theme.name}</span>
+                                        <span className="theme-stats">{themeTasks.length} tâches • {done} faites aujourd'hui</span>
+                                    </div>
                                 </div>
-                                <div>
-                                    {themeTasks.length} tasks • {done} done today
-                                </div>
-                                <button onClick={() => handleDeleteTheme(theme.id)}>
-                                    🗑
+                                <button className="theme-delete-btn" onClick={() => handleDeleteTheme(theme.id)}>
+                                    Supprimer
                                 </button>
                             </div>
                         )
                     })}
                 </section>
+
 
             </main>
         </div>

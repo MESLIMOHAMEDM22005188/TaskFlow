@@ -1,243 +1,38 @@
-/* OBJECTIFS PAGE */
+/* ── objectifs.css ── */
+.objectifs-page { min-height: 100vh; background: var(--bg); color: white; }
+.objectifs-main { max-width: 900px; margin: auto; padding: 40px; }
+.objectifs-title { font-size: 28px; font-weight: 700; margin-bottom: 30px; text-align: center; }
+.objectifs-section-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; margin-top: 40px; opacity: 0.9; }
+.objectifs-section { margin-bottom: 40px; }
+.objectifs-empty { opacity: 0.5; font-size: 14px; text-align: center; padding: 30px; border: 1px dashed rgba(255,255,255,0.1); border-radius: 14px; }
 
-.objectifs-page {
-    min-height: 100vh;
-    background: #0f172a;
-    color: white;
-}
+.objectif-card { padding: 20px; border-radius: 16px; background: var(--bg-card); border: 1px solid rgba(255,255,255,0.07); margin-bottom: 14px; transition: .2s; }
+.objectif-card:hover { transform: translateY(-2px); background: var(--bg-surface); }
+.objectif-card.completed { border-color: rgba(34,197,94,0.3); background: rgba(34,197,94,0.03); }
+.objectif-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+.objectif-left { display: flex; align-items: center; gap: 14px; }
+.objectif-emoji { font-size: 28px; }
+.objectif-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+.objectif-desc { font-size: 13px; opacity: 0.5; }
+.objectif-days { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: rgba(var(--accent-rgb),0.15); color: var(--accent); white-space: nowrap; }
+.objectif-days.urgent { background: rgba(239,68,68,0.15); color: #ef4444; }
+.objectif-progress-header { display: flex; justify-content: space-between; font-size: 13px; opacity: 0.6; margin-bottom: 8px; }
+.objectif-progress-bar { height: 8px; border-radius: 999px; background: rgba(255,255,255,0.08); overflow: hidden; margin-bottom: 12px; }
+.objectif-progress-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--accent), #a855f7); transition: width 0.4s ease; }
+.objectif-progress-controls { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
+.progress-btn { width: 32px; height: 32px; border-radius: 50%; border: none; background: rgba(var(--accent-rgb),0.2); color: var(--accent); font-size: 18px; font-weight: 700; cursor: pointer; transition: .2s; display: flex; align-items: center; justify-content: center; }
+.progress-btn:hover { background: rgba(var(--accent-rgb),0.4); transform: scale(1.1); }
+.objectif-actions { display: flex; gap: 8px; justify-content: flex-end; }
 
-.objectifs-main {
-    max-width: 900px;
-    margin: auto;
-    padding: 40px;
-}
+.catalogue { margin-bottom: 40px; }
+.catalogue-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+.catalogue-card { padding: 20px; border-radius: 16px; background: var(--bg-card); border: 1px solid rgba(255,255,255,0.07); display: flex; flex-direction: column; gap: 10px; transition: .2s; }
+.catalogue-card:hover { transform: translateY(-3px); background: var(--bg-surface); }
+.catalogue-top { display: flex; justify-content: space-between; align-items: center; }
+.catalogue-emoji { font-size: 28px; }
+.catalogue-category { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: rgba(var(--accent-rgb),0.1); color: var(--accent); }
+.catalogue-title { font-size: 15px; font-weight: 600; }
+.catalogue-desc { font-size: 13px; opacity: 0.5; line-height: 1.5; }
+.catalogue-meta { display: flex; gap: 10px; font-size: 12px; opacity: 0.6; }
 
-.objectifs-title {
-    font-size: 28px;
-    font-weight: 700;
-    margin-bottom: 30px;
-    text-align: center;
-}
-
-.objectifs-section-title {
-    font-size: 18px;
-    font-weight: 700;
-    margin-bottom: 16px;
-    margin-top: 40px;
-    opacity: 0.9;
-}
-
-.objectifs-section {
-    margin-bottom: 40px;
-}
-
-.objectifs-empty {
-    opacity: 0.5;
-    font-size: 14px;
-    text-align: center;
-    padding: 30px;
-    border: 1px dashed rgba(255, 255, 255, 0.1);
-    border-radius: 14px;
-}
-
-/* OBJECTIF CARD */
-
-.objectif-card {
-    padding: 20px;
-    border-radius: 16px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    margin-bottom: 14px;
-    transition: .2s;
-}
-
-.objectif-card:hover {
-    transform: translateY(-2px);
-    background: rgba(255, 255, 255, 0.06);
-}
-
-.objectif-card.completed {
-    border-color: rgba(34, 197, 94, 0.3);
-    background: rgba(34, 197, 94, 0.03);
-}
-
-.objectif-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 14px;
-}
-
-.objectif-left {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-}
-
-.objectif-emoji {
-    font-size: 28px;
-}
-
-.objectif-title {
-    font-size: 16px;
-    font-weight: 600;
-    margin-bottom: 4px;
-}
-
-.objectif-desc {
-    font-size: 13px;
-    opacity: 0.5;
-}
-
-.objectif-days {
-    font-size: 12px;
-    font-weight: 600;
-    padding: 4px 10px;
-    border-radius: 999px;
-    background: rgba(99, 102, 241, 0.15);
-    color: #6366f1;
-    white-space: nowrap;
-}
-
-.objectif-days.urgent {
-    background: rgba(239, 68, 68, 0.15);
-    color: #ef4444;
-}
-
-/* PROGRESS */
-
-.objectif-progress-header {
-    display: flex;
-    justify-content: space-between;
-    font-size: 13px;
-    opacity: 0.6;
-    margin-bottom: 8px;
-}
-
-.objectif-progress-bar {
-    height: 8px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.08);
-    overflow: hidden;
-    margin-bottom: 12px;
-}
-
-.objectif-progress-fill {
-    height: 100%;
-    border-radius: 999px;
-    background: linear-gradient(90deg, #6366f1, #a855f7);
-    transition: width 0.4s ease;
-}
-
-.objectif-progress-controls {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 14px;
-}
-
-.progress-btn {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    border: none;
-    background: rgba(99, 102, 241, 0.2);
-    color: #6366f1;
-    font-size: 18px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: .2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.progress-btn:hover {
-    background: rgba(99, 102, 241, 0.4);
-    transform: scale(1.1);
-}
-
-/* ACTIONS */
-
-.objectif-actions {
-    display: flex;
-    gap: 8px;
-    justify-content: flex-end;
-}
-
-/* CATALOGUE */
-
-.catalogue {
-    margin-bottom: 40px;
-}
-
-.catalogue-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 16px;
-}
-
-.catalogue-card {
-    padding: 20px;
-    border-radius: 16px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    transition: .2s;
-}
-
-.catalogue-card:hover {
-    transform: translateY(-3px);
-    background: rgba(255, 255, 255, 0.06);
-}
-
-.catalogue-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.catalogue-emoji {
-    font-size: 28px;
-}
-
-.catalogue-category {
-    font-size: 11px;
-    font-weight: 600;
-    padding: 3px 8px;
-    border-radius: 999px;
-    background: rgba(99, 102, 241, 0.1);
-    color: #6366f1;
-}
-
-.catalogue-title {
-    font-size: 15px;
-    font-weight: 600;
-}
-
-.catalogue-desc {
-    font-size: 13px;
-    opacity: 0.5;
-    line-height: 1.5;
-}
-
-.catalogue-meta {
-    display: flex;
-    gap: 10px;
-    font-size: 12px;
-    opacity: 0.6;
-}
-
-/* RESPONSIVE */
-
-@media (max-width: 600px) {
-    .objectifs-main {
-        padding: 24px 16px;
-    }
-
-    .catalogue-grid {
-        grid-template-columns: 1fr;
-    }
-}
+@media (max-width: 600px) { .objectifs-main { padding: 24px 16px; } .catalogue-grid { grid-template-columns: 1fr; } }

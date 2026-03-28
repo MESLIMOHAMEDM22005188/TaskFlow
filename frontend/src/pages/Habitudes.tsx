@@ -448,7 +448,6 @@ export default function Habitudes() {
         lastXp,
         name, setName,
         type, setType,
-        category, setCategory,
         emoji, setEmoji,
         color, setColor,
         frequency, setFrequency,
@@ -469,6 +468,7 @@ export default function Habitudes() {
         getDifficultyColor,
         getDangerColor,
         loadingIds
+
     } = useHabitudes()
 
     // State pour les suggestions d'addictions
@@ -480,7 +480,6 @@ export default function Habitudes() {
     function applySuggestion(s: typeof ADDICTION_SUGGESTIONS[0]) {
         setName(s.name)
         setEmoji(s.emoji)
-        setCategory(s.category)
         setDangerLevel(s.danger)
         setBaselineQty(s.defaultQty)
         setBaselineUnit(s.unit)
@@ -728,7 +727,7 @@ export default function Habitudes() {
                     )}
 
                     {buildHabits.map(habit => (
-                        <div key={habit.ids} className={`habit-card ${habit.doneToday ? "done" : ""}`} style={{ borderLeft: `4px solid ${habit.color}` }}>
+                        <div key={habit.id} className={`habit-card ${habit.doneToday ? "done" : ""}`} style={{ borderLeft: `4px solid ${habit.color}` }}>
 
                             <div className="habit-top">
                                 <div className="habit-left">
@@ -800,9 +799,10 @@ export default function Habitudes() {
                                     <button
                                         className="habit-btn success"
                                         onClick={() => handleSuccess(habit.id)}
-                                        disabled={habit.todayCount >= habit.times_per_day || loadingIds.has(habit.id)}
+                                        disabled={habit.todayCount >= habit.times_per_day}
                                     >
-                                        {loadingIds.has(habit.id) ? "..." : habit.times_per_day > 1 ? `+ Faire (${habit.todayCount}/${habit.times_per_day})` : "✓ Fait aujourd'hui"}
+                                        {habit.times_per_day > 1 ? `+ Faire (${habit.todayCount}/${habit.times_per_day})` : "✓ Fait aujourd'hui"}
+
                                     </button>
                                 )}
                                 <button className="habit-btn delete" onClick={() => handleDelete(habit.id)}>🗑</button>

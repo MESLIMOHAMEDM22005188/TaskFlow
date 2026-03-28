@@ -37,6 +37,7 @@ app.use('/api/habits', authMiddleware, habitsRoutes)
 const frontendPath = path.join(__dirname, '..', 'frontend', 'dist')
 app.use(express.static(frontendPath))
 
+
 // ✅ Catch-all pour React Router (doit être en dernier)
 app.get('/{*path}', (req, res) => {
     res.sendFile(path.join(frontendPath, 'index.html'))

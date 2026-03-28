@@ -77,7 +77,7 @@ export function useHabitudes() {
                 danger_level: type === "quit" ? dangerLevel : "low",
                 times_per_day: timesPerDay,
                 start_date: type === "quit" ? startDate || undefined : undefined,
-                theme_ids: themeIds
+                theme_ids: themeIds.join(",") as any
             })
             setHabits(prev => [habit, ...prev])
             resetForm()

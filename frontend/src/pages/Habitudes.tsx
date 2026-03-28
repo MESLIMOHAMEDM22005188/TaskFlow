@@ -467,7 +467,7 @@ export default function Habitudes() {
         getNextMilestone,
         getDifficultyColor,
         getDangerColor,
-        loadingIds
+
 
     } = useHabitudes()
 

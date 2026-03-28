@@ -9,8 +9,7 @@ export default function CreateTask({reload}:{reload:()=>void}){
 
         if(!title.trim()) return
 
-        await createTask({title})
-
+        createTask({ title, priority: "medium" })
         setTitle("")
         reload()
     }

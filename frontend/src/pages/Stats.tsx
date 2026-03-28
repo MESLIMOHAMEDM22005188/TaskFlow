@@ -2,7 +2,7 @@ import "../assets/css/stats.css"
 import { useStats } from "../services/Stats"
 import type { HeatmapPeriod } from "../services/Stats"
 import {
-    BarChart, Bar, LineChart, Line, RadarChart, Radar,
+    BarChart, Bar, Line, RadarChart, Radar,
     PolarGrid, PolarAngleAxis, PieChart, Pie, Cell,
     ComposedChart,
     XAxis, YAxis, Tooltip, ResponsiveContainer, Legend
@@ -75,7 +75,7 @@ function XpChart({ data, period }: { data: { period: string; xp: number }[]; per
                     contentStyle={{ background: "#1e293b", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8 }}
                     labelStyle={{ color: "rgba(255,255,255,0.7)", marginBottom: 4 }}
                     labelFormatter={d => formatXpLabel(d, period)}
-                    formatter={(value: number, name: string) => [
+                    formatter={(value, name) => [
                         `${Number(value).toLocaleString()} XP`,
                         name === "xp" ? "Ce jour" : "Cumulé"
                     ]}

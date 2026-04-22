@@ -33,16 +33,19 @@ app.use('/api/upload', authMiddleware, uploadRoutes)
 app.use('/api/stats', authMiddleware, statsRoutes)
 app.use('/api/habits', authMiddleware, habitsRoutes)
 
-// ✅ Sert le frontend buildé
+// Serve frontend
 const frontendPath = path.join(__dirname, '..', 'frontend', 'dist')
 app.use(express.static(frontendPath))
 
-
-// ✅ Catch-all pour React Router (doit être en dernier)
-app.get('/{*path}', (req, res) => {
+// Catch-all React Router
+app.get('*', (req, res) => {
     res.sendFile(path.join(frontendPath, 'index.html'))
 })
 
-app.listen(process.env.PORT || 3000, () => {
-    console.log(`Server running on port ${process.env.PORT || 3000}`)
+// AlwaysData requires IPv6 + PORT
+const PORT = process.env.PORT || 8100
+const HOST = '::'
+
+app.listen(PORT, HOST, () => {
+    console.log(`Server running on http://${HOST}:${PORT}`)
 })

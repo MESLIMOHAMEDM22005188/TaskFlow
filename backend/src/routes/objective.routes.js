@@ -12,7 +12,6 @@ router.get("/", async (req, res) => {
     res.json(rows)
 })
 
-// GET le catalogue
 router.get("/templates", async (req, res) => {
     const [rows] = await db.execute(
         "SELECT * FROM objective_templates ORDER BY category ASC"

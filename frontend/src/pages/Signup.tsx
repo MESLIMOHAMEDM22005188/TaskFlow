@@ -4,7 +4,6 @@ import api from "../services/api";
 import "../assets/css/auth.css";
 
 export default function Signup() {
-
     const navigate = useNavigate();
 
     const [email, setEmail] = useState("");
@@ -18,23 +17,23 @@ export default function Signup() {
             await api.post("/auth/signup", {
                 email,
                 password,
-                username
+                username,
             });
 
             alert("Account created");
             navigate("/login");
-
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            alert("Signup failed");
+            console.log(err.response);
+            console.log(err.response?.data);
+
+            alert(err.response?.data?.message || err.message);
         }
     };
 
     return (
         <div className="auth-container">
-
             <form className="auth-card" onSubmit={handleSignup}>
-
                 <h2 className="auth-title">Create account</h2>
 
                 <input
@@ -76,9 +75,7 @@ export default function Signup() {
                 >
                     Login
                 </button>
-
             </form>
-
         </div>
     );
 }

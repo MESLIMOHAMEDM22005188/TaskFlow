@@ -3,23 +3,34 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const db = require("../config/db");
 
+const authMiddleware = require("../middleware/auth");
 const router = express.Router();
 
+
 router.post("/signup", async (req, res) => {
-    const { username, email, password } = req.body;
+    console.log("=== SIGNUP ===");
+    console.log(req.body);
 
-    const hashed = await bcrypt.hash(password, 10);
+    try {
+        const { username, email, password } = req.body;
 
-    await db.execute(
-        "INSERT INTO users (email, password, username) VALUES (?, ?, ?)",
-        [email, hashed, username || null],
-    );
+        const hashed = await bcrypt.hash(password, 10);
 
-    res.json({ message: "User created" });
+        await db.execute(
+            "INSERT INTO users (email, password, username) VALUES (?, ?, ?)",
+            [email, hashed, username]
+        );
+
+        res.json({ message: "OK" });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({
+            error: err.message,
+            stack: err.stack
+        });
+    }
 });
-
-const authMiddleware = require("../middleware/auth")
-
 router.put("/change-password", authMiddleware, async (req, res) => {
     const { currentPassword, newPassword } = req.body
 

@@ -19,9 +19,15 @@ const app = express()
 
 app.use(cors())
 app.use(express.json())
+app.get("/api/test", (req, res) => {
+    res.json({
+        ok: true,
+        message: "Backend works"
+    });
+});
 app.use("/sounds", express.static(path.join(__dirname, "public/sounds")))
 
-// Routes API
+console.log("Auth routes loaded:", typeof authRoutes);
 app.use('/api/auth', authRoutes)
 app.use('/api/tasks', authMiddleware, taskRoutes)
 app.use('/api/themes', authMiddleware, themeRoutes)
@@ -33,16 +39,13 @@ app.use('/api/upload', authMiddleware, uploadRoutes)
 app.use('/api/stats', authMiddleware, statsRoutes)
 app.use('/api/habits', authMiddleware, habitsRoutes)
 
-// Serve frontend
-const frontendPath = path.join(__dirname, '..', 'frontend', 'dist')
+*const frontendPath = path.join(__dirname, '..', 'frontend', 'dist')
 app.use(express.static(frontendPath))
 
-// Catch-all React Router
-app.get('/{*path}', (req, res) => {
-    res.sendFile(path.join(frontendPath, 'index.html'))
-})
+app.get(/.*/, (req, res) => {
+    res.sendFile(path.join(frontendPath, "index.html"));
+});
 
-// AlwaysData requires IPv6 + PORT
 const PORT = process.env.PORT || 8100
 const HOST = '::'
 

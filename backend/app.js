@@ -98,7 +98,11 @@ if (fs.existsSync(frontendPath)) {
         maxAge: "1h",
     }))
 
-    app.get(/^\/(?!api(?:\/|$)).*/, (_req, res) => {
+    app.get("/", (_req, res) => {
+        res.sendFile(path.join(frontendPath, "index.html"))
+    })
+
+    app.get(/^\/(?!api(?:\/|$)).+/, (_req, res) => {
         res.sendFile(path.join(frontendPath, "index.html"))
     })
 }

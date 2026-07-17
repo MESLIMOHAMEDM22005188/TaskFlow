@@ -83,8 +83,12 @@ router.post("/", async (req, res) => {
 
         // Insérer tous les thèmes dans task_themes
         if (ids.length > 0) {
-            const themeValues = ids.map(tid => [taskId, tid])
-            await db.query("INSERT IGNORE INTO task_themes (task_id, theme_id) VALUES ?", [themeValues])
+            const placeholders = ids.map(() => "(?, ?)").join(", ")
+            const params = ids.flatMap((themeId) => [taskId, themeId])
+            await db.execute(
+                `INSERT IGNORE INTO task_themes (task_id, theme_id) VALUES ${placeholders}`,
+                params
+            )
         }
 
         const [[task]] = await db.execute("SELECT * FROM tasks WHERE id = ?", [taskId])
@@ -297,7 +301,6 @@ router.delete("/:id/complete", async (req, res) => {
         res.status(500).json({ message: "Error undoing completion" })
     }
 })
-module.exports = router
 
 router.put("/:id/restore", async (req, res) => {
     try {
@@ -327,3 +330,5 @@ router.delete("/:id/permanent", async (req, res) => {
         res.status(500).json({ message: "Error deleting task" })
     }
 })
+
+module.exports = router

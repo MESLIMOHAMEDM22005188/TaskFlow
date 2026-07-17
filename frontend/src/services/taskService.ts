@@ -1,4 +1,4 @@
-const API = import.meta.env.VITE_API_URL
+import { API_ROOT } from "./api"
 
 function getHeaders() {
     const token = localStorage.getItem("token")
@@ -18,12 +18,12 @@ async function handleResponse(res: Response) {
 
 // TASKS
 export async function getTasks() {
-    const res = await fetch(`${API}/api/tasks`, { headers: getHeaders() })
+    const res = await fetch(`${API_ROOT}/tasks`, { headers: getHeaders() })
     return handleResponse(res)
 }
 
 export async function getTodayCompletions(): Promise<TaskDailyState[]> {
-    const res = await fetch(`${API}/api/tasks/completions/today`, {
+    const res = await fetch(`${API_ROOT}/tasks/completions/today`, {
         headers: getHeaders()
     })
     return handleResponse(res)
@@ -38,7 +38,7 @@ export async function createTask(data: {
     note?: string | null
     completion_target?: number
 }) {
-    const res = await fetch(`${API}/api/tasks`, {
+    const res = await fetch(`${API_ROOT}/tasks`, {
         method: "POST",
         headers: getHeaders(),
         body: JSON.stringify(data)
@@ -48,7 +48,7 @@ export async function createTask(data: {
 
 
 export async function deleteTask(id: number): Promise<{ message: string }> {
-    const res = await fetch(`${API}/api/tasks/${id}`, {
+    const res = await fetch(`${API_ROOT}/tasks/${id}`, {
         method: "DELETE",
         headers: getHeaders()
     })
@@ -56,14 +56,14 @@ export async function deleteTask(id: number): Promise<{ message: string }> {
 }
 
 export async function getTaskHistory(): Promise<TaskHistory[]> {
-    const res = await fetch(`${API}/api/tasks/history`, {
+    const res = await fetch(`${API_ROOT}/tasks/history`, {
         headers: getHeaders()
     })
     return handleResponse(res)
 }
 
 export async function completeTask(id: number): Promise<{ task: Task, xp: number }> {
-    const res = await fetch(`${API}/api/tasks/${id}/complete`, {
+    const res = await fetch(`${API_ROOT}/tasks/${id}/complete`, {
         method: "POST",
         headers: getHeaders()
     })
@@ -71,7 +71,7 @@ export async function completeTask(id: number): Promise<{ task: Task, xp: number
 }
 
 export async function uncompleteTask(id: number): Promise<{ task: Task, xp: number }> {
-    const res = await fetch(`${API}/api/tasks/${id}/complete`, {
+    const res = await fetch(`${API_ROOT}/tasks/${id}/complete`, {
         method: "DELETE",
         headers: getHeaders()
     })
@@ -80,7 +80,7 @@ export async function uncompleteTask(id: number): Promise<{ task: Task, xp: numb
 
 // THEMES
 export async function getThemes() {
-    const res = await fetch(`${API}/api/themes`, { headers: getHeaders() })
+    const res = await fetch(`${API_ROOT}/themes`, { headers: getHeaders() })
     return handleResponse(res)
 }
 
@@ -89,7 +89,7 @@ export async function createTheme(data: {
     emoji?: string
     color?: string
 }) {
-    const res = await fetch(`${API}/api/themes`, {
+    const res = await fetch(`${API_ROOT}/themes`, {
         method: "POST",
         headers: getHeaders(),
         body: JSON.stringify(data)
@@ -98,7 +98,7 @@ export async function createTheme(data: {
 }
 
 export async function deleteTheme(id: number) {
-    const res = await fetch(`${API}/api/themes/${id}`, {
+    const res = await fetch(`${API_ROOT}/themes/${id}`, {
         method: "DELETE",
         headers: getHeaders()
     })
@@ -107,12 +107,12 @@ export async function deleteTheme(id: number) {
 
 // PROFIL
 export async function getProfil(): Promise<Profil> {
-    const res = await fetch(`${API}/api/profil`, { headers: getHeaders() })
+    const res = await fetch(`${API_ROOT}/profil`, { headers: getHeaders() })
     return handleResponse(res)
 }
 
 export async function updateProfil(data: { username: string, bio: string }) {
-    const res = await fetch(`${API}/api/profil`, {
+    const res = await fetch(`${API_ROOT}/profil`, {
         method: "PUT",
         headers: getHeaders(),
         body: JSON.stringify(data)
@@ -145,7 +145,7 @@ export type Task = {
     themes?: { id: number; name: string; emoji: string | null; color: string }[]
 }
 export async function joinGroup(groupId: number): Promise<{ joined: boolean }> {
-    const res = await fetch(`${API}/api/community/groups/${groupId}/join`, {
+    const res = await fetch(`${API_ROOT}/community/groups/${groupId}/join`, {
         method: "POST",
         headers: getHeaders(),
     })
@@ -241,12 +241,12 @@ export type Objective = {
 
 // FUNCTIONS
 export async function getObjectives(): Promise<Objective[]> {
-    const res = await fetch(`${API}/api/objectives`, { headers: getHeaders() })
+    const res = await fetch(`${API_ROOT}/objectives`, { headers: getHeaders() })
     return handleResponse(res)
 }
 
 export async function getObjectiveTemplates(): Promise<ObjectiveTemplate[]> {
-    const res = await fetch(`${API}/api/objectives/templates`, { headers: getHeaders() })
+    const res = await fetch(`${API_ROOT}/objectives/templates`, { headers: getHeaders() })
     return handleResponse(res)
 }
 
@@ -259,7 +259,7 @@ export async function createObjective(data: {
     target_unit?: string
     deadline?: string | null
 }) {
-    const res = await fetch(`${API}/api/objectives`, {
+    const res = await fetch(`${API_ROOT}/objectives`, {
         method: "POST",
         headers: getHeaders(),
         body: JSON.stringify(data)
@@ -268,7 +268,7 @@ export async function createObjective(data: {
 }
 
 export async function adoptTemplate(templateId: number, deadline?: string) {
-    const res = await fetch(`${API}/api/objectives/adopt/${templateId}`, {
+    const res = await fetch(`${API_ROOT}/objectives/adopt/${templateId}`, {
         method: "POST",
         headers: getHeaders(),
         body: JSON.stringify({ deadline })
@@ -277,7 +277,7 @@ export async function adoptTemplate(templateId: number, deadline?: string) {
 }
 
 export async function updateObjectiveProgress(id: number, current_value: number) {
-    const res = await fetch(`${API}/api/objectives/${id}/progress`, {
+    const res = await fetch(`${API_ROOT}/objectives/${id}/progress`, {
         method: "PUT",
         headers: getHeaders(),
         body: JSON.stringify({ current_value })
@@ -286,7 +286,7 @@ export async function updateObjectiveProgress(id: number, current_value: number)
 }
 
 export async function updateObjectiveStatus(id: number, status: string) {
-    const res = await fetch(`${API}/api/objectives/${id}/status`, {
+    const res = await fetch(`${API_ROOT}/objectives/${id}/status`, {
         method: "PUT",
         headers: getHeaders(),
         body: JSON.stringify({ status })
@@ -295,7 +295,7 @@ export async function updateObjectiveStatus(id: number, status: string) {
 }
 
 export async function deleteObjective(id: number) {
-    const res = await fetch(`${API}/api/objectives/${id}`, {
+    const res = await fetch(`${API_ROOT}/objectives/${id}`, {
         method: "DELETE",
         headers: getHeaders()
     })
@@ -333,12 +333,12 @@ export type FlowSession = {
 
 // FUNCTIONS
 export async function getFlowSettings(): Promise<FlowSettings> {
-    const res = await fetch(`${API}/api/flow/settings`, { headers: getHeaders() })
+    const res = await fetch(`${API_ROOT}/flow/settings`, { headers: getHeaders() })
     return handleResponse(res)
 }
 
 export async function updateFlowSettings(data: Partial<FlowSettings>) {
-    const res = await fetch(`${API}/api/flow/settings`, {
+    const res = await fetch(`${API_ROOT}/flow/settings`, {
         method: "PUT",
         headers: getHeaders(),
         body: JSON.stringify(data)
@@ -352,7 +352,7 @@ export async function saveFlowSession(data: {
     type: string
     completed: boolean
 }) {
-    const res = await fetch(`${API}/api/flow/sessions`, {
+    const res = await fetch(`${API_ROOT}/flow/sessions`, {
         method: "POST",
         headers: getHeaders(),
         body: JSON.stringify(data)
@@ -360,7 +360,7 @@ export async function saveFlowSession(data: {
     return handleResponse(res)
 }
 export async function changePassword(currentPassword: string, newPassword: string) {
-    const res = await fetch(`${API}/api/auth/change-password`, {
+    const res = await fetch(`${API_ROOT}/auth/change-password`, {
         method: "PUT",
         headers: getHeaders(),
         body: JSON.stringify({ currentPassword, newPassword })
@@ -370,7 +370,7 @@ export async function changePassword(currentPassword: string, newPassword: strin
 
 
 export async function getFlowStats(): Promise<FlowStats> {
-    const res = await fetch(`${API}/api/flow/stats`, { headers: getHeaders() })
+    const res = await fetch(`${API_ROOT}/flow/stats`, { headers: getHeaders() })
     return handleResponse(res)
 }
 
@@ -412,15 +412,15 @@ export type LeaderboardUser = {
 // FUNCTIONS
 export async function getPosts(groupId?: number): Promise<Post[]> {
     const url = groupId
-        ? `${API}/api/community/posts?group_id=${groupId}`
-        : `${API}/api/community/posts`
+        ? `${API_ROOT}/community/posts?group_id=${groupId}`
+        : `${API_ROOT}/community/posts`
     const res = await fetch(url, { headers: getHeaders() })
     return handleResponse(res)
 }
 
 
 export async function getAnonymousPosts(): Promise<Post[]> {
-    const res = await fetch(`${API}/api/community/posts/anonymous`, { headers: getHeaders() })
+    const res = await fetch(`${API_ROOT}/community/posts/anonymous`, { headers: getHeaders() })
     return handleResponse(res)
 }
 
@@ -431,7 +431,7 @@ export async function createPost(data: {
     group_id?: number
     is_anonymous?: boolean
 }) {
-    const res = await fetch(`${API}/api/community/posts`, {
+    const res = await fetch(`${API_ROOT}/community/posts`, {
         method: "POST",
         headers: getHeaders(),
         body: JSON.stringify(data)
@@ -440,7 +440,7 @@ export async function createPost(data: {
 }
 
 export async function deletePost(id: number) {
-    const res = await fetch(`${API}/api/community/posts/${id}`, {
+    const res = await fetch(`${API_ROOT}/community/posts/${id}`, {
         method: "DELETE",
         headers: getHeaders()
     })
@@ -448,7 +448,7 @@ export async function deletePost(id: number) {
 }
 
 export async function likePost(id: number) {
-    const res = await fetch(`${API}/api/community/posts/${id}/like`, {
+    const res = await fetch(`${API_ROOT}/community/posts/${id}/like`, {
         method: "POST",
         headers: getHeaders()
     })
@@ -456,7 +456,7 @@ export async function likePost(id: number) {
 }
 
 export async function getComments(postId: number): Promise<Comment[]> {
-    const res = await fetch(`${API}/api/community/posts/${postId}/comments`, { headers: getHeaders() })
+    const res = await fetch(`${API_ROOT}/community/posts/${postId}/comments`, { headers: getHeaders() })
     return handleResponse(res)
 }
 
@@ -465,7 +465,7 @@ export async function createComment(
     content: string,
     is_anonymous = false
 ): Promise<Comment> {
-    const res = await fetch(`${API}/api/community/posts/${postId}/comments`, {
+    const res = await fetch(`${API_ROOT}/community/posts/${postId}/comments`, {
         method: "POST",
         headers: getHeaders(),
         body: JSON.stringify({ content, is_anonymous }),
@@ -474,8 +474,8 @@ export async function createComment(
 }
 export async function getLeaderboard(groupId?: number): Promise<LeaderboardUser[]> {
     const url = groupId
-        ? `${API}/api/community/leaderboard?group_id=${groupId}`
-        : `${API}/api/community/leaderboard`
+        ? `${API_ROOT}/community/leaderboard?group_id=${groupId}`
+        : `${API_ROOT}/community/leaderboard`
     const res = await fetch(url, { headers: getHeaders() })
     return handleResponse(res)
 }
@@ -484,7 +484,7 @@ export async function uploadAvatar(file: File): Promise<string> {
     formData.append("avatar", file)
 
     const token = localStorage.getItem("token")
-    const res = await fetch(`${API}/api/upload/avatar`, {
+    const res = await fetch(`${API_ROOT}/upload/avatar`, {
         method: "POST",
         headers: {
             Authorization: `Bearer ${token}`
@@ -547,22 +547,22 @@ export type FocusPerDay = {
 
 // FUNCTIONS
 export async function getStatsOverview(): Promise<StatsOverview> {
-    const res = await fetch(`${API}/api/stats/overview`, { headers: getHeaders() })
+    const res = await fetch(`${API_ROOT}/stats/overview`, { headers: getHeaders() })
     return handleResponse(res)
 }
 
 export async function getTasksPerDay(period: "week" | "month" | "year"): Promise<TaskPerDay[]> {
-    const res = await fetch(`${API}/api/stats/tasks-per-day?period=${period}`, { headers: getHeaders() })
+    const res = await fetch(`${API_ROOT}/stats/tasks-per-day?period=${period}`, { headers: getHeaders() })
     return handleResponse(res)
 }
 
 export async function getXpOverTime(period: "week" | "month" | "year"): Promise<XpOverTime[]> {
-    const res = await fetch(`${API}/api/stats/xp-over-time?period=${period}`, { headers: getHeaders() })
+    const res = await fetch(`${API_ROOT}/stats/xp-over-time?period=${period}`, { headers: getHeaders() })
     return handleResponse(res)
 }
 
 export async function getRadarData(): Promise<RadarData[]> {
-    const res = await fetch(`${API}/api/stats/radar`, { headers: getHeaders() })
+    const res = await fetch(`${API_ROOT}/stats/radar`, { headers: getHeaders() })
     return handleResponse(res)
 }// ── À ajouter dans taskService.ts ─────────────────────────────
 
@@ -589,12 +589,12 @@ export type UserPreferences = {
 }
 
 export async function getPreferences(): Promise<UserPreferences> {
-    const res = await fetch(`${API}/api/preferences`, { headers: getHeaders() })
+    const res = await fetch(`${API_ROOT}/preferences`, { headers: getHeaders() })
     return handleResponse(res)
 }
 
 export async function savePreferences(data: Partial<UserPreferences>): Promise<void> {
-    const res = await fetch(`${API}/api/preferences`, {
+    const res = await fetch(`${API_ROOT}/preferences`, {
         method: "PUT",
         headers: getHeaders(),
         body: JSON.stringify(data),
@@ -603,17 +603,17 @@ export async function savePreferences(data: Partial<UserPreferences>): Promise<v
 }
 
 export async function getPrioritySplit(): Promise<PrioritySplit[]> {
-    const res = await fetch(`${API}/api/stats/priority-split`, { headers: getHeaders() })
+    const res = await fetch(`${API_ROOT}/stats/priority-split`, { headers: getHeaders() })
     return handleResponse(res)
 }
 
 export async function getFocusPerDay(period: "week" | "month" | "year"): Promise<FocusPerDay[]> {
-    const res = await fetch(`${API}/api/stats/focus-per-day?period=${period}`, { headers: getHeaders() })
+    const res = await fetch(`${API_ROOT}/stats/focus-per-day?period=${period}`, { headers: getHeaders() })
     return handleResponse(res)
 }
 
 export async function getHeatmap(): Promise<TaskPerDay[]> {
-    const res = await fetch(`${API}/api/stats/heatmap`, { headers: getHeaders() })
+    const res = await fetch(`${API_ROOT}/stats/heatmap`, { headers: getHeaders() })
     return handleResponse(res)
 }// TYPES
 export type Habit = {
@@ -653,7 +653,7 @@ export type HabitLog = {
 }
 
 export async function getNotifications() {
-    const res = await fetch(`${API}/api/notifications`, { headers: getHeaders() })
+    const res = await fetch(`${API_ROOT}/notifications`, { headers: getHeaders() })
     return handleResponse(res)
 }
 
@@ -665,11 +665,11 @@ export type HabitMilestone = {
 
 // FUNCTIONS
 export async function getHabits(): Promise<Habit[]> {
-    const res = await fetch(`${API}/api/habits`, { headers: getHeaders() })
+    const res = await fetch(`${API_ROOT}/habits`, { headers: getHeaders() })
     return handleResponse(res)
 }
 export async function getGroups(): Promise<Group[]> {
-    const res = await fetch(`${API}/api/community/groups`, { headers: getHeaders() })
+    const res = await fetch(`${API_ROOT}/community/groups`, { headers: getHeaders() })
     return handleResponse(res)
 }
 
@@ -680,7 +680,7 @@ export async function createGroup(data: {
     category?: string
     is_private?: boolean
 }): Promise<Group> {
-    const res = await fetch(`${API}/api/community/groups`, {
+    const res = await fetch(`${API_ROOT}/community/groups`, {
         method: "POST",
         headers: getHeaders(),
         body: JSON.stringify(data),
@@ -705,7 +705,7 @@ export async function createHabit(data: {
     start_date?: string
     theme_ids?: number[]
 }) {
-    const res = await fetch(`${API}/api/habits`, {
+    const res = await fetch(`${API_ROOT}/habits`, {
         method: "POST",
         headers: getHeaders(),
         body: JSON.stringify(data)
@@ -714,7 +714,7 @@ export async function createHabit(data: {
 }
 
 export async function updateHabit(id: number, data: Partial<Habit>) {
-    const res = await fetch(`${API}/api/habits/${id}`, {
+    const res = await fetch(`${API_ROOT}/habits/${id}`, {
         method: "PUT",
         headers: getHeaders(),
         body: JSON.stringify(data)
@@ -723,7 +723,7 @@ export async function updateHabit(id: number, data: Partial<Habit>) {
 }
 
 export async function deleteHabit(id: number) {
-    const res = await fetch(`${API}/api/habits/${id}`, {
+    const res = await fetch(`${API_ROOT}/habits/${id}`, {
         method: "DELETE",
         headers: getHeaders()
     })
@@ -736,7 +736,7 @@ export async function logHabitSuccess(id: number, note?: string): Promise<{
     todayCount: number
     isFullDay: boolean
 }> {
-    const res = await fetch(`${API}/api/habits/${id}/success`, {
+    const res = await fetch(`${API_ROOT}/habits/${id}/success`, {
         method: "POST",
         headers: getHeaders(),
         body: JSON.stringify({ note })
@@ -745,7 +745,7 @@ export async function logHabitSuccess(id: number, note?: string): Promise<{
 }
 
 export async function logHabitRelapse(id: number, note?: string) {
-    const res = await fetch(`${API}/api/habits/${id}/relapse`, {
+    const res = await fetch(`${API_ROOT}/habits/${id}/relapse`, {
         method: "POST",
         headers: getHeaders(),
         body: JSON.stringify({ note })
@@ -754,7 +754,7 @@ export async function logHabitRelapse(id: number, note?: string) {
 }
 
 export async function undoHabitSuccess(id: number) {
-    const res = await fetch(`${API}/api/habits/${id}/success`, {
+    const res = await fetch(`${API_ROOT}/habits/${id}/success`, {
         method: "DELETE",
         headers: getHeaders()
     })
@@ -762,11 +762,11 @@ export async function undoHabitSuccess(id: number) {
 }
 
 export async function getHabitHeatmap(id: number): Promise<HabitLog[]> {
-    const res = await fetch(`${API}/api/habits/${id}/heatmap`, { headers: getHeaders() })
+    const res = await fetch(`${API_ROOT}/habits/${id}/heatmap`, { headers: getHeaders() })
     return handleResponse(res)
 }
 
 export async function getHabitMilestones(id: number): Promise<HabitMilestone[]> {
-    const res = await fetch(`${API}/api/habits/${id}/milestones`, { headers: getHeaders() })
+    const res = await fetch(`${API_ROOT}/habits/${id}/milestones`, { headers: getHeaders() })
     return handleResponse(res)
 }

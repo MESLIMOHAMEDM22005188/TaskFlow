@@ -4,7 +4,12 @@ const cloudinary = require("../config/cloudinary")
 const db = require("../config/db")
 
 const router = express.Router()
-const upload = multer({ storage: multer.memoryStorage() })
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 5 * 1024 * 1024,
+    },
+})
 
 router.post("/avatar", upload.single("avatar"), async (req, res) => {
     try {

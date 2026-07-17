@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import "../assets/css/parametres.css"
 import { changePassword, getPreferences, savePreferences } from "../services/taskService"
+import { API_ROOT } from "../services/api"
 
 // ── Helpers thème ────────────────────────────────────────────
 const BG_PRESETS: Record<string, { bg: string; card: string; surface: string; label: string }> = {
@@ -271,7 +272,7 @@ export default function Parametres() {
         setExportLoading(true)
         try {
             const token = localStorage.getItem("token")
-            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/account/export`, {
+            const res = await fetch(`${API_ROOT}/account/export`, {
                 headers: { Authorization: `Bearer ${token}` }
             })
             const blob = await res.blob()
@@ -294,7 +295,7 @@ export default function Parametres() {
         if (deleteConfirmText !== "SUPPRIMER") return
         try {
             const token = localStorage.getItem("token")
-            await fetch(`${import.meta.env.VITE_API_URL}/api/account/delete`, {
+            await fetch(`${API_ROOT}/account/delete`, {
                 method: "DELETE",
                 headers: { Authorization: `Bearer ${token}` }
             })

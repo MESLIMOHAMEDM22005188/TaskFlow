@@ -5,6 +5,7 @@ import {
     saveFlowSession, getFlowStats,
     getTasks
 } from "./taskService"
+import { ASSET_ROOT } from "./api"
 import type { FlowSettings, FlowStats, Task } from "./taskService"
 
 type TimerMode = "focus" | "short_break" | "long_break"
@@ -84,7 +85,7 @@ export function useFlow() {
                 heavy_rain: "https://www.fesliyanstudios.com/play-mp3/388",
                 forest: "https://www.fesliyanstudios.com/play-mp3/390",
                 waves: "https://www.fesliyanstudios.com/play-mp3/391",
-                fire: `${import.meta.env.VITE_API_URL}/sounds/fire.mp3`,
+                fire: `${ASSET_ROOT}/sounds/fire.mp3`,
                 cafe: "https://www.fesliyanstudios.com/play-mp3/393",
                 wind: "https://www.fesliyanstudios.com/play-mp3/394",
                 night: "https://www.fesliyanstudios.com/play-mp3/395",

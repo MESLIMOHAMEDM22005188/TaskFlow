@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { getTaskHistory } from "../services/taskService"
+import { API_ROOT } from "../services/api"
 import type { TaskHistory } from "../services/taskService"
 import "../assets/css/dashboard.css"
 import "../assets/css/historique.css"
-
-const API = import.meta.env.VITE_API_URL
 
 function getHeaders() {
     return {
@@ -15,14 +14,14 @@ function getHeaders() {
 }
 
 async function restoreTask(id: number): Promise<void> {
-    await fetch(`${API}/api/tasks/${id}/restore`, {
+    await fetch(`${API_ROOT}/tasks/${id}/restore`, {
         method: "PUT",
         headers: getHeaders()
     })
 }
 
 async function deleteTaskPermanently(id: number): Promise<void> {
-    await fetch(`${API}/api/tasks/${id}/permanent`, {
+    await fetch(`${API_ROOT}/tasks/${id}/permanent`, {
         method: "DELETE",
         headers: getHeaders()
     })

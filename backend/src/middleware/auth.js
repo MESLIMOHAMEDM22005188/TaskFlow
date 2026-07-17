@@ -3,7 +3,13 @@ const jwt = require("jsonwebtoken")
 function authMiddleware(req, res, next) {
     const header = req.headers.authorization
 
-    if (!header) return res.status(401).json({ message: "No token" })
+    if (!header) {
+        return res.status(401).json({ message: "Authentication required" })
+    }
+
+    if (!header.startsWith("Bearer ")) {
+        return res.status(401).json({ message: "Invalid authorization header" })
+    }
 
     const token = header.split(" ")[1]
 
@@ -12,7 +18,7 @@ function authMiddleware(req, res, next) {
         req.userId = decoded.userId
         next()
     } catch {
-        res.status(401).json({ message: "Invalid token" })
+        res.status(401).json({ message: "Invalid or expired token" })
     }
 }
 

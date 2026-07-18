@@ -27,7 +27,7 @@ const defaultOrigins = [
     "http://127.0.0.1:5173",
     "http://localhost:4173",
     "http://127.0.0.1:4173",
-    "https://grindly.alwaysdata.net",
+    "https://grindlyy.alwaysdata.net",
 ]
 const configuredOrigins = (process.env.CORS_ALLOWED_ORIGINS || "")
     .split(",")

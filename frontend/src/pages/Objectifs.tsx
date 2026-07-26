@@ -1,6 +1,6 @@
 import "../assets/css/objectifs.css"
 import { useObjectifs } from "../services/Objectifs"
-
+import Navbar from "../components/Navbar"
 function getDaysLeft(deadline: string | null): number | null {
     if (!deadline) return null
     return Math.ceil((new Date(deadline).getTime() - Date.now()) / 86400000)
@@ -13,7 +13,6 @@ function getProgress(current: number, target: number | null): number {
 export default function Objectifs() {
 
     const {
-        navigate,
         loading,
         activeObjectives,
         completedObjectives,
@@ -38,26 +37,7 @@ export default function Objectifs() {
     return (
         <div className="objectifs-page">
 
-            <header className="topbar">
-                <div className="logo">TaskFlow</div>
-                <nav className="nav-menu">
-                    <div className="nav-item" onClick={() => navigate("/dashboard")}>Dashboard</div>
-                    <div className="nav-item" onClick={() => navigate("/objectifs")}>Objectifs</div>
-                    <div className="nav-item" onClick={() => navigate("/flow")}>Flow</div>
-                    <div className="nav-item" onClick={() => navigate("/stats")}>Stats</div>
-                    <div className="nav-item" onClick={() => navigate("/habitudes")}>Habitudes</div>
-                    <div className="nav-item" onClick={() => navigate("/profil")}>Profil</div>
-                    <div className="nav-item" onClick={() => navigate("/communaute")}>Communauté</div>
-                    <div className="nav-item" onClick={() => navigate("/historique")}>Historique</div>
-                    <div className="nav-item" onClick={() => navigate("/parametres")}>Paramètres</div>
-
-                    <div className="nav-icons">
-                        <div className="nav-item nav-search">🔍</div>
-                        <div className="nav-item nav-notif">🔔</div>
-                    </div>
-                </nav>
-            </header>
-
+        <Navbar />
             <main className="objectifs-main">
 
                 <h1 className="objectifs-title">Objectifs</h1>

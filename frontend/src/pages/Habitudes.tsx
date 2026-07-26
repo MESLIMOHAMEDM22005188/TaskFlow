@@ -3,7 +3,7 @@ import "../assets/css/habitudes.css"
 import { useHabitudes } from "../services/Habitudes"
 import { getHabitHeatmap } from "../services/taskService"
 import type { Habit } from "../services/taskService"
-
+import Navbar from "../components/Navbar.tsx";
 const CATEGORIES = [
     { value: "health", label: "💪 Santé" },
     { value: "mental", label: "🧠 Mental" },
@@ -126,7 +126,6 @@ function SoberHeatmap({ habitId, color }: { habitId: number; color: string }) {
     }
     if (currentWeek.length > 0) weeks.push(currentWeek)
 
-    // Génère les labels de mois
     const monthLabels: { label: string; col: number }[] = []
     let lastMonth = -1
     weeks.forEach((week, wi) => {
@@ -439,7 +438,7 @@ function HabitHeatmap({ habitId }: { habitId: number }) {
 
 export default function Habitudes() {
     const {
-        navigate, loading,
+        loading,
         buildHabits, quitHabits,
         themes, themeIds, toggleThemeSelection,
         showForm, setShowForm,
@@ -498,25 +497,7 @@ export default function Habitudes() {
     return (
         <div className="habitudes-page">
 
-            <header className="topbar">
-                <div className="logo">TaskFlow</div>
-                <nav className="nav-menu">
-                    <div className="nav-item" onClick={() => navigate("/dashboard")}>Dashboard</div>
-                    <div className="nav-item" onClick={() => navigate("/objectifs")}>Objectifs</div>
-                    <div className="nav-item" onClick={() => navigate("/flow")}>Flow</div>
-                    <div className="nav-item" onClick={() => navigate("/stats")}>Stats</div>
-                    <div className="nav-item" onClick={() => navigate("/habitudes")}>Habitudes</div>
-                    <div className="nav-item" onClick={() => navigate("/profil")}>Profil</div>
-                    <div className="nav-item" onClick={() => navigate("/communaute")}>Communauté</div>
-                    <div className="nav-item" onClick={() => navigate("/historique")}>Historique</div>
-                    <div className="nav-item" onClick={() => navigate("/parametres")}>Paramètres</div>
-                    <div className="nav-icons">
-                        <div className="nav-item nav-search">🔍</div>
-                        <div className="nav-item nav-notif">🔔</div>
-                    </div>
-                </nav>
-            </header>
-
+< Navbar/>
             <main className="habitudes-main">
 
                 <div className="habitudes-hero">

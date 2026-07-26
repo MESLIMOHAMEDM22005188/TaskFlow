@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
 import "../assets/css/profil.css"
 import { getProfil, updateProfil, uploadAvatar } from "../services/taskService"
 import type { Achievement } from "../services/taskService"
-
+import { useNavigate } from "react-router-dom"
+import Navbar from "../components/Navbar.tsx";
 export default function Profil() {
-
     const navigate = useNavigate()
     const [username, setUsername] = useState("")
     const [bio, setBio] = useState("")
@@ -86,29 +85,7 @@ export default function Profil() {
     return (
         <div className="profil-page">
 
-            <header className="topbar">
-                <div className="logo">TaskFlow</div>
-                <nav className="nav-menu">
-                    <div className="nav-item" onClick={() => navigate("/dashboard")}>Dashboard</div>
-                    <div className="nav-item" onClick={() => navigate("/objectifs")}>Objectifs</div>
-                    <div className="nav-item" onClick={() => navigate("/flow")}>Flow</div>
-                    <div className="nav-item" onClick={() => navigate("/stats")}>Stats</div>
-                    <div className="nav-item" onClick={() => navigate("/habitudes")}>Habitudes</div>
-                    <div className="nav-item" onClick={() => navigate("/profil")}>Profil</div>
-                    <div className="nav-item" onClick={() => navigate("/communaute")}>Communauté</div>
-                    <div className="nav-item" onClick={() => navigate("/historique")}>Historique</div>
-                    <div className="nav-item" onClick={() => navigate("/parametres")}>Paramètres</div>
-
-                    <div className="nav-icons">
-                        <div className="nav-item nav-search">🔍</div>
-                        <div className="nav-item nav-notif">🔔</div>
-                        <div className="nav-avatar">
-                            <img src={avatar} alt="avatar" />
-                        </div>
-                    </div>
-                </nav>
-            </header>
-
+< Navbar />
             <main className="profil-main">
 
                 <h1 className="profil-title">Profile</h1>

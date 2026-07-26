@@ -48,6 +48,10 @@ export function useDashboard() {
     useEffect(() => {
         Promise.all([getTasks(), getThemes(), getTodayCompletions()])
             .then(([t, th, completions]) => {
+                console.log("TASKS =", t)
+                console.log("THEMES =", th)
+                console.log("IS ARRAY ?", Array.isArray(th))
+
                 setTasks(t)
                 setThemes(th)
                 setDailyState(buildDailyMap(completions))

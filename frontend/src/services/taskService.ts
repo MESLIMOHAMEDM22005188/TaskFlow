@@ -78,7 +78,6 @@ export async function uncompleteTask(id: number): Promise<{ task: Task, xp: numb
     return handleResponse(res)
 }
 
-// THEMES
 export async function getThemes() {
     const res = await fetch(`${API_ROOT}/themes`, { headers: getHeaders() })
     return handleResponse(res)

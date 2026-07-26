@@ -2,7 +2,6 @@ const db = require("../config/db")
 
 async function updateAchievements(userId) {
 
-    // 1. récupérer les stats réelles
     const [[{ tasks }]] = await db.execute(
         "SELECT COUNT(*) as tasks FROM task_completions WHERE user_id = ?",
         [userId]
@@ -23,10 +22,8 @@ async function updateAchievements(userId) {
         [userId]
     )
 
-    // 2. récupérer les achievements
     const [achievements] = await db.execute("SELECT * FROM achievements")
 
-    // 3. associer chaque type à sa valeur
     const stats = {
         tasks,
         themes,

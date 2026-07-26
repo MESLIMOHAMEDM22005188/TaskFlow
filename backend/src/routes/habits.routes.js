@@ -3,97 +3,35 @@ const db = require("../config/db")
 
 const router = express.Router()
 
-// GET toutes les habitudes de l'user
 router.get("/", async (req, res) => {
-    const [habits] = await db.execute(
-        "SELECT * FROM habits WHERE user_id = ? AND is_active = TRUE ORDER BY created_at DESC",
-        [req.userId]
-    )
+    try {
+        console.log("userId =", req.userId)
 
-    if (habits.length === 0) return res.json([])
+        const [rows] = await db.execute(
+            `
+            SELECT
+                id,
+                name,
+                emoji,
+                color,
+                is_default
+            FROM themes
+            WHERE is_default = 1
+               OR user_id = ?
+            ORDER BY is_default DESC, created_at DESC
+            `,
+            [req.userId]
+        )
 
-    const habitIds = habits.map(h => h.id)
-    const placeholders = habitIds.map(() => "?").join(",")
+        console.log(rows)
 
-    const [allLogs] = await db.execute(
-        `SELECT * FROM habit_logs WHERE habit_id IN (${placeholders}) ORDER BY logged_at DESC`,
-        habitIds
-    )
+        res.json(rows)
 
-    const today = new Date().toISOString().split("T")[0]
-
-    const result = habits.map(habit => {
-        const logs = allLogs.filter(l => l.habit_id === habit.id)
-
-        // ✅ FIX: on déduplique par date (un log par jour, peu importe times_per_day)
-        // pour le calcul du streak et bestStreak
-        const successLogs = logs
-            .filter(l => l.type === "success")
-            .map(l => l.logged_at instanceof Date
-                ? l.logged_at.toISOString().split("T")[0]
-                : String(l.logged_at).split("T")[0]
-            )
-
-        // Dates uniques uniquement pour le streak
-        const uniqueSuccessDates = [...new Set(successLogs)]
-
-        const lastRelapse = logs.find(l => l.type === "relapse")
-
-        // ✅ FIX: streak basé sur les dates uniques, pas le count total de logs
-        let streak = 0
-        const now = new Date()
-        for (let i = 0; i <= 365; i++) {
-            const d = new Date(now)
-            d.setDate(now.getDate() - i)
-            const key = d.toISOString().split("T")[0]
-            if (uniqueSuccessDates.includes(key)) streak++
-            else if (i > 0) break
-        }
-
-        let bestStreak = 0
-        let tempStreak = 0
-        const sortedUniqueDates = [...uniqueSuccessDates].sort()
-        for (let i = 0; i < sortedUniqueDates.length; i++) {
-            if (i === 0) {
-                tempStreak = 1
-            } else {
-                const diff = (new Date(sortedUniqueDates[i]).getTime() - new Date(sortedUniqueDates[i - 1]).getTime()) / 86400000
-                if (diff === 1) tempStreak++
-                else { bestStreak = Math.max(bestStreak, tempStreak); tempStreak = 1 }
-            }
-        }
-        bestStreak = Math.max(bestStreak, tempStreak)
-
-        // ✅ FIX: todayCount = nombre de logs "success" aujourd'hui (pas dédupliqué —
-        // on veut savoir combien de fois l'user a cliqué aujourd'hui vs times_per_day)
-        const todayCount = successLogs.filter(d => d === today).length
-        const relapseCount = logs.filter(l => l.type === "relapse").length
-
-        const yesterday = new Date()
-        yesterday.setDate(yesterday.getDate() - 1)
-        const yesterdayKey = yesterday.toISOString().split("T")[0]
-        const yesterdayCount = successLogs.filter(d => d === yesterdayKey).length
-        const hadSparkYesterday = yesterdayCount > 0 && yesterdayCount < (habit.times_per_day ?? 1)
-
-        return {
-            ...habit,
-            streak,
-            bestStreak,
-            doneToday: todayCount >= (habit.times_per_day ?? 1),
-            todayCount,
-            relapseCount,
-            lastRelapse: lastRelapse?.logged_at ?? null,
-            totalSuccess: uniqueSuccessDates.length, // jours uniques réussis
-            // ✅ FIX: habit.spark_count (singulier) et non habits.spark_count
-            sparkCount: habit.spark_count ?? 0,
-            hadSparkYesterday
-        }
-    })
-
-    res.json(result)
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({ message: "Error fetching themes" })
+    }
 })
-
-// POST créer une habitude
 router.post("/", async (req, res) => {
     const {
         name, type, category, emoji, color,

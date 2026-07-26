@@ -3,9 +3,20 @@ const db = require("../config/db")
 
 const router = express.Router()
 
-// GET all themes (default + personal)
 router.get("/", async (req, res) => {
     try {
+        console.log("========== GET /themes ==========");
+        console.log("User ID :", req.userId);
+
+        const [allThemes] = await db.execute(`
+            SELECT id, name, user_id, is_default
+            FROM themes
+            ORDER BY id
+        `);
+
+        console.log("Toutes les lignes de themes :");
+        console.table(allThemes);
+
         const [rows] = await db.execute(
             `
             SELECT
@@ -20,17 +31,18 @@ router.get("/", async (req, res) => {
             ORDER BY is_default DESC, created_at DESC
             `,
             [req.userId]
-        )
+        );
 
-        res.json(rows)
+        console.log("Résultat de la requête finale :");
+        console.table(rows);
+
+        res.json(rows);
 
     } catch (err) {
-        console.error(err)
-        res.status(500).json({ message: "Error fetching themes" })
+        console.error("Erreur GET /themes :", err);
+        res.status(500).json({ message: "Error fetching themes" });
     }
-})
-
-// CREATE personal theme
+});
 router.post("/", async (req, res) => {
     try {
         const { name, emoji, color } = req.body
@@ -89,7 +101,6 @@ router.post("/", async (req, res) => {
     }
 })
 
-// DELETE only personal themes
 router.delete("/:id", async (req, res) => {
     try {
         const [result] = await db.execute(

@@ -1,34 +1,55 @@
 const express = require("express")
 const db = require("../config/db")
+const fs = require("fs")
+const path = require("path")
 
 const router = express.Router()
 
 router.get("/", async (req, res) => {
     try {
-        const [rows] = await db.execute(
-            `
-                SELECT
-                    id,
-                    name,
-                    emoji,
-                    color,
-                    is_default
-                FROM themes
-                WHERE is_default = 1
-                   OR user_id = ?
-                ORDER BY is_default DESC, created_at DESC
-            `,
-            [req.userId]
+        const [allThemes] = await db.execute(`
+            SELECT id, name, user_id, is_default
+            FROM themes
+            ORDER BY id
+        `)
+
+        const [rows] = await db.execute(`
+            SELECT
+                id,
+                name,
+                emoji,
+                color,
+                is_default
+            FROM themes
+            WHERE is_default = 1
+               OR user_id = ?
+            ORDER BY is_default DESC, created_at DESC
+        `, [req.userId])
+
+        fs.appendFileSync(
+            path.join(__dirname, "../../themes-debug.log"),
+            JSON.stringify({
+                date: new Date().toISOString(),
+                userId: req.userId,
+                allThemes,
+                filteredThemes: rows
+            }, null, 2) + "\n\n"
         )
 
         res.json(rows)
 
     } catch (err) {
-        console.error(err)
+        fs.appendFileSync(
+            path.join(__dirname, "../../themes-debug.log"),
+            JSON.stringify({
+                error: err.message,
+                stack: err.stack
+            }, null, 2) + "\n\n"
+        )
+
         res.status(500).json({ message: "Error fetching themes" })
     }
 })
-
 router.post("/", async (req, res) => {
     try {
         const { name, emoji, color } = req.body

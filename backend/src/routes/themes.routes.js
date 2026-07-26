@@ -5,12 +5,6 @@ const router = express.Router()
 
 router.get("/", async (req, res) => {
     try {
-        const [allThemes] = await db.execute(`
-            SELECT id, name, user_id, is_default
-            FROM themes
-            ORDER BY id
-        `);
-
         const [rows] = await db.execute(
             `
                 SELECT
@@ -25,25 +19,20 @@ router.get("/", async (req, res) => {
                 ORDER BY is_default DESC, created_at DESC
             `,
             [req.userId]
-        );
+        )
 
-        return res.json({
-            debug: {
-                userId: req.userId,
-                allThemes,
-                filteredThemes: rows
-            }
-        });
+        res.json(rows)
 
     } catch (err) {
-        return res.status(500).json({
-            error: err.message,
-            stack: err.stack
-        });
+        console.error(err)
+        res.status(500).json({ message: "Error fetching themes" })
     }
-});router.post("/", async (req, res) => {
+})
+
+router.post("/", async (req, res) => {
     try {
         const { name, emoji, color } = req.body
+
         const [[existing]] = await db.execute(
             `
                 SELECT id
@@ -60,10 +49,11 @@ router.get("/", async (req, res) => {
                 message: "A theme with this name already exists."
             })
         }
+
         const [result] = await db.execute(
             `
-            INSERT INTO themes (user_id, name, emoji, color, is_default)
-            VALUES (?, ?, ?, ?, 0)
+                INSERT INTO themes (user_id, name, emoji, color, is_default)
+                VALUES (?, ?, ?, ?, 0)
             `,
             [req.userId, name, emoji || null, color || "#6366f1"]
         )
@@ -80,13 +70,13 @@ router.get("/", async (req, res) => {
 
         await db.execute(
             `
-            INSERT INTO user_achievements (user_id, achievement_id, progress, completed)
-            SELECT ?, a.id, ?, ? >= a.goal
-            FROM achievements a
-            WHERE a.type = 'themes'
-            ON DUPLICATE KEY UPDATE
-                progress = ?,
-                completed = ? >= a.goal
+                INSERT INTO user_achievements (user_id, achievement_id, progress, completed)
+                SELECT ?, a.id, ?, ? >= a.goal
+                FROM achievements a
+                WHERE a.type = 'themes'
+                    ON DUPLICATE KEY UPDATE
+                                         progress = ?,
+                                         completed = ? >= a.goal
             `,
             [req.userId, themesCount, themesCount, themesCount, themesCount]
         )
@@ -103,16 +93,18 @@ router.delete("/:id", async (req, res) => {
     try {
         const [result] = await db.execute(
             `
-            DELETE FROM themes
-            WHERE id = ?
-              AND user_id = ?
-              AND is_default = 0
+                DELETE FROM themes
+                WHERE id = ?
+                  AND user_id = ?
+                  AND is_default = 0
             `,
             [req.params.id, req.userId]
         )
 
         if (result.affectedRows === 0) {
-            return res.status(404).json({ message: "Theme not found" })
+            return res.status(404).json({
+                message: "Theme not found"
+            })
         }
 
         res.json({ message: "Theme deleted" })

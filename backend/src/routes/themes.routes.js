@@ -5,45 +5,43 @@ const router = express.Router()
 
 router.get("/", async (req, res) => {
     try {
-        console.log("========== GET /themes ==========");
-        console.log("User ID :", req.userId);
-
         const [allThemes] = await db.execute(`
             SELECT id, name, user_id, is_default
             FROM themes
             ORDER BY id
         `);
 
-        console.log("Toutes les lignes de themes :");
-        console.table(allThemes);
-
         const [rows] = await db.execute(
             `
-            SELECT
-                id,
-                name,
-                emoji,
-                color,
-                is_default
-            FROM themes
-            WHERE is_default = 1
-               OR user_id = ?
-            ORDER BY is_default DESC, created_at DESC
+                SELECT
+                    id,
+                    name,
+                    emoji,
+                    color,
+                    is_default
+                FROM themes
+                WHERE is_default = 1
+                   OR user_id = ?
+                ORDER BY is_default DESC, created_at DESC
             `,
             [req.userId]
         );
 
-        console.log("Résultat de la requête finale :");
-        console.table(rows);
-
-        res.json(rows);
+        return res.json({
+            debug: {
+                userId: req.userId,
+                allThemes,
+                filteredThemes: rows
+            }
+        });
 
     } catch (err) {
-        console.error("Erreur GET /themes :", err);
-        res.status(500).json({ message: "Error fetching themes" });
+        return res.status(500).json({
+            error: err.message,
+            stack: err.stack
+        });
     }
-});
-router.post("/", async (req, res) => {
+});router.post("/", async (req, res) => {
     try {
         const { name, emoji, color } = req.body
         const [[existing]] = await db.execute(

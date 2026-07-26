@@ -1,10 +1,11 @@
 import "../assets/css/dashboard.css"
 import { useDashboard } from "../services/Dashboard"
 
+import Navbar from "../components/Navbar";
+
 export function Dashboard() {
 
     const {
-        navigate,
         dark, setDark,
         tasks,
         themes,
@@ -37,31 +38,17 @@ export function Dashboard() {
     return (
         <div className={dark ? "dashboard dark" : "dashboard light"}>
 
-            <header className="topbar">
-                <div className="logo">TaskFlow</div>
-                <nav className="nav-menu">
-                    <div className="nav-item" onClick={() => navigate("/dashboard")}>Dashboard</div>
-                    <div className="nav-item" onClick={() => navigate("/objectifs")}>Objectifs</div>
-                    <div className="nav-item" onClick={() => navigate("/flow")}>Flow</div>
-                    <div className="nav-item" onClick={() => navigate("/stats")}>Stats</div>
-                    <div className="nav-item" onClick={() => navigate("/habitudes")}>Habitudes</div>
-                    <div className="nav-item" onClick={() => navigate("/profil")}>Profil</div>
-                    <div className="nav-item" onClick={() => navigate("/communaute")}>Communauté</div>
-                    <div className="nav-item" onClick={() => navigate("/historique")}>Historique</div>
-                    <div className="nav-item" onClick={() => navigate("/parametres")}>Paramètres</div>
-                    <div className="nav-item nav-focus">⚡ Focus</div>
-                    <div className="nav-icons">
-                        <div className="nav-item nav-notif">
-                            🔔 {notifications.length > 0 && (
-                            <span className="notif-badge">{notifications.length}</span>
-                        )}
-                        </div>
-                        <button className="theme-button" onClick={() => setDark(prev => !prev)}>
-                            {dark ? "Light mode" : "Dark mode"}
-                        </button>
-                    </div>
-                </nav>
-            </header>
+            <Navbar
+                notifCount={notifications.length}
+                rightExtra={
+                    <button
+                        className="theme-button"
+                        onClick={() => setDark(prev => !prev)}
+                    >
+                        {dark ? "Light mode" : "Dark mode"}
+                    </button>
+                }
+            />
 
             <main className="main">
                 <h1 className="title">Your workspace</h1>

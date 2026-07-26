@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
 import { getTaskHistory } from "../services/taskService"
 import { API_ROOT } from "../services/api"
 import type { TaskHistory } from "../services/taskService"
 import "../assets/css/dashboard.css"
 import "../assets/css/historique.css"
+import Navbar from "../components/Navbar"
 
 function getHeaders() {
     return {
@@ -28,7 +28,6 @@ async function deleteTaskPermanently(id: number): Promise<void> {
 }
 
 export default function Historique() {
-    const navigate = useNavigate()
     const [tasks, setTasks] = useState<TaskHistory[]>([])
     const [filter, setFilter] = useState<"all" | "done" | "archived">("all")
     const [dark] = useState(true)
@@ -74,22 +73,7 @@ export default function Historique() {
 
     return (
         <div className={dark ? "dashboard dark" : "dashboard light"}>
-            <header className="topbar">
-                <div className="logo">TaskFlow</div>
-                <nav className="nav-menu">
-                    <div className="nav-item" onClick={() => navigate("/dashboard")}>Dashboard</div>
-                    <div className="nav-item" onClick={() => navigate("/objectifs")}>Objectifs</div>
-                    <div className="nav-item" onClick={() => navigate("/flow")}>Flow</div>
-                    <div className="nav-item" onClick={() => navigate("/stats")}>Stats</div>
-                    <div className="nav-item" onClick={() => navigate("/habitudes")}>Habitudes</div>
-                    <div className="nav-item" onClick={() => navigate("/profil")}>Profil</div>
-                    <div className="nav-item" onClick={() => navigate("/communaute")}>Communauté</div>
-                    <div className="nav-item" onClick={() => navigate("/historique")}>Historique</div>
-                    <div className="nav-item" onClick={() => navigate("/parametres")}>Paramètres</div>
-                    <div className="nav-item nav-focus">⚡ Focus</div>
-                </nav>
-            </header>
-
+            <Navbar />
             <main className="main">
                 <h1 className="title">Historique</h1>
 

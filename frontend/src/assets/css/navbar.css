@@ -1,0 +1,4 @@
+.nav-item.active{
+    color: var(--accent,#6366f1);
+    font-weight:600;
+}

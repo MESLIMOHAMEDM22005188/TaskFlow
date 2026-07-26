@@ -14,6 +14,11 @@
     --bg-surface: rgba(255, 255, 255, 0.06);
 }
 
+.nav-item.active {
+    color: var(--accent, #6366f1);
+    font-weight: 600;
+}
+
 .dashboard {
     min-height: 100vh;
     transition: .3s;

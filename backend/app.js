@@ -52,10 +52,13 @@ app.use(helmet({
 }))
 app.use(cors({
     origin(origin, callback) {
+        console.log("Origin:", origin)
+
         if (!origin || allowedOrigins.includes(origin)) {
             return callback(null, true)
         }
 
+        console.log("Blocked origin:", origin)
         return callback(new Error("Origin not allowed by CORS"))
     },
 }))

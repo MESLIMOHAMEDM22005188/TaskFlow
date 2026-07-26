@@ -48,7 +48,6 @@ export default function Flow() {
             <Navbar />
 
             <main className="flow-main">
-                {/* MÉTHODE DE FOCUS */}
                 <div className="flow-methods">
                     <label className="flow-label">Méthode</label>
                     <div className="flow-method-buttons">

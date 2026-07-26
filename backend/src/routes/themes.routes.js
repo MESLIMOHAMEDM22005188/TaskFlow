@@ -1,55 +1,34 @@
 const express = require("express")
 const db = require("../config/db")
-const fs = require("fs")
-const path = require("path")
 
 const router = express.Router()
 
 router.get("/", async (req, res) => {
     try {
-        const [allThemes] = await db.execute(`
-            SELECT id, name, user_id, is_default
-            FROM themes
-            ORDER BY id
-        `)
-
-        const [rows] = await db.execute(`
-            SELECT
-                id,
-                name,
-                emoji,
-                color,
-                is_default
-            FROM themes
-            WHERE is_default = 1
-               OR user_id = ?
-            ORDER BY is_default DESC, created_at DESC
-        `, [req.userId])
-
-        fs.appendFileSync(
-            path.join(__dirname, "../../themes-debug.log"),
-            JSON.stringify({
-                date: new Date().toISOString(),
-                userId: req.userId,
-                allThemes,
-                filteredThemes: rows
-            }, null, 2) + "\n\n"
+        const [rows] = await db.execute(
+            `
+                SELECT
+                    id,
+                    name,
+                    emoji,
+                    color,
+                    is_default
+                FROM themes
+                WHERE is_default = 1
+                   OR user_id = ?
+                ORDER BY is_default DESC, created_at DESC
+            `,
+            [req.userId]
         )
 
         res.json(rows)
 
     } catch (err) {
-        fs.appendFileSync(
-            path.join(__dirname, "../../themes-debug.log"),
-            JSON.stringify({
-                error: err.message,
-                stack: err.stack
-            }, null, 2) + "\n\n"
-        )
-
+        console.error("GET /themes:", err)
         res.status(500).json({ message: "Error fetching themes" })
     }
 })
+
 router.post("/", async (req, res) => {
     try {
         const { name, emoji, color } = req.body
@@ -76,7 +55,7 @@ router.post("/", async (req, res) => {
                 INSERT INTO themes (user_id, name, emoji, color, is_default)
                 VALUES (?, ?, ?, ?, 0)
             `,
-            [req.userId, name, emoji || null, color || "#6366f1"]
+            [req.userId, name.trim(), emoji || null, color || "#6366f1"]
         )
 
         const [[theme]] = await db.execute(
@@ -105,7 +84,7 @@ router.post("/", async (req, res) => {
         res.json(theme)
 
     } catch (err) {
-        console.error(err)
+        console.error("POST /themes:", err)
         res.status(500).json({ message: "Error creating theme" })
     }
 })
@@ -131,7 +110,7 @@ router.delete("/:id", async (req, res) => {
         res.json({ message: "Theme deleted" })
 
     } catch (err) {
-        console.error(err)
+        console.error("DELETE /themes:", err)
         res.status(500).json({ message: "Error deleting theme" })
     }
 })

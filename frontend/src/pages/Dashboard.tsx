@@ -6,7 +6,6 @@ import { useDashboard } from "../services/Dashboard"
 import Navbar from "../components/Navbar";
 
 export function Dashboard() {
-
     const {
         dark, setDark,
         tasks,
@@ -74,7 +73,6 @@ export function Dashboard() {
                 {showTaskForm && (
                     <div className="theme-create-wrapper">
                         <div className="theme-create">
-
                             <div className="theme-field">
                                 <label className="theme-label">Task title</label>
                                 <input
@@ -82,10 +80,6 @@ export function Dashboard() {
                                     value={newTask}
                                     onChange={e => setNewTask(e.target.value)}
                                 />
-                            </div>
-
-                            {/* SÉLECTEUR MULTI-THÈMES — max 3 */}
-                            <div className="theme-field">
                                 <label className="theme-label">
                                     Thèmes <span className="theme-label-hint">(3 max)</span>
                                 </label>
@@ -210,56 +204,97 @@ export function Dashboard() {
                     </div>
                 </div>
 
-                {/* TASKS */}
                 {tasks.map(task => {
-                    const state = dailyState.get(task.id)
-                    const todayCount = state?.today_count ?? 0
-                    const doneToday = state?.done_today ?? false
+                    const state = dailyState.get(task.id);
+                    const todayCount = state?.today_count ?? 0;
+                    const doneToday = state?.done_today ?? false;
 
-                    // Affiche multi-thèmes si dispo, sinon fallback theme_name
-                    const taskThemes = task.themes && task.themes.length > 0
-                        ? task.themes
-                        : task.theme_name
-                            ? [{ id: task.theme_id, name: task.theme_name, emoji: task.theme_emoji, color: task.theme_color ?? "#ffffff" }]
-                            : []
-
+                    // Récupère les thèmes (nouveau système ou ancien)
+                    const taskThemes =
+                        task.themes && task.themes.length > 0
+                            ? task.themes
+                            : task.theme_name
+                                ? [{
+                                    id: task.theme_id,
+                                    name: task.theme_name,
+                                    emoji: task.theme_emoji,
+                                    color: task.theme_color ?? "#ffffff"
+                                }]
+                                : [];
 
                     return (
-                        <div key={task.id} className={`task ${doneToday ? "task-done" : ""}`}>
+                        <div
+                            key={task.id}
+                            className={`task ${doneToday ? "task-done" : ""}`}
+                        >
                             <div className="task-content">
-                                <span>{task.title}</span>
+
+                <span className="task-title">
+                    {task.title}
+                </span>
+
                                 <div className="task-meta">
-                                    <span className={`badge priority-${task.priority?.toLowerCase()}`}>
-                                        {task.priority}
-                                    </span>
+
+                    <span className={`badge priority-${task.priority?.toLowerCase()}`}>
+                        {task.priority}
+                    </span>
+
                                     <span className={`badge type-${task.frequency}`}>
-                                        {task.frequency}
-                                    </span>
+                        {task.frequency}
+                    </span>
+
                                     {task.completion_target > 1 && (
-                                        <span className="badge">{todayCount} / {task.completion_target}</span>
+                                        <span className="badge">
+                            {todayCount} / {task.completion_target}
+                        </span>
                                     )}
+
                                     {taskThemes.map(theme => (
-                                        <span key={theme.id} style={{ color: theme.color, fontSize: 12 }}>
-                                            {theme.emoji} {theme.name}
-                                        </span>
+                                        <span
+                                            key={theme.id}
+                                            className="task-theme"
+                                            style={{
+                                                border: `1px solid ${theme.color}`,
+                                                background: `${theme.color}20`,
+                                                color: theme.color
+                                            }}
+                                        >
+                            {theme.emoji} {theme.name}
+                        </span>
                                     ))}
+
                                 </div>
+
                             </div>
+
                             <div className="task-actions">
+
                                 <button
                                     className={`task-btn done-btn ${doneToday ? "active" : ""}`}
                                     onClick={() => toggleDone(task.id)}
                                 >
                                     {doneToday ? "↩" : "✓"}
                                 </button>
-                                <button className="task-btn archive-btn" onClick={() => archiveTask(task.id)} title="Archiver">🗃</button>
-                                <button className="task-btn delete-btn" onClick={() => deleteTask(task.id)}>🗑</button>
+
+                                <button
+                                    className="task-btn archive-btn"
+                                    onClick={() => archiveTask(task.id)}
+                                    title="Archiver"
+                                >
+                                    🗃
+                                </button>
+
+                                <button
+                                    className="task-btn delete-btn"
+                                    onClick={() => deleteTask(task.id)}
+                                >
+                                    🗑
+                                </button>
+
                             </div>
                         </div>
-                    )
+                    );
                 })}
-
-                {/* THEMES */}
                 <section className="themes">
                     {themes.map(theme => {
                         // Compte les tâches via multi-thèmes ET via theme_id (compatibilité)
@@ -270,8 +305,14 @@ export function Dashboard() {
                         const done = themeTasks.filter(t => dailyState.get(t.id)?.done_today).length
 
                         return (
-                            <div key={theme.id} className="theme-card">
-                                <div className="theme-card-left">
+                            <div
+                                key={theme.id}
+                                className="theme-card"
+                                style={{
+                                    borderLeft: `5px solid ${theme.color}`,
+                                    boxShadow: `0 0 18px ${theme.color}18`
+                                }}
+                            >                                <div className="theme-card-left">
                                     <span className="theme-emoji">{theme.emoji}</span>
                                     <div className="theme-info">
                                         <span className="theme-name">{theme.name}</span>

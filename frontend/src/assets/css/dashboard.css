@@ -169,6 +169,54 @@
     gap: 8px;
 }
 
+.selected-themes{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-bottom:12px;
+}
+
+.selected-theme-badge{
+    padding:6px 12px;
+    border-radius:999px;
+    border:1px solid;
+    font-size:13px;
+    font-weight:600;
+}
+
+.theme-picker-toggle{
+    width:100%;
+    padding:12px;
+    border-radius:10px;
+    background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.08);
+    color:white;
+    cursor:pointer;
+    transition:.2s;
+}
+
+.theme-picker-toggle:hover{
+    border-color:var(--accent);
+    background:rgba(99,102,241,.15);
+}
+
+.task-theme{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    border:1px solid;
+    border-radius:999px;
+    padding:4px 10px;
+    font-size:12px;
+    font-weight:600;
+}
+
+.theme-limit{
+    margin-top:8px;
+    color:#888;
+    font-size:12px;
+}
+
 .theme-multi-btn {
     display: flex;
     align-items: center;

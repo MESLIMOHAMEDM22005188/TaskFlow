@@ -6,20 +6,28 @@
     --text-muted: #9ca3af;
 }
 
-/* ---------- Topbar générale ---------- */
-.topbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    padding: 12px 20px;
-    background: var(--topbar-bg);
-    border-bottom: 1px solid var(--topbar-border);
-    position: sticky;
-    top: 0;
-    z-index: 100;
-}
+.topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
 
+    width:100%;
+    max-width:100%;
+    min-width:0;
+
+    box-sizing:border-box;
+
+    padding:12px 20px;
+
+    background:var(--topbar-bg);
+    border-bottom:1px solid var(--topbar-border);
+
+    position:sticky;
+    top:0;
+    z-index:100;
+
+    overflow:hidden;
+}
 .logo {
     font-weight: 700;
     font-size: 18px;
@@ -34,17 +42,21 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
     flex: 1;
     justify-content: flex-end;
 }
 
-.nav-menu::-webkit-scrollbar {
-    display: none;
+.logo{
+    flex-shrink:0;
 }
 
+.nav-icons{
+    flex-shrink:0;
+}
+
+.nav-item{
+    flex-shrink:0;
+}
 .nav-item {
     color: var(--text-muted);
     font-size: 14px;

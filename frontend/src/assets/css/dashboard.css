@@ -49,10 +49,16 @@
     letter-spacing: -0.5px;
     color: var(--accent);
 }
+.nav-menu {
+    display: flex;
+    align-items: center;
+    gap: 4px;
 
-/* NAV */
-.nav-menu { display: flex; align-items: center; gap: 4px; }
+    flex: 1;
+    min-width: 0;
 
+    justify-content: flex-end;
+}
 .nav-item {
     cursor: pointer;
     font-size: 13px;

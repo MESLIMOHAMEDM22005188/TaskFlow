@@ -1,6 +1,5 @@
-
-
 import "../assets/css/dashboard.css"
+import { useState } from "react"
 import { useDashboard } from "../services/Dashboard"
 
 import Navbar from "../components/Navbar";
@@ -34,6 +33,8 @@ export function Dashboard() {
         archiveTask,
     } = useDashboard()
 
+    const [showThemesList, setShowThemesList] = useState(false)
+
     const doneTasks = tasks.filter(t => dailyState.get(t.id)?.done_today).length
 
     return (
@@ -66,6 +67,12 @@ export function Dashboard() {
                         onClick={handleToggleThemeForm}
                     >
                         Create Theme
+                    </button>
+                    <button
+                        className={`main-button secondary ${showThemesList ? "active" : ""}`}
+                        onClick={() => setShowThemesList(prev => !prev)}
+                    >
+                        {showThemesList ? "Masquer les thèmes" : "Voir les thèmes existants"}
                     </button>
                 </div>
 
@@ -295,40 +302,48 @@ export function Dashboard() {
                         </div>
                     );
                 })}
-                <section className="themes">
-                    {themes.map(theme => {
-                        // Compte les tâches via multi-thèmes ET via theme_id (compatibilité)
-                        const themeTasks = tasks.filter(t =>
-                            (t.themes && t.themes.some(th => th.id === theme.id)) ||
-                            Number(t.theme_id) === Number(theme.id)
-                        )
-                        const done = themeTasks.filter(t => dailyState.get(t.id)?.done_today).length
 
-                        return (
-                            <div
-                                key={theme.id}
-                                className="theme-card"
-                                style={{
-                                    borderLeft: `5px solid ${theme.color}`,
-                                    boxShadow: `0 0 18px ${theme.color}18`
-                                }}
-                            >                                <div className="theme-card-left">
+                {/* LISTE DES THÈMES EXISTANTS — visible uniquement au clic */}
+                {showThemesList && (
+                    <section className="themes">
+                        {themes.length === 0 && (
+                            <p style={{ fontSize: 13, color: "rgba(255,255,255,0.4)" }}>
+                                Aucun thème créé pour l'instant.
+                            </p>
+                        )}
+                        {themes.map(theme => {
+                            // Compte les tâches via multi-thèmes ET via theme_id (compatibilité)
+                            const themeTasks = tasks.filter(t =>
+                                (t.themes && t.themes.some(th => th.id === theme.id)) ||
+                                Number(t.theme_id) === Number(theme.id)
+                            )
+                            const done = themeTasks.filter(t => dailyState.get(t.id)?.done_today).length
+
+                            return (
+                                <div
+                                    key={theme.id}
+                                    className="theme-card"
+                                    style={{
+                                        borderLeft: `5px solid ${theme.color}`,
+                                        boxShadow: `0 0 18px ${theme.color}18`
+                                    }}
+                                >                                <div className="theme-card-left">
                                     <span className="theme-emoji">{theme.emoji}</span>
                                     <div className="theme-info">
                                         <span className="theme-name">{theme.name}</span>
                                         <span className="theme-stats">{themeTasks.length} tâches • {done} faites aujourd'hui</span>
                                     </div>
                                 </div>
-                                <button className="theme-delete-btn" onClick={() => handleDeleteTheme(theme.id)}>
-                                    Supprimer
-                                </button>
-                            </div>
-                        )
-                    })}
-                </section>
+                                    <button className="theme-delete-btn" onClick={() => handleDeleteTheme(theme.id)}>
+                                        Supprimer
+                                    </button>
+                                </div>
+                            )
+                        })}
+                    </section>
+                )}
 
             </main>
         </div>
     )
 }
-

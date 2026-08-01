@@ -26,13 +26,11 @@ router.get("/posts", async (req, res) => {
         const { group_id } = req.query
 
         let whereClause = "WHERE p.group_id IS NULL AND p.is_anonymous = FALSE"
-        const params = [req.userId]
+        let params = [req.userId]
 
         if (group_id) {
-            // Feed d'un groupe spécifique (non anonyme)
             whereClause = "WHERE p.group_id = ?"
-            params.unshift(req.userId)
-            params.splice(1, 0, group_id)
+            params = [group_id, req.userId]
         }
 
         const [posts] = await db.execute(`

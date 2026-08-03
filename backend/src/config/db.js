@@ -1,18 +1,29 @@
 require("dotenv").config();
+
 const mysql = require("mysql2/promise");
 
-let pool = null;
+let connectionPool = null;
+
+/**
+ * Builds the database configuration.
+ * Supports DATABASE_URL and individual environment variables.
+ *
+ * @returns {Object}
+ */
 
 function getDatabaseConfig() {
+
     if (process.env.DATABASE_URL) {
+
         const databaseUrl = new URL(process.env.DATABASE_URL)
+
         return {
             host: databaseUrl.hostname,
             port: Number(databaseUrl.port || 3306),
             user: decodeURIComponent(databaseUrl.username),
             password: decodeURIComponent(databaseUrl.password),
             database: databaseUrl.pathname.replace(/^\//, ""),
-        }
+        };
     }
 
     return {
@@ -23,25 +34,49 @@ function getDatabaseConfig() {
         port: Number(process.env.DB_PORT || 3306),
     }
 }
+/**
+ * Returns the singleton MySQL connection pool.
+ *
+ * @returns {Pool}
+ */
 
-function getPool() {
-    if (!pool) {
-        pool = mysql.createPool({
+function getConnectionPool() {
+    if (!connectionPool) {
+        connectionPool = mysql.createPool({
+
             ...getDatabaseConfig(),
+
             waitForConnections: true,
             connectionLimit: Number(process.env.DB_CONNECTION_LIMIT || 10),
             queueLimit: 0,
         })
     }
 
-    return pool
+    return connectionPool
 }
 
-module.exports = {
-    execute: async (sql, params) => {
-        return getPool().execute(sql, params)
+odule.exports = {
+
+    /**
+     * Executes a prepared SQL statement.
+     *
+     * @param {string} sql
+     * @param {Array} params
+     * @returns {Promise<Array>}
+     */
+    async execute(sql, params = []) {
+        return getConnectionPool().execute(sql, params);
     },
-    query: async (sql, params) => {
-        return getPool().query(sql, params)
+
+    /**
+     * Executes a standard SQL query.
+     *
+     * @param {string} sql
+     * @param {Array} params
+     * @returns {Promise<Array>}
+     */
+    async query(sql, params = []) {
+        return getConnectionPool().query(sql, params);
     },
-}
+
+};

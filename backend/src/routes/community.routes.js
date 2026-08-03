@@ -16,11 +16,6 @@ function generateAnonName() {
     const num = Math.floor(Math.random() * 99) + 1
     return `${adj}${animal}${num}`
 }
-
-// ================================
-// POSTS — FEED GÉNÉRAL
-// ================================
-
 router.get("/posts", async (req, res) => {
     try {
         const { group_id } = req.query

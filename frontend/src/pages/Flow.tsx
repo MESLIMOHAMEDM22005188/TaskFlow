@@ -1,5 +1,5 @@
 import "../assets/css/flow.css"
-import { useFlow } from "../services/Flow"
+import useFlow from "../services/Flow"
 
 import Navbar from "../components/Navbar";
 

@@ -1,18 +1,30 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
+
 import {
-    getFlowSettings, updateFlowSettings,
-    saveFlowSession, getFlowStats,
+    getFlowSettings,
+    updateFlowSettings,
+    saveFlowSession,
+    getFlowStats,
     getTasks
 } from "./taskService"
+
 import { ASSET_ROOT } from "./api"
-import type { FlowSettings, FlowStats, Task } from "./taskService"
+
+import type {
+    FlowSettings,
+    FlowStats,
+    Task
+} from "./taskService"
 
 type TimerMode = "focus" | "short_break" | "long_break"
 
-export function useFlow() {
+function useFlow() {
 
     const navigate = useNavigate()
+
+    const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+    const audioRef = useRef<HTMLAudioElement | null>(null)
 
     const [settings, setSettings] = useState<FlowSettings | null>(null)
     const [showSettings, setShowSettings] = useState(false)
@@ -20,9 +32,8 @@ export function useFlow() {
     const [mode, setMode] = useState<TimerMode>("focus")
     const [timeLeft, setTimeLeft] = useState(25 * 60)
     const [isRunning, setIsRunning] = useState(false)
+
     const [pomodoroCount, setPomodoroCount] = useState(0)
-    const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-    const startTimeRef = useRef<number>(0)
 
     const [tasks, setTasks] = useState<Task[]>([])
     const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null)
@@ -36,43 +47,170 @@ export function useFlow() {
 
     const [ambientSound, setAmbientSound] = useState("none")
     const [ambientVolume, setAmbientVolume] = useState(50)
-    const audioRef = useRef<HTMLAudioElement | null>(null)
 
     const [lastXp, setLastXp] = useState<number | null>(null)
 
     useEffect(() => {
-        Promise.all([getFlowSettings(), getFlowStats(), getTasks()])
-            .then(([s, st, t]) => {
-                setSettings(s)
-                setTimeLeft(s.focus_duration * 60)
-                setAmbientSound(s.ambient_sound)
-                setAmbientVolume(s.ambient_volume)
-                setStats(st)
-                setTasks(t)
-            })
-            .catch(err => console.error(err))
+
+        async function load() {
+            try {
+
+                const [flowSettings, flowStats, userTasks] = await Promise.all([
+                    getFlowSettings(),
+                    getFlowStats(),
+                    getTasks()
+                ])
+
+                setSettings(flowSettings)
+                setStats(flowStats)
+                setTasks(userTasks)
+
+                setAmbientSound(flowSettings.ambient_sound)
+                setAmbientVolume(flowSettings.ambient_volume)
+
+                setTimeLeft(flowSettings.focus_duration * 60)
+
+            } catch (err) {
+                console.error(err)
+            }
+        }
+
+        load()
+
     }, [])
 
-    useEffect(() => {
-        if (isRunning) {
-            startTimeRef.current = Date.now()
-            intervalRef.current = setInterval(() => {
-                setTimeLeft(prev => {
-                    if (prev <= 1) {
-                        // eslint-disable-next-line react-hooks/immutability
-                        handleTimerEnd()
-                        return 0
-                    }
-                    return prev - 1
-                })
-            }, 1000)
+    const switchMode = useCallback((newMode: TimerMode) => {
+
+        if (!settings) return
+
+        setIsRunning(false)
+
+        if (intervalRef.current) {
+            clearInterval(intervalRef.current)
+            intervalRef.current = null
+        }
+
+        setMode(newMode)
+
+        switch (newMode) {
+
+            case "focus":
+                setTimeLeft(settings.focus_duration * 60)
+                break
+
+            case "short_break":
+                setTimeLeft(settings.short_break * 60)
+                break
+
+            case "long_break":
+                setTimeLeft(settings.long_break * 60)
+                break
+        }
+
+    }, [settings])
+    const handleTimerEnd = useCallback(async () => {
+        setIsRunning(false)
+
+        const minutesSpent = settings
+            ? mode === "focus"
+                ? settings.focus_duration
+                : mode === "short_break"
+                    ? settings.short_break
+                    : settings.long_break
+            : 25
+
+        const result = await saveFlowSession({
+            task_id: selectedTaskId,
+            duration_minutes: minutesSpent,
+            type: mode,
+            completed: true
+        })
+
+        if (result.xpGained > 0) {
+            setLastXp(result.xpGained)
+        }
+
+        const newStats = await getFlowStats()
+        setStats(newStats)
+
+        if (mode === "focus") {
+
+            const newCount = pomodoroCount + 1
+            setPomodoroCount(newCount)
+
+            const isLongBreak =
+                newCount % (settings?.pomodoros_until_long ?? 4) === 0
+
+            switchMode(isLongBreak ? "long_break" : "short_break")
+
+            if (settings?.auto_start_break) {
+                setIsRunning(true)
+            }
+
         } else {
-            if (intervalRef.current) clearInterval(intervalRef.current)
+
+            switchMode("focus")
+
+            if (settings?.auto_start_break) {
+                setIsRunning(true)
+            }
         }
+
+    }, [
+        mode,
+        pomodoroCount,
+        selectedTaskId,
+        settings,
+        switchMode
+    ])
+
+    useEffect(() => {
+
+        if (!isRunning) {
+
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current)
+                intervalRef.current = null
+            }
+
+            return
+        }
+
+        if (intervalRef.current) {
+            clearInterval(intervalRef.current)
+        }
+
+        intervalRef.current = setInterval(() => {
+
+            setTimeLeft(previous => {
+
+                if (previous <= 1) {
+
+                    clearInterval(intervalRef.current!)
+                    intervalRef.current = null
+
+                    setTimeout(() => {
+                        handleTimerEnd()
+                    }, 0)
+
+                    return 0
+                }
+
+                return previous - 1
+            })
+
+        }, 1000)
+
         return () => {
-            if (intervalRef.current) clearInterval(intervalRef.current)
+
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current)
+                intervalRef.current = null
+            }
+
         }
-    }, [isRunning, mode])
+
+    }, [isRunning, handleTimerEnd])
 
     useEffect(() => {
         if (audioRef.current) {
@@ -101,48 +239,7 @@ export function useFlow() {
         }
     }, [ambientSound, isRunning])
 
-    async function handleTimerEnd() {
-        setIsRunning(false)
 
-        const minutesSpent = settings
-            ? mode === "focus" ? settings.focus_duration
-                : mode === "short_break" ? settings.short_break
-                    : settings.long_break
-            : 25
-
-        const result = await saveFlowSession({
-            task_id: selectedTaskId,
-            duration_minutes: minutesSpent,
-            type: mode,
-            completed: true
-        })
-
-        if (result.xpGained > 0) setLastXp(result.xpGained)
-
-        const newStats = await getFlowStats()
-        setStats(newStats)
-
-        if (mode === "focus") {
-            const newCount = pomodoroCount + 1
-            setPomodoroCount(newCount)
-
-            const isLongBreak = newCount % (settings?.pomodoros_until_long ?? 4) === 0
-            switchMode(isLongBreak ? "long_break" : "short_break")
-
-            if (settings?.auto_start_break) setIsRunning(true)
-        } else {
-            switchMode("focus")
-            if (settings?.auto_start_break) setIsRunning(true)
-        }
-    }
-
-    function switchMode(newMode: TimerMode) {
-        setMode(newMode)
-        if (!settings) return
-        if (newMode === "focus") setTimeLeft(settings.focus_duration * 60)
-        else if (newMode === "short_break") setTimeLeft(settings.short_break * 60)
-        else setTimeLeft(settings.long_break * 60)
-    }
 
     function handleStart() {
         setIsRunning(true)
@@ -213,3 +310,5 @@ export function useFlow() {
         handleSaveSettings,
     }
 }
+
+export default useFlow

@@ -22,6 +22,7 @@ async function updateAchievements(userId) {
         [userId]
     )
 
+
     const [achievements] = await db.execute("SELECT * FROM achievements")
 
     const stats = {

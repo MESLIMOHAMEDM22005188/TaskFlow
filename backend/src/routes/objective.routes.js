@@ -3,7 +3,6 @@ const db = require("../config/db")
 
 const router = express.Router()
 
-// GET tous les objectifs de l'user
 router.get("/", async (req, res) => {
     const [rows] = await db.execute(
         "SELECT * FROM objectives WHERE user_id = ? ORDER BY created_at DESC",
@@ -19,7 +18,6 @@ router.get("/templates", async (req, res) => {
     res.json(rows)
 })
 
-// POST créer un objectif perso
 router.post("/", async (req, res) => {
     const { title, description, emoji, theme_id, target_value, target_unit, deadline } = req.body
 
@@ -32,34 +30,76 @@ router.post("/", async (req, res) => {
     res.json(rows[0])
 })
 
-// POST adopter un template
 router.post("/adopt/:templateId", async (req, res) => {
-    const { deadline } = req.body
+    try {
+        const { deadline } = req.body
 
-    const [templates] = await db.execute(
-        "SELECT * FROM objective_templates WHERE id = ?",
-        [req.params.templateId]
-    )
+        // Vérifie si le template existe
+        const [templates] = await db.execute(
+            "SELECT * FROM objective_templates WHERE id = ?",
+            [req.params.templateId]
+        )
 
-    if (templates.length === 0) return res.status(404).json({ message: "Template not found" })
+        if (templates.length === 0) {
+            return res.status(404).json({ message: "Template not found" })
+        }
 
-    const t = templates[0]
+        const t = templates[0]
 
-    const computedDeadline = deadline || (t.suggested_days
-        ? new Date(Date.now() + t.suggested_days * 86400000).toISOString().split("T")[0]
-        : null)
+        // Empêche les doublons
+        const [existing] = await db.execute(
+            `SELECT id
+             FROM objectives
+             WHERE user_id = ?
+               AND template_id = ?
+               AND status = 'active'
+             LIMIT 1`,
+            [req.userId, t.id]
+        )
 
-    const [result] = await db.execute(
-        "INSERT INTO objectives (user_id, template_id, title, description, emoji, target_value, target_unit, deadline) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        [req.userId, t.id, t.title, t.description, t.emoji, t.target_value, t.target_unit, computedDeadline]
-    )
+        if (existing.length > 0) {
+            return res.status(400).json({
+                message: "Vous avez déjà adopté cet objectif."
+            })
+        }
 
-    const [rows] = await db.execute("SELECT * FROM objectives WHERE id = ?", [result.insertId])
-    res.json(rows[0])
+        const computedDeadline = deadline || (
+            t.suggested_days
+                ? new Date(Date.now() + t.suggested_days * 86400000)
+                    .toISOString()
+                    .split("T")[0]
+                : null
+        )
+
+        const [result] = await db.execute(
+            `INSERT INTO objectives
+            (user_id, template_id, title, description, emoji, target_value, target_unit, deadline)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                req.userId,
+                t.id,
+                t.title,
+                t.description,
+                t.emoji,
+                t.target_value,
+                t.target_unit,
+                computedDeadline
+            ]
+        )
+
+        const [rows] = await db.execute(
+            "SELECT * FROM objectives WHERE id = ?",
+            [result.insertId]
+        )
+
+        res.json(rows[0])
+
+    } catch (err) {
+        console.error("POST /objectives/adopt:", err)
+        res.status(500).json({ message: "Error adopting objective" })
+    }
 })
-
-// PUT mettre à jour la progression
-router.put("/:id/progress", async (req, res) => {
+    router.put("/:id/progress", async (req, res) => {
     const { current_value } = req.body
 
     const [objectives] = await db.execute(
@@ -81,7 +121,6 @@ router.put("/:id/progress", async (req, res) => {
     res.json(rows[0])
 })
 
-// PUT changer le statut (abandon)
 router.put("/:id/status", async (req, res) => {
     const { status } = req.body
 

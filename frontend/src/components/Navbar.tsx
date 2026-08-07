@@ -49,7 +49,6 @@ export default function Navbar({
         return pathname === path || pathname.startsWith(path + "/");
     }
 
-    // Ferme le menu si on repasse en desktop (resize) pour éviter un état bloqué
     useEffect(() => {
         function handleResize() {
             if (window.innerWidth > 900) {
@@ -60,7 +59,6 @@ export default function Navbar({
         return () => window.removeEventListener("resize", handleResize);
     }, []);
 
-    // Bloque le scroll du body pendant que le menu mobile est ouvert
     useEffect(() => {
         document.body.style.overflow = menuOpen ? "hidden" : "auto";
 

@@ -560,7 +560,7 @@ export default function Parametres() {
                         <p>
                             Conformément au <strong>Règlement Général sur la Protection des Données (RGPD)</strong>,
                             tu as le droit d'accéder à tes données, de les télécharger et de les faire supprimer.
-                            TaskFlow ne revend jamais tes données à des tiers.
+                            Grindlyy ne revend jamais tes données à des tiers.
                         </p>
                     </div>
 

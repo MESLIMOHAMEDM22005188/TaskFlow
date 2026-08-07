@@ -31,7 +31,6 @@ export function AuthChoice() {
     );
 }
 
-// ✅ typage propre (évite erreurs TS)
 const container: CSSProperties = {
     height: "100vh",
     display: "flex",

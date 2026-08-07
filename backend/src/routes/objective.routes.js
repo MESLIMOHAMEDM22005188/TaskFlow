@@ -30,7 +30,9 @@ router.post("/", async (req, res) => {
     res.json(rows[0])
 })
 
-router.post("/adopt/:templateId", async (req, res) => {
+router.post("/adopt/:templateId", async (req, res) =>
+{
+    console.log(">>> ROUTE ADOPT APPELÉE <<<");
     try {
         const { deadline } = req.body
 
@@ -99,6 +101,7 @@ router.post("/adopt/:templateId", async (req, res) => {
         res.status(500).json({ message: "Error adopting objective" })
     }
 })
+
     router.put("/:id/progress", async (req, res) => {
     const { current_value } = req.body
 

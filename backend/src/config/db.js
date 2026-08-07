@@ -55,7 +55,7 @@ function getConnectionPool() {
     return connectionPool
 }
 
-odule.exports = {
+module.exports = {
 
     /**
      * Executes a prepared SQL statement.

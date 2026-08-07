@@ -96,11 +96,16 @@ router.post("/adopt/:templateId", async (req, res) =>
 
         res.json(rows[0])
 
-    } catch (err) {
-        console.error("POST /objectives/adopt:", err)
-        res.status(500).json({ message: "Error adopting objective" })
     }
-})
+    catch (err) {
+        console.error("POST /objectives/adopt:", err);
+
+        return res.status(500).json({
+            message: "Error adopting objective",
+            error: err.message,
+            code: err.code
+        });
+    }})
 
     router.put("/:id/progress", async (req, res) => {
     const { current_value } = req.body

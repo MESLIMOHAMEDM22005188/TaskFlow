@@ -101,8 +101,6 @@ export default function Navbar({
             <div className="logo" onClick={() => goTo("/dashboard")}>
                 Grindlyy
             </div>
-
-            {/* Navigation desktop */}
             <nav className="nav-menu">
                 {NAV_ITEMS.map((item) => (
                     <div

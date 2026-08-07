@@ -20,13 +20,15 @@ router.get("/posts", async (req, res) => {
     try {
         const { group_id } = req.query
 
-        let whereClause = "WHERE p.group_id IS NULL AND p.is_anonymous = FALSE"
-        let params = [req.userId]
+        const hasGroup = group_id !== undefined && group_id !== null && group_id !== "";
 
-        if (group_id) {
-            whereClause = "WHERE p.group_id = ?"
-            params = [req.userId, group_id]
-        }
+        const whereClause = hasGroup
+            ? "WHERE p.group_id = ?"
+            : "WHERE p.group_id IS NULL AND p.is_anonymous = FALSE";
+
+        const params = hasGroup
+            ? [req.userId, Number(group_id)]
+            : [req.userId];
 
         const [posts] = await db.execute(`
             SELECT 
@@ -51,7 +53,8 @@ router.get("/posts", async (req, res) => {
             avatar_url: p.is_anonymous ? null : p.avatar_url,
             xp: p.is_anonymous ? 0 : p.xp,
         }))
-
+        console.log("group_id =", group_id);
+        console.log("posts trouvés =", posts.length);
         res.json(sanitized)
     } catch (err) {
         console.error(err)

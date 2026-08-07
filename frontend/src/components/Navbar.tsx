@@ -101,7 +101,7 @@ export default function Navbar({
     return (
         <header className="topbar">
             <div className="logo" onClick={() => goTo("/dashboard")}>
-                TaskFlow
+                Grindlyy
             </div>
 
             {/* Navigation desktop */}
@@ -168,7 +168,7 @@ export default function Navbar({
                 onTouchEnd={handleTouchEnd}
             >
                 <div className="mobile-panel-header">
-                    <div className="logo">TaskFlow</div>
+                    <div className="logo">Grindlyy</div>
                     <button
                         className="mobile-close"
                         onClick={closeMenu}

@@ -6,7 +6,7 @@ export function AuthChoice() {
 
     return (
         <div style={container}>
-            <h1 style={title}>TaskFlow</h1>
+            <h1 style={title}>Grindly</h1>
 
             <p style={subtitle}>
                 Organise tes tâches simplement

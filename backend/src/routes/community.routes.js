@@ -25,7 +25,7 @@ router.get("/posts", async (req, res) => {
 
         if (group_id) {
             whereClause = "WHERE p.group_id = ?"
-            params = [group_id, req.userId]
+            params = [req.userId, group_id]
         }
 
         const [posts] = await db.execute(`

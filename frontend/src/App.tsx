@@ -1,4 +1,5 @@
 import { useEffect } from "react"
+import "./assets/css/theme-overrides.css"
 import { Routes, Route } from "react-router-dom"
 import { getPreferences } from "./services/taskService"
 

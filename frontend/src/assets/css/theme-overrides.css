@@ -1,0 +1,257 @@
+/*
+ * Theme system for Grindlyy / TaskFlow.
+ * Centralized overrides keep the existing page layouts and API behavior unchanged.
+ */
+
+:root {
+  color-scheme: dark;
+  --theme-bg: var(--bg, #0f172a);
+  --theme-panel: #172033;
+  --theme-panel-raised: #1c2940;
+  --theme-border: rgba(148, 163, 184, 0.16);
+  --theme-text: #e8edf7;
+  --theme-muted: #a4aec2;
+  --theme-shadow: 0 14px 38px rgba(0, 0, 0, 0.18);
+  --theme-hover: rgba(148, 163, 184, 0.09);
+  --theme-input: rgba(7, 13, 26, 0.62);
+}
+
+:root.light-mode {
+  color-scheme: light;
+  --theme-panel: #ffffff;
+  --theme-panel-raised: #f8f9fc;
+  --theme-border: rgba(30, 41, 59, 0.12);
+  --theme-text: #20263a;
+  --theme-muted: #667085;
+  --theme-shadow: 0 10px 28px rgba(31, 41, 55, 0.07);
+  --theme-hover: rgba(99, 102, 241, 0.07);
+  --theme-input: #ffffff;
+}
+
+html, body, #root {
+  min-height: 100%;
+}
+
+body {
+  background: var(--theme-bg, #0f172a);
+  color: var(--theme-text);
+  transition: background-color 180ms ease, color 180ms ease;
+}
+
+:root:not(.light-mode) body {
+  background: var(--bg, #0f172a);
+}
+
+:root.light-mode body {
+  background: #f3f5fa;
+  color: var(--theme-text);
+}
+
+:root:not(.light-mode) :is(
+  .dashboard, .habitudes-page, .flow-page, .objectifs-page,
+  .profil-page, .communaute-page, .stats-page, .settings-page,
+  .historique-page
+) {
+  background-color: var(--bg, #0f172a);
+  color: var(--theme-text);
+}
+
+:root.light-mode :is(
+  .dashboard, .habitudes-page, .flow-page, .objectifs-page,
+  .profil-page, .communaute-page, .stats-page, .settings-page,
+  .historique-page
+) {
+  background-color: #f3f5fa;
+  color: var(--theme-text);
+}
+
+/* Navigation */
+.topbar {
+  background: color-mix(in srgb, var(--bg, #0f172a) 88%, transparent);
+  border-bottom-color: var(--theme-border);
+  backdrop-filter: blur(18px);
+}
+
+:root.light-mode .topbar {
+  --topbar-bg: rgba(255, 255, 255, 0.88);
+  --topbar-border: var(--theme-border);
+  --text-main: #20263a;
+  --text-muted: #667085;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 3px 18px rgba(31, 41, 55, 0.035);
+}
+
+:root:not(.light-mode) .topbar {
+  --topbar-bg: color-mix(in srgb, var(--bg, #0f172a) 94%, #ffffff 6%);
+  --topbar-border: var(--theme-border);
+  --text-main: var(--theme-text);
+  --text-muted: var(--theme-muted);
+}
+
+.nav-item:hover, .mobile-nav-item:hover {
+  background: var(--theme-hover);
+}
+
+:root.light-mode .nav-item.active,
+:root.light-mode .mobile-nav-item.active {
+  background: rgba(var(--accent-rgb, 99, 102, 241), 0.09);
+}
+
+/* Shared panels, cards and containers */
+:root:not(.light-mode) :is(
+  .habit-card, .settings-card, .profil-card, .stats-card,
+  .comm-post, .post-card, .group-card, .catalogue-card,
+  .objective-card, .flow-card, .histo-card, .theme-card,
+  .leaderboard-card, .community-card
+) {
+  background-color: var(--bg-card, var(--theme-panel));
+  border-color: var(--theme-border);
+}
+
+:root.light-mode :is(
+  .habit-card, .settings-card, .profil-card, .stats-card,
+  .comm-post, .post-card, .group-card, .catalogue-card,
+  .objective-card, .flow-card, .histo-card, .theme-card,
+  .leaderboard-card, .community-card
+) {
+  background-color: var(--theme-panel);
+  border-color: var(--theme-border);
+  box-shadow: var(--theme-shadow);
+}
+
+:root.light-mode :is(
+  .habit-card, .settings-card, .profil-card, .stats-card,
+  .comm-post, .post-card, .group-card, .catalogue-card,
+  .objective-card, .flow-card, .histo-card, .theme-card,
+  .leaderboard-card, .community-card
+):hover {
+  border-color: rgba(var(--accent-rgb, 99, 102, 241), 0.24);
+}
+
+/* Typography: avoid low-contrast opacity-only text in dark mode */
+:root:not(.light-mode) :is(
+  .settings-title, .settings-section-title, .setting-row-title,
+  .profil-title, .stats-title, .objectifs-title, .flow-title,
+  .habitudes-title, .communaute-section-title, .histo-title
+) {
+  color: var(--theme-text);
+}
+
+:root:not(.light-mode) :is(
+  .settings-subtitle, .settings-section-desc, .setting-row-desc,
+  .habit-info-item, .habit-next, .habit-motivation,
+  .histo-meta, .stats-subtitle, .objectifs-subtitle
+) {
+  color: var(--theme-muted);
+}
+
+:root.light-mode :is(
+  .settings-title, .settings-section-title, .setting-row-title,
+  .profil-title, .stats-title, .objectifs-title, .flow-title,
+  .habitudes-title, .communaute-section-title, .histo-title,
+  .habit-name, .setting-row-title
+) {
+  color: #20263a;
+}
+
+:root.light-mode :is(
+  .settings-subtitle, .settings-section-desc, .setting-row-desc,
+  .habit-info-item, .habit-next, .habit-motivation,
+  .histo-meta, .stats-subtitle, .objectifs-subtitle
+) {
+  color: #667085;
+}
+
+/* Inputs, selects and textareas */
+:root:not(.light-mode) :is(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),
+  textarea, select, .settings-input, .settings-select,
+  .theme-input, .profil-form input, .profil-form textarea
+) {
+  color: var(--theme-text);
+  background-color: var(--theme-input);
+  border-color: var(--theme-border);
+}
+
+:root.light-mode :is(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),
+  textarea, select, .settings-input, .settings-select,
+  .theme-input, .profil-form input, .profil-form textarea
+) {
+  color: #20263a;
+  background-color: #ffffff;
+  border-color: rgba(30, 41, 59, 0.16);
+}
+
+:root.light-mode :is(input, textarea, select)::placeholder {
+  color: #8b93a5;
+}
+
+:root :is(input, textarea, select, button):focus-visible {
+  outline: 2px solid rgba(var(--accent-rgb, 99, 102, 241), 0.7);
+  outline-offset: 2px;
+}
+
+/* Buttons and controls */
+:root.light-mode :is(
+  .habit-btn, .settings-btn-outline, .histo-filter-btn,
+  .profil-save, .profil-logout, .comm-tab, .tab-button,
+  .filter-btn, .secondary-button
+) {
+  color: #344054;
+  border-color: var(--theme-border);
+}
+
+:root.light-mode :is(
+  .habit-btn, .settings-btn-outline, .histo-filter-btn,
+  .comm-tab, .tab-button, .filter-btn, .secondary-button
+):hover {
+  background-color: var(--theme-hover);
+}
+
+:root.light-mode .habit-btn:not(.success):not(.done):not(.relapse):not(.delete) {
+  background: #eef1f7;
+  color: #344054;
+}
+
+:root.light-mode .histo-card {
+  background: #ffffff;
+  border-color: var(--theme-border);
+  box-shadow: 0 4px 18px rgba(31, 41, 55, 0.045);
+}
+
+:root.light-mode .settings-card {
+  border-radius: 18px;
+}
+
+:root.light-mode .settings-section-title {
+  color: #667085;
+  border-bottom-color: var(--theme-border);
+}
+
+:root.light-mode .setting-row {
+  border-bottom-color: rgba(30, 41, 59, 0.07);
+}
+
+:root.light-mode .settings-select option {
+  background: #ffffff;
+  color: #20263a;
+}
+
+/* Motion and small-screen polish */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .settings-main, .habitudes-main, .communaute-main, .profil-main,
+  .stats-main, .objectifs-main, .flow-main, .historique-main {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}

@@ -233,21 +233,21 @@ router.get("/radar", async (req, res) => {
 
     const radarData = await Promise.all(themes.map(async theme => {
 
-        // Tâches via task_themes
+        // Tâches : inclut les associations multiples et l'ancien champ theme_id.
         const [[{ taskCount }]] = await db.execute(`
-            SELECT COUNT(*) as taskCount
+            SELECT COUNT(DISTINCT t.id) AS taskCount
             FROM tasks t
-                     JOIN task_themes tt ON tt.task_id = t.id
-            WHERE t.user_id = ? AND tt.theme_id = ?
-        `, [req.userId, theme.id])
+            LEFT JOIN task_themes tt ON tt.task_id = t.id
+            WHERE t.user_id = ? AND (tt.theme_id = ? OR t.theme_id = ?)
+        `, [req.userId, theme.id, theme.id])
 
         const [[{ completedCount }]] = await db.execute(`
-            SELECT COUNT(*) as completedCount
+            SELECT COUNT(DISTINCT tc.id) AS completedCount
             FROM task_completions tc
             JOIN tasks t ON t.id = tc.task_id
-            JOIN task_themes tt ON tt.task_id = t.id
-            WHERE tc.user_id = ? AND tt.theme_id = ?
-        `, [req.userId, theme.id])
+            LEFT JOIN task_themes tt ON tt.task_id = t.id
+            WHERE tc.user_id = ? AND (tt.theme_id = ? OR t.theme_id = ?)
+        `, [req.userId, theme.id, theme.id])
 
         // Habitudes via habit_themes
         const [[{ habitCount }]] = await db.execute(`
@@ -269,8 +269,8 @@ router.get("/radar", async (req, res) => {
             theme: theme.name,
             color: theme.color,
             emoji: theme.emoji,
-            tasks: taskCount + habitCount,          // total activités
-            completed: completedCount + habitSuccessCount,  // total complétions
+            tasks: Number(taskCount) + Number(habitCount),
+            completed: Number(completedCount) + Number(habitSuccessCount)
         }
     }))
 
@@ -308,7 +308,7 @@ router.get("/focus-per-day", async (req, res) => {
         ORDER BY date ASC
     `, [req.userId, lookbackDays])
 
-    res.json(fillDailyGaps(rows, numberOfDays).map(row => ({ date: row.date, minutes: Number(row.count) || 0 })))
+    res.json(fillDailyGaps(rows.map(row => ({ date: row.date, count: row.minutes })), numberOfDays).map(row => ({ date: row.date, minutes: Number(row.count) || 0 })))
 })
 
 // GET heatmap : toute l'historique pour que le filtre « Tout » soit exact

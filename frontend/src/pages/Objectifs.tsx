@@ -314,9 +314,22 @@ export default function Objectifs() {
                                                 <div className="objectif-progress-fill" style={{ width: `${progress}%` }} />
                                             </div>
                                             <div className="objectif-progress-controls">
-                                                <button type="button" className="progress-btn" aria-label={`Diminuer la progression de ${objective.title}`} disabled={objective.current_value <= 0} onClick={() => handleUpdateProgress(objective.id, Math.max(0, objective.current_value - 1))}>−</button>
+                                                <button
+                                                    type="button"
+                                                    className="progress-btn progress-btn-decrement"
+                                                    aria-label={`Retirer une unité à ${objective.title}`}
+                                                    title="Retirer une unité"
+                                                    disabled={Number(objective.current_value || 0) <= 0}
+                                                    onClick={() => handleUpdateProgress(objective.id, Math.max(0, Number(objective.current_value || 0) - 1))}
+                                                >−</button>
                                                 <span>{objective.current_value.toLocaleString("fr-FR")} <small>{objective.target_unit}</small></span>
-                                                <button type="button" className="progress-btn" aria-label={`Augmenter la progression de ${objective.title}`} onClick={() => handleUpdateProgress(objective.id, objective.current_value + 1)}>＋</button>
+                                                <button
+                                                    type="button"
+                                                    className="progress-btn progress-btn-increment"
+                                                    aria-label={`Ajouter une unité à ${objective.title}`}
+                                                    title="Ajouter une unité"
+                                                    onClick={() => handleUpdateProgress(objective.id, Number(objective.current_value || 0) + 1)}
+                                                >+</button>
                                             </div>
                                         </>
                                     )}

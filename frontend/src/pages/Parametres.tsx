@@ -4,7 +4,7 @@ import "../assets/css/parametres.css"
 import { changePassword, getPreferences, savePreferences } from "../services/taskService"
 import { API_ROOT } from "../services/api"
 import Navbar from "../components/Navbar"
-import { applyLanguage, LANGUAGES, type GrindlyLanguage } from "../i18n"
+import { applyLanguage, LANGUAGES, t, type GrindlyLanguage } from "../i18n"
 
 // ── Helpers thème ────────────────────────────────────────────
 const BG_PRESETS: Record<string, { bg: string; card: string; surface: string; label: string }> = {
@@ -371,7 +371,7 @@ export default function Parametres() {
                 </div>
 
                 {/* ── APPARENCE ── */}
-                <Section title="🎨 Apparence">
+                <Section title={`🎨 ${t(language, "settings.appearance")}`}>
                     <SettingRow icon="🌙" title="Mode sombre" desc="Thème sombre pour réduire la fatigue oculaire">
                         <Toggle checked={darkMode} onChange={() => setDarkMode(d => !d)} />
                     </SettingRow>
@@ -384,7 +384,7 @@ export default function Parametres() {
                         <Toggle checked={reducedMotion} onChange={() => setReducedMotion(v => !v)} />
                     </SettingRow>
 
-                    <SettingRow icon="🎨" title="Couleur d'accent" desc="Couleur principale de l'interface — appliquée immédiatement">
+                    <SettingRow icon="🎨" title={t(language, "settings.accent")} desc={t(language, "settings.accentDesc")}>
                         <div className="color-picker">
                             {ACCENT_COLORS.map(c => (
                                 <div
@@ -397,7 +397,7 @@ export default function Parametres() {
                         </div>
                     </SettingRow>
 
-                    <SettingRow icon="▰" title="Couleur de la barre supérieure" desc="Personnalise la barre de navigation. Ton choix est enregistré sur cet appareil.">
+                    <SettingRow icon="▰" title={t(language, "settings.topbar")} desc={t(language, "settings.topbarDesc")}>
                         <div className="topbar-color-control">
                             <input aria-label="Couleur de la barre supérieure" type="color" value={topbarColor} onChange={e => setTopbarColor(e.target.value)} />
                             <span>{topbarColor.toUpperCase()}</span>
@@ -405,7 +405,7 @@ export default function Parametres() {
                         </div>
                     </SettingRow>
 
-                    <SettingRow wide icon="🌌" title="Fond de l'interface" desc="Choisis parmi 28 palettes. Le fond est appliqué immédiatement et conservé en mode sombre comme en mode clair.">
+                    <SettingRow wide icon="🌌" title={t(language, "settings.background")} desc={t(language, "settings.backgroundDesc")}>
                         <div className="bg-picker" role="radiogroup" aria-label="Choisir le fond de l'interface">
                             {Object.entries(BG_PRESETS).map(([key, preset]) => (
                                 <button
@@ -431,7 +431,7 @@ export default function Parametres() {
                         </div>
                     </SettingRow>
 
-                    <SettingRow icon="🌍" title="Langue" desc="Langue de l'interface">
+                    <SettingRow icon="🌍" title={t(language, "settings.language")} desc={t(language, "settings.languageDesc")}>
                         <select
                             className="settings-select"
                             value={language}

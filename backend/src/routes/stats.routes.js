@@ -20,25 +20,44 @@ router.get("/overview", async (req, res) => {
         [req.userId]
     )
 
+    // Compte les jours distincts, pas chaque complétion : plusieurs tâches le même jour
+    // ne doivent pas casser ni artificiellement prolonger une série.
     const [[{ bestStreak }]] = await db.execute(`
-        SELECT MAX(streak) as bestStreak FROM (
-            SELECT COUNT(*) as streak
+        SELECT COALESCE(MAX(streak), 0) AS bestStreak
+        FROM (
+            SELECT COUNT(*) AS streak
             FROM (
-                SELECT completed_at,
-                       DATE_SUB(completed_at, INTERVAL ROW_NUMBER() OVER (ORDER BY completed_at) DAY) as grp
-                FROM (SELECT DISTINCT completed_at FROM task_completions WHERE user_id = ?) t
-            ) grouped
-            GROUP BY grp
-        ) streaks
+                SELECT completed_date,
+                       DATE_SUB(completed_date, INTERVAL rn DAY) AS streak_group
+                FROM (
+                    SELECT completed_date,
+                           ROW_NUMBER() OVER (ORDER BY completed_date) AS rn
+                    FROM (
+                        SELECT DISTINCT DATE(completed_at) AS completed_date
+                        FROM task_completions
+                        WHERE user_id = ?
+                    ) AS distinct_days
+                ) AS ordered_days
+            ) AS grouped_days
+            GROUP BY streak_group
+        ) AS streak_groups
     `, [req.userId])
 
     const [bestDayRows] = await db.execute(`
-        SELECT DATE_FORMAT(completed_at, '%W') as bestDay
+        SELECT CASE DAYOFWEEK(completed_at)
+            WHEN 1 THEN 'Dimanche'
+            WHEN 2 THEN 'Lundi'
+            WHEN 3 THEN 'Mardi'
+            WHEN 4 THEN 'Mercredi'
+            WHEN 5 THEN 'Jeudi'
+            WHEN 6 THEN 'Vendredi'
+            WHEN 7 THEN 'Samedi'
+        END AS bestDay
         FROM task_completions
         WHERE user_id = ?
-        GROUP BY DAY(completed_at), DATE_FORMAT(completed_at, '%W')
+        GROUP BY DAYOFWEEK(completed_at)
         ORDER BY COUNT(*) DESC
-            LIMIT 1
+        LIMIT 1
     `, [req.userId])
     const [bestHourRows] = await db.execute(`
         SELECT HOUR(completed_at) as bestHour
@@ -62,7 +81,7 @@ router.get("/overview", async (req, res) => {
 router.get("/tasks-per-day", async (req, res) => {
     const { period } = req.query // 7, 30, 365
 
-    const days = period === "year" ? 365 : period === "month" ? 30 : 7
+    const days = period === "year" ? 364 : period === "month" ? 29 : 6
 
     const [rows] = await db.execute(`
         SELECT 
@@ -74,10 +93,27 @@ router.get("/tasks-per-day", async (req, res) => {
         ORDER BY date ASC
     `, [req.userId, days])
 
-    res.json(rows)
+    res.json(fillDailyGaps(rows, days))
 })
 
-// GET XP par semaine/mois — remplace l'ancienne route
+// Remplit les jours absents de la réponse avec 0 pour garder un axe temporel continu.
+function fillDailyGaps(rows, numberOfDays) {
+    const counts = new Map(rows.map(row => [String(row.date).slice(0, 10), Number(row.count) || 0]))
+    const result = []
+    const today = new Date()
+    const current = new Date(today.getFullYear(), today.getMonth(), today.getDate() - numberOfDays + 1)
+    for (let index = 0; index < numberOfDays; index += 1) {
+        const year = current.getFullYear()
+        const month = String(current.getMonth() + 1).padStart(2, "0")
+        const day = String(current.getDate()).padStart(2, "0")
+        const date = `${year}-${month}-${day}`
+        result.push({ date, count: counts.get(date) ?? 0 })
+        current.setDate(current.getDate() + 1)
+    }
+    return result
+}
+
+// GET XP par semaine/mois
 router.get("/xp-over-time", async (req, res) => {
     try {
         const { period } = req.query
@@ -85,7 +121,7 @@ router.get("/xp-over-time", async (req, res) => {
         let groupBy, interval
         if (period === "year") {
             groupBy = "DATE_FORMAT(t.date, '%Y-%m')"
-            interval = "12 MONTH"
+            interval = "11 MONTH"
         } else if (period === "month") {
             // FIX : '%Y-%m-%d' et non '%Y-%u' (qui groupait par semaine)
             groupBy = "DATE_FORMAT(t.date, '%Y-%m-%d')"
@@ -176,7 +212,7 @@ function fillGaps(rows, period) {
             cur.setMonth(cur.getMonth() + 1)
         }
     } else {
-        const days = period === "month" ? 30 : 7
+        const days = period === "month" ? 29 : 6
         start = new Date(now)
         start.setDate(now.getDate() - days)
         fmt = d => d.toISOString().split("T")[0]
@@ -271,22 +307,22 @@ router.get("/focus-per-day", async (req, res) => {
         ORDER BY date ASC
     `, [req.userId, days])
 
-    res.json(rows)
+    res.json(fillDailyGaps(rows, days))
 })
 
-// GET heatmap 365 jours
+// GET heatmap : toute l'historique pour que le filtre « Tout » soit exact
 router.get("/heatmap", async (req, res) => {
     const [rows] = await db.execute(`
-        SELECT 
-            DATE_FORMAT(completed_at, '%Y-%m-%d') as date,
-            COUNT(*) as count
+        SELECT
+            DATE_FORMAT(completed_at, '%Y-%m-%d') AS date,
+            COUNT(*) AS count
         FROM task_completions
-        WHERE user_id = ? AND completed_at >= DATE_SUB(CURDATE(), INTERVAL 365 DAY)
+        WHERE user_id = ?
         GROUP BY DATE_FORMAT(completed_at, '%Y-%m-%d')
         ORDER BY date ASC
     `, [req.userId])
 
-    res.json(rows)
+    res.json(rows.map(row => ({ ...row, count: Number(row.count) || 0 })))
 })
 
 module.exports = router

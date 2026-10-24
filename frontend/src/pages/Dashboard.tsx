@@ -1,5 +1,5 @@
 import "../assets/css/dashboard.css"
-import { useState, useEffect, type CSSProperties } from "react"
+import { useState, type CSSProperties } from "react"
 import { useSearchParams } from "react-router-dom"
 import { useDashboard } from "../services/Dashboard"
 
@@ -16,7 +16,7 @@ const normalizeThemeName = (value: string | null | undefined) =>
 export function Dashboard() {
     const {
         navigate,
-        dark, setDark,
+        dark,
         tasks,
         themes,
         dailyState,

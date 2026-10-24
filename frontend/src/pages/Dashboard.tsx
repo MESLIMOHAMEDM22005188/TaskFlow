@@ -39,18 +39,7 @@ export function Dashboard() {
 
     return (
         <div className={dark ? "dashboard dark" : "dashboard light"}>
-
-            <Navbar
-                notifCount={notifications.length}
-                rightExtra={
-                    <button
-                        className="theme-button"
-                        onClick={() => setDark(prev => !prev)}
-                    >
-                        {dark ? "Light mode" : "Dark mode"}
-                    </button>
-                }
-            />
+            <Navbar notifCount={notifications.length} />
 
             <main className="main">
                 <h1 className="title">Your workspace</h1>

@@ -191,7 +191,22 @@ export function Dashboard() {
 
                             <div className="theme-field">
                                 <label className="theme-label">Échéance</label>
-                                <input className="theme-input" type="date" value={deadline} onChange={e => setDeadline(e.target.value)} />
+                                <select
+                                    className="theme-select"
+                                    value={deadline ? "date" : "until_cancelled"}
+                                    onChange={e => {
+                                        if (e.target.value === "until_cancelled") setDeadline("")
+                                    }}
+                                >
+                                    <option value="until_cancelled">Chaque jour jusqu’à annulation</option>
+                                    <option value="date">Jusqu’à une date précise</option>
+                                </select>
+                                {deadline !== "" || false ? (
+                                    <input className="theme-input" type="date" value={deadline} onChange={e => setDeadline(e.target.value)} />
+                                ) : null}
+                                <small className="theme-label-hint">
+                                    Sans date limite, la tâche reste dans ta liste chaque jour jusqu’à ce que tu l’archives.
+                                </small>
                             </div>
 
                             <div className="theme-field">

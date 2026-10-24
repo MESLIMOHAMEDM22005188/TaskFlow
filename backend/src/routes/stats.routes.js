@@ -238,7 +238,9 @@ router.get("/radar", async (req, res) => {
             SELECT COUNT(DISTINCT t.id) AS taskCount
             FROM tasks t
             LEFT JOIN task_themes tt ON tt.task_id = t.id
-            WHERE t.user_id = ? AND (tt.theme_id = ? OR t.theme_id = ?)
+            WHERE t.user_id = ?
+              AND COALESCE(t.status, 'active') <> 'archived'
+              AND (tt.theme_id = ? OR t.theme_id = ?)
         `, [req.userId, theme.id, theme.id])
 
         const [[{ completedCount }]] = await db.execute(`
@@ -246,7 +248,9 @@ router.get("/radar", async (req, res) => {
             FROM task_completions tc
             JOIN tasks t ON t.id = tc.task_id
             LEFT JOIN task_themes tt ON tt.task_id = t.id
-            WHERE tc.user_id = ? AND (tt.theme_id = ? OR t.theme_id = ?)
+            WHERE tc.user_id = ?
+              AND COALESCE(t.status, 'active') <> 'archived'
+              AND (tt.theme_id = ? OR t.theme_id = ?)
         `, [req.userId, theme.id, theme.id])
 
         // Habitudes via habit_themes

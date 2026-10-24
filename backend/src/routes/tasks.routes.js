@@ -208,12 +208,14 @@ router.post("/:id/complete", async (req, res) => {
             SET
                 completions_count = completions_count + 1,
                 status = CASE
-                    WHEN (completions_count + 1) >= completion_target THEN 'done'
-                    ELSE status
+                    WHEN frequency = 'once'
+                         AND (completions_count + 1) >= completion_target THEN 'done'
+                    ELSE 'active'
                 END,
                 completed_at = CASE
-                    WHEN (completions_count + 1) >= completion_target THEN NOW()
-                    ELSE completed_at
+                    WHEN frequency = 'once'
+                         AND (completions_count + 1) >= completion_target THEN NOW()
+                    ELSE NULL
                 END
             WHERE id = ?
         `, [taskId])

@@ -58,7 +58,7 @@ export default function Communaute() {
         <div className="communaute-page">
 
             <header className="topbar">
-                <div className="logo">Grindly ST</div>
+                <div className="logo">Grindly</div>
                 <nav className="nav-menu">
                     <div className="nav-item" onClick={() => navigate("/dashboard")}>Dashboard</div>
                     <div className="nav-item" onClick={() => navigate("/objectifs")}>Objectifs</div>

@@ -82,7 +82,6 @@ export default function Navbar({ rightExtra, notifCount = 0 }: NavbarProps) {
     const [searchLoading, setSearchLoading] = useState(false);
     const [searchError, setSearchError] = useState(false);
     const searchInput = useRef<HTMLInputElement>(null);
-    const tasksLoaded = useRef(false);
     const touchStartX = useRef(0);
     const touchEndX = useRef(0);
 

@@ -72,7 +72,7 @@ export function useStats() {
                 totalFocus: Number(ov.totalFocus) || 0,
                 bestStreak: Number(ov.bestStreak) || 0,
                 bestDay: ov.bestDay || "—",
-                bestHour: ov.bestHour == null ? null : Number(ov.bestHour)
+                bestHour: ov.bestHour == null || !Number.isFinite(Number(ov.bestHour)) ? null : Number(ov.bestHour)
             })
             setTasksPerDay(tpd.map(item => ({ ...item, count: Number(item.count) || 0 })))
             setXpOverTime(xot.map(item => ({ ...item, xp: Number(item.xp) || 0 })))

@@ -4,6 +4,7 @@ import type { ReactNode, TouchEvent, KeyboardEvent as ReactKeyboardEvent } from 
 import { getTasks, getPreferences, savePreferences } from "../services/taskService";
 import type { Task, UserPreferences } from "../services/taskService";
 import "../assets/css/navbar.css";
+import { getLanguage, t, type GrindlyLanguage } from "../i18n";
 
 const NAV_ITEMS = [
     { path: "/dashboard", label: "Dashboard", keywords: "accueil tâches tâche travail" },
@@ -16,6 +17,8 @@ const NAV_ITEMS = [
     { path: "/historique", label: "Historique", keywords: "archives terminées passées" },
     { path: "/parametres", label: "Paramètres", keywords: "préférences apparence thème sombre clair" },
 ];
+
+const NAV_TRANSLATION_KEYS = { "/dashboard":"nav.dashboard", "/objectifs":"nav.objectifs", "/flow":"nav.flow", "/stats":"nav.stats", "/habitudes":"nav.habitudes", "/profil":"nav.profil", "/communaute":"nav.communaute", "/historique":"nav.historique", "/parametres":"nav.parametres" } as const;
 
 type NavbarProps = {
     rightExtra?: ReactNode;
@@ -79,6 +82,7 @@ export default function Navbar({ rightExtra, notifCount = 0 }: NavbarProps) {
     const navigate = useNavigate();
     const { pathname } = useLocation();
     const [menuOpen, setMenuOpen] = useState(false);
+    const [language, setLanguage] = useState<GrindlyLanguage>(() => getLanguage());
     const [lightMode, setLightMode] = useState(
         () => typeof document !== "undefined" && document.documentElement.classList.contains("light-mode")
     );
@@ -225,6 +229,12 @@ export default function Navbar({ rightExtra, notifCount = 0 }: NavbarProps) {
     }, []);
 
     useEffect(() => {
+        const syncLanguage = (event: Event) => setLanguage(((event as CustomEvent<{language?: GrindlyLanguage}>).detail?.language || getLanguage()));
+        window.addEventListener("grindly-language-change", syncLanguage);
+        return () => window.removeEventListener("grindly-language-change", syncLanguage);
+    }, []);
+
+    useEffect(() => {
         const syncTheme = (event: Event) => {
             const customEvent = event as CustomEvent<{ lightMode?: boolean }>;
             setLightMode(customEvent.detail?.lightMode ?? document.documentElement.classList.contains("light-mode"));
@@ -242,9 +252,9 @@ export default function Navbar({ rightExtra, notifCount = 0 }: NavbarProps) {
     }
 
     const themeButton = (
-        <button className="theme-button" type="button" onClick={toggleTheme} aria-label={lightMode ? "Activer le mode sombre" : "Activer le mode clair"}>
+        <button className="theme-button" type="button" onClick={toggleTheme} aria-label={lightMode ? t(language, "theme.dark") : t(language, "theme.light")}>
             <span className="theme-button-icon" aria-hidden="true">{lightMode ? "☾" : "☼"}</span>
-            <span>{lightMode ? "Mode sombre" : "Mode clair"}</span>
+            <span>{lightMode ? t(language, "theme.dark") : t(language, "theme.light")}</span>
         </button>
     );
 
@@ -267,7 +277,7 @@ export default function Navbar({ rightExtra, notifCount = 0 }: NavbarProps) {
                     </button>
                 ))}
                 <div className="nav-icons">
-                    <button type="button" className={`nav-item nav-search ${searchOpen ? "active" : ""}`} aria-label="Ouvrir la recherche" aria-expanded={searchOpen} onClick={() => void openSearch()}>⌕</button>
+                    <button type="button" className={`nav-item nav-search ${searchOpen ? "active" : ""}`} aria-label={t(language, "search.open")} aria-expanded={searchOpen} onClick={() => void openSearch()}>⌕</button>
                     <button type="button" className="nav-item nav-notif" aria-label={`Notifications : ${notifCount}`} title={notifCount ? `${notifCount} notifications` : "Aucune nouvelle notification"}>
                         ♧
                         {notifCount > 0 && <span className="notif-badge">{notifCount}</span>}
@@ -342,16 +352,16 @@ export default function Navbar({ rightExtra, notifCount = 0 }: NavbarProps) {
                                 value={searchTerm}
                                 onChange={event => setSearchTerm(event.target.value)}
                                 onKeyDown={handleSearchKeyDown}
-                                placeholder="Rechercher une page ou une tâche…"
-                                aria-label="Rechercher une page ou une tâche"
+                                placeholder={t(language, "search.placeholder")}
+                                aria-label={t(language, "search.type")}
                             />
-                            <kbd>Échap</kbd>
+                            <kbd>{t(language, "search.min")}</kbd>
                         </div>
                         <div className="global-search-results">
-                            {query.length < 2 && <p className="global-search-hint">Accès rapide aux pages. Tape au moins 2 caractères pour rechercher une tâche.</p>}
+                            {query.length < 2 && <p className="global-search-hint">{t(language, "search.quick")}</p>}
                             {matchingPages.length > 0 && (
                                 <div className="global-search-group">
-                                    <p className="global-search-label">Pages</p>
+                                    <p className="global-search-label">{t(language, "search.pages")}</p>
                                     {matchingPages.map(item => (
                                         <button type="button" key={item.path} className="global-search-result" onClick={() => { navigate(item.path); setSearchOpen(false); setSearchTerm(""); }}>
                                             <span className="global-search-result-icon">↗</span>
@@ -363,17 +373,17 @@ export default function Navbar({ rightExtra, notifCount = 0 }: NavbarProps) {
                             )}
                             {query.length >= 2 && (
                                 <div className="global-search-group">
-                                    <p className="global-search-label">Tâches</p>
-                                    {searchLoading && <p className="global-search-hint">Recherche dans tes tâches…</p>}
+                                    <p className="global-search-label">{t(language, "search.tasks")}</p>
+                                    {searchLoading && <p className="global-search-hint">{t(language, "search.loading")}</p>}
                                     {!searchLoading && matchingTasks.map(task => (
                                         <button type="button" key={task.id} className="global-search-result" onClick={() => openTask(task)}>
                                             <span className="global-search-result-icon">✓</span>
                                             <span>{task.title}</span>
-                                            <span className="global-search-result-path">Ouvrir</span>
+                                            <span className="global-search-result-path">{t(language, "search.openTask")}</span>
                                         </button>
                                     ))}
-                                    {!searchLoading && !searchError && matchingTasks.length === 0 && <p className="global-search-hint">Aucune tâche correspondante.</p>}
-                                    {searchError && <p className="global-search-hint">Impossible de charger les tâches. Réessaie après reconnexion.</p>}
+                                    {!searchLoading && !searchError && matchingTasks.length === 0 && <p className="global-search-hint">{t(language, "search.none")}</p>}
+                                    {searchError && <p className="global-search-hint">{t(language, "search.error")}</p>}
                                 </div>
                             )}
                         </div>

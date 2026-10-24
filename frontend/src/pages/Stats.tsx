@@ -196,11 +196,20 @@ export default function Stats() {
 
     const resetChartColors = () => setChartColors(DEFAULT_CHART_COLORS)
     const priorityColor = (priority: string) => {
-        if (priority.toLowerCase() === "low") return chartColors.priorityLow
-        if (priority.toLowerCase() === "medium") return chartColors.priorityMedium
-        if (priority.toLowerCase() === "high") return chartColors.priorityHigh
+        if (priority.toLowerCase() === "low" || priority.toLowerCase() === "basse") return chartColors.priorityLow
+        if (priority.toLowerCase() === "medium" || priority.toLowerCase() === "moyenne") return chartColors.priorityMedium
+        if (priority.toLowerCase() === "high" || priority.toLowerCase() === "haute") return chartColors.priorityHigh
         return chartColors.tasks
     }
+    const priorityLabel = (priority: string) => {
+        const normalized = priority.toLowerCase()
+        if (normalized === "low" || normalized === "basse") return "Basse"
+        if (normalized === "medium" || normalized === "moyenne") return "Moyenne"
+        if (normalized === "high" || normalized === "haute") return "Haute"
+        return priority
+    }
+    const currentDate = new Date()
+    const maxHeatmapDate = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, "0")}-${String(currentDate.getDate()).padStart(2, "0")}`
 
     if (loading) return <div className="stats-page"><Navbar /><main className="stats-main"><div className="stats-loading"><span className="stats-loading-orbit" />Préparation de tes statistiques…</div></main></div>
 
@@ -315,7 +324,7 @@ export default function Stats() {
                             <input
                                 type="date"
                                 className="theme-input"
-                                max={new Date().toISOString().slice(0, 10)}
+                                max={maxHeatmapDate}
                                 value={heatmapFrom}
                                 onChange={e => setHeatmapFrom(e.target.value)}
                             />
@@ -447,7 +456,7 @@ export default function Stats() {
                                     {prioritySplit.filter(item => item.count > 0).map(item => (
                                         <div key={item.priority} className="priority-legend-item">
                                             <div className="priority-legend-dot" style={{ background: priorityColor(item.priority) }} />
-                                            <span>{item.priority}</span>
+                                            <span>{priorityLabel(item.priority)}</span>
                                             <span className="priority-legend-count">{item.count.toLocaleString("fr-FR")}</span>
                                         </div>
                                     ))}

@@ -48,6 +48,7 @@ function applyPreferencesTheme(prefs: Partial<UserPreferences>) {
     root.style.setProperty("--bg-surface", dark ? preset.surface : "rgba(0,0,0,0.05)");
     root.classList.toggle("light-mode", !dark);
     localStorage.setItem("grindly-theme", dark ? "dark" : "light");
+    localStorage.setItem("grindly-bg-preset", prefs.bg_preset || "navy");
     window.dispatchEvent(new CustomEvent("grindly-theme-change", { detail: { lightMode: !dark } }));
 }
 
@@ -109,7 +110,7 @@ export default function Navbar({ rightExtra, notifCount = 0 }: NavbarProps) {
             : "99, 102, 241";
         const currentBg = getComputedStyle(root).getPropertyValue("--bg").trim();
         const presetEntry = Object.entries(BG_PRESETS).find(([, preset]) => preset.bg === currentBg);
-        const bgPreset = presetEntry?.[0] ?? "navy";
+        const bgPreset = localStorage.getItem("grindly-bg-preset") || presetEntry?.[0] || "navy";
         root.style.setProperty("--accent", storedAccent);
         root.style.setProperty("--accent-rgb", storedRgb);
         root.classList.toggle("light-mode", nextLight);

@@ -41,7 +41,21 @@ body {
   min-height: 100vh;
   margin: 0;
   overflow-x: hidden;
+  background: var(--bg);
+  color: var(--text);
 }
+
+/* Keep native controls and the document canvas aligned with the selected mode. */
+:root.light-mode {
+  color-scheme: light;
+  --text: #475467;
+  --text-h: #172033;
+  --border: #dfe4ec;
+  --code-bg: #eef1f6;
+  --social-bg: rgba(226, 232, 240, 0.7);
+  --shadow: rgba(15, 23, 42, 0.08) 0 10px 15px -3px, rgba(15, 23, 42, 0.04) 0 4px 6px -2px;
+}
+:root:not(.light-mode) { color-scheme: dark; }
 
 button,
 input,

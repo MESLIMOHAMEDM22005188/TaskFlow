@@ -7,18 +7,34 @@ import Navbar from "../components/Navbar"
 
 // ── Helpers thème ────────────────────────────────────────────
 const BG_PRESETS: Record<string, { bg: string; card: string; surface: string; label: string }> = {
-    // Sombres neutres
-    obsidian:   { bg: "#0a0a0f", card: "rgba(255,255,255,0.035)", surface: "rgba(255,255,255,0.06)",  label: "Obsidienne" },
-    navy:       { bg: "#0f172a", card: "rgba(255,255,255,0.03)",  surface: "rgba(255,255,255,0.06)",  label: "Marine" },
-    charcoal:   { bg: "#18181b", card: "rgba(255,255,255,0.04)",  surface: "rgba(255,255,255,0.07)",  label: "Charbon" },
-    // Teintés froids
-    midnight:   { bg: "#050d1a", card: "rgba(99,120,255,0.06)",   surface: "rgba(99,120,255,0.1)",    label: "Minuit" },
-    abyss:      { bg: "#03111a", card: "rgba(0,150,200,0.06)",    surface: "rgba(0,150,200,0.1)",     label: "Abysses" },
-    forest:     { bg: "#071510", card: "rgba(34,197,94,0.05)",    surface: "rgba(34,197,94,0.09)",    label: "Forêt" },
-    // Teintés chauds
-    ember:      { bg: "#180d08", card: "rgba(239,100,68,0.06)",   surface: "rgba(239,100,68,0.1)",    label: "Braise" },
-    wine:       { bg: "#150812", card: "rgba(200,50,100,0.06)",   surface: "rgba(200,50,100,0.1)",    label: "Bordeaux" },
-    dusk:       { bg: "#130d1f", card: "rgba(168,85,247,0.06)",   surface: "rgba(168,85,247,0.1)",    label: "Crépuscule" },
+    obsidian: { bg: "#0a0a0f", card: "rgba(255,255,255,0.035)", surface: "rgba(255,255,255,0.06)", label: "Obsidienne" },
+    navy: { bg: "#0f172a", card: "rgba(255,255,255,0.03)", surface: "rgba(255,255,255,0.06)", label: "Marine" },
+    charcoal: { bg: "#18181b", card: "rgba(255,255,255,0.04)", surface: "rgba(255,255,255,0.07)", label: "Charbon" },
+    midnight: { bg: "#050d1a", card: "rgba(99,120,255,0.06)", surface: "rgba(99,120,255,0.1)", label: "Minuit" },
+    abyss: { bg: "#03111a", card: "rgba(0,150,200,0.06)", surface: "rgba(0,150,200,0.1)", label: "Abysses" },
+    forest: { bg: "#071510", card: "rgba(34,197,94,0.05)", surface: "rgba(34,197,94,0.09)", label: "Forêt" },
+    ember: { bg: "#180d08", card: "rgba(239,100,68,0.06)", surface: "rgba(239,100,68,0.1)", label: "Braise" },
+    wine: { bg: "#150812", card: "rgba(200,50,100,0.06)", surface: "rgba(200,50,100,0.1)", label: "Bordeaux" },
+    dusk: { bg: "#130d1f", card: "rgba(168,85,247,0.06)", surface: "rgba(168,85,247,0.1)", label: "Crépuscule" },
+    slate: { bg: "#111827", card: "rgba(148,163,184,0.06)", surface: "rgba(148,163,184,0.11)", label: "Ardoise" },
+    graphite: { bg: "#20252e", card: "rgba(203,213,225,0.05)", surface: "rgba(203,213,225,0.09)", label: "Graphite" },
+    ocean: { bg: "#062b3a", card: "rgba(34,211,238,0.06)", surface: "rgba(34,211,238,0.11)", label: "Océan" },
+    arctic: { bg: "#0b2233", card: "rgba(125,211,252,0.07)", surface: "rgba(125,211,252,0.12)", label: "Arctique" },
+    indigo: { bg: "#16123a", card: "rgba(129,140,248,0.07)", surface: "rgba(129,140,248,0.13)", label: "Indigo" },
+    lavender: { bg: "#211a35", card: "rgba(196,181,253,0.06)", surface: "rgba(196,181,253,0.11)", label: "Lavande" },
+    plum: { bg: "#2a102b", card: "rgba(232,121,249,0.06)", surface: "rgba(232,121,249,0.11)", label: "Prune" },
+    rose: { bg: "#30131f", card: "rgba(251,113,133,0.06)", surface: "rgba(251,113,133,0.11)", label: "Rose" },
+    cocoa: { bg: "#2a1d18", card: "rgba(214,175,145,0.06)", surface: "rgba(214,175,145,0.11)", label: "Cacao" },
+    copper: { bg: "#2b1a13", card: "rgba(251,146,60,0.06)", surface: "rgba(251,146,60,0.11)", label: "Cuivre" },
+    emerald: { bg: "#06251d", card: "rgba(52,211,153,0.06)", surface: "rgba(52,211,153,0.11)", label: "Émeraude" },
+    moss: { bg: "#172315", card: "rgba(163,190,110,0.06)", surface: "rgba(163,190,110,0.11)", label: "Mousse" },
+    cobalt: { bg: "#0b1f4d", card: "rgba(96,165,250,0.07)", surface: "rgba(96,165,250,0.12)", label: "Cobalt" },
+    twilight: { bg: "#211747", card: "rgba(167,139,250,0.07)", surface: "rgba(167,139,250,0.12)", label: "Aurore" },
+    cherry: { bg: "#350d18", card: "rgba(251,113,133,0.06)", surface: "rgba(251,113,133,0.12)", label: "Cerise" },
+    sand: { bg: "#2b251b", card: "rgba(217,187,133,0.06)", surface: "rgba(217,187,133,0.11)", label: "Sable" },
+    petrol: { bg: "#062e2e", card: "rgba(45,212,191,0.06)", surface: "rgba(45,212,191,0.11)", label: "Pétrole" },
+    smoke: { bg: "#24272e", card: "rgba(161,161,170,0.06)", surface: "rgba(161,161,170,0.11)", label: "Fumée" },
+    garnet: { bg: "#2c1114", card: "rgba(248,113,113,0.06)", surface: "rgba(248,113,113,0.11)", label: "Grenat" },
 }
 
 function applyTheme(color: string, dark: boolean, bgKey: string) {
@@ -74,15 +90,16 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void 
 
 // ── SettingRow ───────────────────────────────────────────────
 function SettingRow({
-                        icon, title, desc, children
+                        icon, title, desc, children, wide = false
                     }: {
     icon: string
     title: string
     desc?: string
     children: React.ReactNode
+    wide?: boolean
 }) {
     return (
-        <div className="setting-row">
+        <div className={`setting-row ${wide ? "setting-row-wide" : ""}`}>
             <div className="setting-row-left">
                 <span className="setting-row-icon">{icon}</span>
                 <div>
@@ -169,7 +186,9 @@ export default function Parametres() {
             const savedTheme = localStorage.getItem("grindly-theme")
             setDarkMode(savedTheme ? savedTheme === "dark" : !!prefs.dark_mode)
             setAccentColor(prefs.accent_color)
-            setBgPreset(prefs.bg_preset)
+            const legacyPresets: Record<string, string> = { dark: "navy", darker: "obsidian", warm: "cocoa" }
+            const savedPreset = prefs.bg_preset || localStorage.getItem("grindly-bg-preset") || "navy"
+            setBgPreset(BG_PRESETS[savedPreset] ? savedPreset : (legacyPresets[savedPreset] || "navy"))
             setLanguage(prefs.language)
             setCompactMode(!!prefs.compact_mode)
             setReducedMotion(!!prefs.reduced_motion)
@@ -366,16 +385,28 @@ export default function Parametres() {
                         </div>
                     </SettingRow>
 
-                    <SettingRow icon="🌌" title="Fond de l'interface" desc="Teinte de fond — appliquée immédiatement">
-                        <div className="bg-picker">
-                            {Object.entries({ dark: "#0f172a", darker: "#0a0a0f", midnight: "#020618", slate: "#1e293b", charcoal: "#111827", warm: "#1a1412" }).map(([key, hex]) => (
-                                <div
+                    <SettingRow wide icon="🌌" title="Fond de l'interface" desc="Choisis parmi 28 palettes. Le fond est appliqué immédiatement et conservé sur les autres pages.">
+                        <div className="bg-picker" role="radiogroup" aria-label="Choisir le fond de l'interface">
+                            {Object.entries(BG_PRESETS).map(([key, preset]) => (
+                                <button
                                     key={key}
-                                    className={`bg-dot ${bgPreset === key ? "selected" : ""}`}
-                                    style={{ background: hex }}
-                                    title={key}
+                                    type="button"
+                                    role="radio"
+                                    aria-checked={bgPreset === key}
+                                    aria-label={`Fond ${preset.label}`}
+                                    className={`bg-preset-option ${bgPreset === key ? "selected" : ""}`}
                                     onClick={() => setBgPreset(key)}
-                                />
+                                >
+                                    <span className="bg-preset-preview" style={{ background: preset.bg }}>
+                                        <span className="bg-preset-preview-card" style={{ background: preset.card, borderColor: preset.surface }}>
+                                            <span className="bg-preset-preview-line" />
+                                            <span className="bg-preset-preview-line short" />
+                                        </span>
+                                        <span className="bg-preset-accent" style={{ background: accentColor }} />
+                                    </span>
+                                    <span className="bg-preset-label">{preset.label}</span>
+                                    {bgPreset === key && <span className="bg-preset-check" aria-hidden="true">✓</span>}
+                                </button>
                             ))}
                         </div>
                     </SettingRow>

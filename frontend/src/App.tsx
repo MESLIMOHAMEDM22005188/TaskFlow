@@ -27,9 +27,38 @@ const BG_PRESETS: Record<string, { bg: string; card: string; surface: string }> 
     dusk:     { bg: "#130d1f", card: "rgba(168,85,247,0.06)",   surface: "rgba(168,85,247,0.1)"   },
 }
 
-function RequireAuth({ children }: { children: React.ReactElement }) {
+function hasValidToken(): boolean {
     const token = localStorage.getItem("token")
-    return token ? children : <Navigate to="/login" replace />
+
+    if (!token || token === "null" || token === "undefined") {
+        return false
+    }
+
+    try {
+        const parts = token.split(".")
+        if (parts.length !== 3) return false
+
+        const encodedPayload = parts[1].replace(/-/g, "+").replace(/_/g, "/")
+        const paddedPayload = encodedPayload.padEnd(
+            encodedPayload.length + ((4 - encodedPayload.length % 4) % 4),
+            "="
+        )
+        const payload = JSON.parse(atob(paddedPayload))
+
+        // Grindly's backend creates JWTs with an "exp" claim (7 days).
+        return typeof payload.exp === "number" && payload.exp * 1000 > Date.now()
+    } catch {
+        return false
+    }
+}
+
+function RequireAuth({ children }: { children: React.ReactElement }) {
+    if (!hasValidToken()) {
+        localStorage.removeItem("token")
+        return <Navigate to="/login" replace />
+    }
+
+    return children
 }
 
 function App() {

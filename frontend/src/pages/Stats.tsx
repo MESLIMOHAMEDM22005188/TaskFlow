@@ -1,4 +1,5 @@
 import "../assets/css/stats.css"
+import { useEffect, useState } from "react"
 import Navbar from "../components/Navbar";
 import { useStats } from "../services/Stats"
 import type { HeatmapPeriod } from "../services/Stats"
@@ -6,7 +7,7 @@ import {
     BarChart, Bar, Line, RadarChart, Radar,
     PolarGrid, PolarAngleAxis, PieChart, Pie, Cell,
     ComposedChart,
-    XAxis, YAxis, Tooltip, ResponsiveContainer, Legend
+    XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, LineChart
 } from "recharts"
 
 const PRIORITY_COLORS = {
@@ -20,6 +21,45 @@ const DAY_LABELS = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"]
 const MONTHS = ["Jan", "Fév", "Mar", "Avr", "Mai", "Jun", "Jul", "Aoû", "Sep", "Oct", "Nov", "Déc"]
 
 type Period = "week" | "month" | "year"
+
+type ChartColors = {
+    tasks: string
+    xp: string
+    xpCumulative: string
+    focus: string
+    radarTasks: string
+    radarCompleted: string
+    heatmap: string
+    priorityLow: string
+    priorityMedium: string
+    priorityHigh: string
+}
+
+const DEFAULT_CHART_COLORS: ChartColors = {
+    tasks: "#6366f1",
+    xp: "#6366f1",
+    xpCumulative: "#a855f7",
+    focus: "#22d3ee",
+    radarTasks: "#6366f1",
+    radarCompleted: "#a855f7",
+    heatmap: "#6366f1",
+    priorityLow: "#22c55e",
+    priorityMedium: "#f59e0b",
+    priorityHigh: "#ef4444",
+}
+
+const COLOR_CONTROL_LABELS: { key: keyof ChartColors; label: string }[] = [
+    { key: "tasks", label: "Tâches" },
+    { key: "xp", label: "XP quotidien" },
+    { key: "xpCumulative", label: "XP cumulé" },
+    { key: "focus", label: "Temps de focus" },
+    { key: "radarTasks", label: "Radar · activités" },
+    { key: "radarCompleted", label: "Radar · complétées" },
+    { key: "heatmap", label: "Carte d’activité" },
+    { key: "priorityLow", label: "Priorité basse" },
+    { key: "priorityMedium", label: "Priorité moyenne" },
+    { key: "priorityHigh", label: "Priorité haute" },
+]
 
 function formatXpLabel(period: string, p: Period): string {
     if (p === "year") {
@@ -38,7 +78,7 @@ function enrichXp(data: { period: string; xp: number }[]) {
     })
 }
 
-function XpChart({ data, period }: { data: { period: string; xp: number }[]; period: Period }) {
+function XpChart({ data, period, colors }: { data: { period: string; xp: number }[]; period: Period; colors: ChartColors }) {
     const enriched = enrichXp(data)
     const hasData = enriched.some(d => d.xp > 0)
 
@@ -57,7 +97,7 @@ function XpChart({ data, period }: { data: { period: string; xp: number }[]; per
             <ComposedChart data={enriched} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                 <XAxis
                     dataKey="period"
-                    tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11 }}
+                    tick={{ fill: "var(--stats-axis)", fontSize: 11 }}
                     tickFormatter={d => formatXpLabel(d, period)}
                     interval="preserveStartEnd"
                 />
@@ -69,12 +109,12 @@ function XpChart({ data, period }: { data: { period: string; xp: number }[]; per
                 <YAxis
                     yAxisId="cumul"
                     orientation="right"
-                    tick={{ fill: "rgba(168,85,247,0.45)", fontSize: 11 }}
+                    tick={{ fill: colors.xpCumulative, fontSize: 11 }}
                     width={40}
                 />
                 <Tooltip
-                    contentStyle={{ background: "#1e293b", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8 }}
-                    labelStyle={{ color: "rgba(255,255,255,0.7)", marginBottom: 4 }}
+                    contentStyle={{ background: "var(--stats-tooltip-bg)", color: "var(--stats-tooltip-text)", border: "1px solid var(--stats-border)", borderRadius: 10 }}
+                    labelStyle={{ color: "var(--stats-tooltip-text)", marginBottom: 4 }}
                     labelFormatter={d => formatXpLabel(d, period)}
                     formatter={(value, name) => [
                         `${Number(value).toLocaleString()} XP`,
@@ -83,12 +123,12 @@ function XpChart({ data, period }: { data: { period: string; xp: number }[]; per
                 />
                 <Legend
                     formatter={v => v === "xp" ? "XP du jour" : "XP cumulé"}
-                    wrapperStyle={{ fontSize: 12, color: "rgba(255,255,255,0.45)" }}
+                    wrapperStyle={{ fontSize: 11, color: "var(--stats-muted)" }}
                 />
                 <Bar
                     yAxisId="daily"
                     dataKey="xp"
-                    fill="#6366f1"
+                    fill={colors.xp}
                     radius={[3, 3, 0, 0]}
                     maxBarSize={24}
                     opacity={0.85}
@@ -97,7 +137,7 @@ function XpChart({ data, period }: { data: { period: string; xp: number }[]; per
                     yAxisId="cumul"
                     type="monotone"
                     dataKey="xpCumul"
-                    stroke="#a855f7"
+                    stroke={colors.xpCumulative}
                     strokeWidth={2}
                     dot={false}
                 />
@@ -110,6 +150,7 @@ export default function Stats() {
 
     const {
         loading,
+        hasLoadError,
         period, setPeriod,
         heatmapPeriod, setHeatmapPeriod,
         heatmapFrom, setHeatmapFrom,
@@ -124,7 +165,41 @@ export default function Stats() {
         getHeatmapColor,
     } = useStats()
 
-    if (loading) return <div className="stats-page">Loading...</div>
+    const [chartColors, setChartColors] = useState<ChartColors>(() => {
+        if (typeof window === "undefined") return DEFAULT_CHART_COLORS
+        try {
+            const saved = window.localStorage.getItem("grindly-stats-colors")
+            return saved ? { ...DEFAULT_CHART_COLORS, ...JSON.parse(saved) } : DEFAULT_CHART_COLORS
+        } catch {
+            return DEFAULT_CHART_COLORS
+        }
+    })
+    const [taskChartType, setTaskChartType] = useState<"bar" | "line">("bar")
+    const [focusChartType, setFocusChartType] = useState<"bar" | "line">("bar")
+
+    useEffect(() => {
+        try {
+            window.localStorage.setItem("grindly-stats-colors", JSON.stringify(chartColors))
+        } catch (err) {
+            console.warn("Impossible de sauvegarder les couleurs des graphiques.", err)
+        }
+    }, [chartColors])
+
+    const updateChartColor = (key: keyof ChartColors, color: string) => {
+        if (/^#[0-9a-f]{6}$/i.test(color)) {
+            setChartColors(previous => ({ ...previous, [key]: color }))
+        }
+    }
+
+    const resetChartColors = () => setChartColors(DEFAULT_CHART_COLORS)
+    const priorityColor = (priority: string) => {
+        if (priority.toLowerCase() === "low") return chartColors.priorityLow
+        if (priority.toLowerCase() === "medium") return chartColors.priorityMedium
+        if (priority.toLowerCase() === "high") return chartColors.priorityHigh
+        return chartColors.tasks
+    }
+
+    if (loading) return <div className="stats-page"><Navbar /><main className="stats-main"><div className="stats-loading"><span className="stats-loading-orbit" />Préparation de tes statistiques…</div></main></div>
 
     const heatmapDays = getHeatmapDays()
 
@@ -135,7 +210,39 @@ export default function Stats() {
 
             <main className="stats-main">
 
-                <h1 className="stats-title">Statistiques</h1>
+                <section className="stats-hero">
+                    <div>
+                        <p className="stats-eyebrow">TON ÉVOLUTION EN UN COUP D’ŒIL</p>
+                        <h1 className="stats-title">Tes statistiques<span>.</span></h1>
+                        <p className="stats-intro">Visualise tes habitudes, tes efforts et tes progrès. Les couleurs restent enregistrées sur cet appareil.</p>
+                    </div>
+                    <div className="stats-hero-orb" aria-hidden="true">↗</div>
+                </section>
+
+                {hasLoadError && (
+                    <div className="stats-warning" role="status">
+                        <span aria-hidden="true">!</span>
+                        Certaines données n’ont pas pu être chargées. Les graphiques concernés affichent les données disponibles ; actualise la page pour réessayer.
+                    </div>
+                )}
+
+                <details className="stats-customization">
+                    <summary><span className="stats-customization-icon" aria-hidden="true">◉</span><span><strong>Personnaliser les graphiques</strong><small>Choisis les couleurs de chaque série · enregistrées automatiquement</small></span><span className="stats-customization-chevron" aria-hidden="true">⌄</span></summary>
+                    <div className="stats-color-controls">
+                        {COLOR_CONTROL_LABELS.map(control => (
+                            <label key={control.key} className="stats-color-control">
+                                <span className="stats-color-swatch" style={{ background: chartColors[control.key] }} />
+                                <span>{control.label}</span>
+                                <input type="color" value={chartColors[control.key]} aria-label={`Couleur : ${control.label}`} onChange={event => updateChartColor(control.key, event.target.value)} />
+                                <code>{chartColors[control.key].toUpperCase()}</code>
+                            </label>
+                        ))}
+                    </div>
+                    <div className="stats-customization-footer">
+                        <span>Les couleurs sont sauvegardées dans ton navigateur.</span>
+                        <button type="button" className="stats-reset-colors" onClick={resetChartColors}>Rétablir les couleurs</button>
+                    </div>
+                </details>
 
                 {/* PERIOD SELECTOR */}
                 <div className="stats-period">
@@ -223,7 +330,7 @@ export default function Stats() {
                                     key={day.date}
                                     className="heatmap-cell"
                                     style={{
-                                        background: getHeatmapColor(day.count),
+                                        background: getHeatmapColor(day.count, chartColors.heatmap),
                                         gridRow: day.dayOfWeek + 1
                                     }}
                                     title={`${day.date} — ${day.count} tâche${day.count > 1 ? "s" : ""}`}
@@ -235,7 +342,7 @@ export default function Stats() {
                     <div className="heatmap-legend">
                         <span>Moins</span>
                         {[0, 2, 4, 6, 8].map(v => (
-                            <div key={v} className="heatmap-cell" style={{ background: getHeatmapColor(v) }} />
+                            <div key={v} className="heatmap-cell" style={{ background: getHeatmapColor(v, chartColors.heatmap) }} />
                         ))}
                         <span>Plus</span>
                     </div>
@@ -244,58 +351,96 @@ export default function Stats() {
                 <div className="stats-grid">
 
                     {/* TÂCHES PAR JOUR */}
-                    <div className="stats-section">
-                        <h2 className="stats-section-title">✅ Tâches complétées</h2>
-                        <ResponsiveContainer width="100%" height={200}>
-                            <BarChart data={tasksPerDay}>
-                                <XAxis dataKey="date" tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11 }} tickFormatter={d => d.slice(5)} />
-                                <YAxis tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11 }} />
-                                <Tooltip contentStyle={{ background: "#1e293b", border: "none", borderRadius: 8 }} labelStyle={{ color: "white" }} />
-                                <Bar dataKey="count" fill="#6366f1" radius={[4, 4, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
+                    <div className="stats-section stats-chart-section">
+                        <div className="stats-chart-heading">
+                            <h2 className="stats-section-title">Tâches complétées</h2>
+                            <div className="stats-chart-switch" role="group" aria-label="Type de graphique des tâches">
+                                <button type="button" className={taskChartType === "bar" ? "active" : ""} aria-pressed={taskChartType === "bar"} onClick={() => setTaskChartType("bar")}>Barres</button>
+                                <button type="button" className={taskChartType === "line" ? "active" : ""} aria-pressed={taskChartType === "line"} onClick={() => setTaskChartType("line")}>Courbe</button>
+                            </div>
+                        </div>
+                        {tasksPerDay.some(item => item.count > 0) ? (
+                            <ResponsiveContainer width="100%" height={240}>
+                                {taskChartType === "bar" ? (
+                                    <BarChart data={tasksPerDay} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+                                        <CartesianGrid stroke="var(--stats-grid)" vertical={false} />
+                                        <XAxis dataKey="date" tick={{ fill: "var(--stats-axis)", fontSize: 10 }} tickFormatter={date => String(date).slice(5)} tickLine={false} axisLine={false} minTickGap={15} />
+                                        <YAxis tick={{ fill: "var(--stats-axis)", fontSize: 10 }} allowDecimals={false} tickLine={false} axisLine={false} />
+                                        <Tooltip contentStyle={{ background: "var(--stats-tooltip-bg)", color: "var(--stats-tooltip-text)", border: "1px solid var(--stats-border)", borderRadius: 10 }} labelStyle={{ color: "var(--stats-tooltip-text)" }} formatter={value => [Number(value) || 0, "Tâches"]} />
+                                        <Bar dataKey="count" name="Tâches" fill={chartColors.tasks} radius={[5, 5, 0, 0]} maxBarSize={32} />
+                                    </BarChart>
+                                ) : (
+                                    <LineChart data={tasksPerDay} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+                                        <CartesianGrid stroke="var(--stats-grid)" vertical={false} />
+                                        <XAxis dataKey="date" tick={{ fill: "var(--stats-axis)", fontSize: 10 }} tickFormatter={date => String(date).slice(5)} tickLine={false} axisLine={false} minTickGap={15} />
+                                        <YAxis tick={{ fill: "var(--stats-axis)", fontSize: 10 }} allowDecimals={false} tickLine={false} axisLine={false} />
+                                        <Tooltip contentStyle={{ background: "var(--stats-tooltip-bg)", color: "var(--stats-tooltip-text)", border: "1px solid var(--stats-border)", borderRadius: 10 }} labelStyle={{ color: "var(--stats-tooltip-text)" }} formatter={value => [Number(value) || 0, "Tâches"]} />
+                                        <Line dataKey="count" name="Tâches" type="monotone" stroke={chartColors.tasks} strokeWidth={3} dot={{ r: 2, fill: chartColors.tasks }} activeDot={{ r: 5 }} />
+                                    </LineChart>
+                                )}
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="stats-empty-state"><span className="stats-empty-icon">✓</span><span>Pas encore de tâche complétée sur cette période</span><span className="stats-empty-hint">Les données apparaîtront dès tes premières validations.</span></div>
+                        )}
                     </div>
 
                     {/* XP OVER TIME — ComposedChart barres + courbe cumulative */}
                     <div className="stats-section">
-                        <h2 className="stats-section-title">⚡ XP gagnés</h2>
-                        <XpChart data={xpOverTime} period={period} />
+                        <h2 className="stats-section-title">XP gagnés</h2>
+                        <XpChart data={xpOverTime} period={period} colors={chartColors} />
                     </div>
 
                     {/* FOCUS PAR JOUR */}
-                    <div className="stats-section">
-                        <h2 className="stats-section-title">⏱ Temps de focus</h2>
-                        <ResponsiveContainer width="100%" height={200}>
-                            <BarChart data={focusPerDay}>
-                                <XAxis dataKey="date" tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11 }} tickFormatter={d => d.slice(5)} />
-                                <YAxis tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11 }} />
-                                <Tooltip
-                                    contentStyle={{ background: "#1e293b", border: "none", borderRadius: 8 }}
-                                    labelStyle={{ color: "white" }}
-                                    formatter={(v) => [`${v ?? 0}min`, "Focus"]}
-                                />
-                                <Bar dataKey="minutes" fill="#22d3ee" radius={[4, 4, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
+                    <div className="stats-section stats-chart-section">
+                        <div className="stats-chart-heading">
+                            <h2 className="stats-section-title">Temps de focus</h2>
+                            <div className="stats-chart-switch" role="group" aria-label="Type de graphique du focus">
+                                <button type="button" className={focusChartType === "bar" ? "active" : ""} aria-pressed={focusChartType === "bar"} onClick={() => setFocusChartType("bar")}>Barres</button>
+                                <button type="button" className={focusChartType === "line" ? "active" : ""} aria-pressed={focusChartType === "line"} onClick={() => setFocusChartType("line")}>Courbe</button>
+                            </div>
+                        </div>
+                        {focusPerDay.some(item => item.minutes > 0) ? (
+                            <ResponsiveContainer width="100%" height={240}>
+                                {focusChartType === "bar" ? (
+                                    <BarChart data={focusPerDay} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+                                        <CartesianGrid stroke="var(--stats-grid)" vertical={false} />
+                                        <XAxis dataKey="date" tick={{ fill: "var(--stats-axis)", fontSize: 10 }} tickFormatter={date => String(date).slice(5)} tickLine={false} axisLine={false} minTickGap={15} />
+                                        <YAxis tick={{ fill: "var(--stats-axis)", fontSize: 10 }} tickLine={false} axisLine={false} />
+                                        <Tooltip contentStyle={{ background: "var(--stats-tooltip-bg)", color: "var(--stats-tooltip-text)", border: "1px solid var(--stats-border)", borderRadius: 10 }} labelStyle={{ color: "var(--stats-tooltip-text)" }} formatter={value => [`${Number(value) || 0} min`, "Focus"]} />
+                                        <Bar dataKey="minutes" name="Focus" fill={chartColors.focus} radius={[5, 5, 0, 0]} maxBarSize={32} />
+                                    </BarChart>
+                                ) : (
+                                    <LineChart data={focusPerDay} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+                                        <CartesianGrid stroke="var(--stats-grid)" vertical={false} />
+                                        <XAxis dataKey="date" tick={{ fill: "var(--stats-axis)", fontSize: 10 }} tickFormatter={date => String(date).slice(5)} tickLine={false} axisLine={false} minTickGap={15} />
+                                        <YAxis tick={{ fill: "var(--stats-axis)", fontSize: 10 }} tickLine={false} axisLine={false} />
+                                        <Tooltip contentStyle={{ background: "var(--stats-tooltip-bg)", color: "var(--stats-tooltip-text)", border: "1px solid var(--stats-border)", borderRadius: 10 }} labelStyle={{ color: "var(--stats-tooltip-text)" }} formatter={value => [`${Number(value) || 0} min`, "Focus"]} />
+                                        <Line dataKey="minutes" name="Focus" type="monotone" stroke={chartColors.focus} strokeWidth={3} dot={{ r: 2, fill: chartColors.focus }} activeDot={{ r: 5 }} />
+                                    </LineChart>
+                                )}
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="stats-empty-state"><span className="stats-empty-icon">◷</span><span>Aucune session de focus sur cette période</span><span className="stats-empty-hint">Lance une session Flow pour voir ta courbe de concentration.</span></div>
+                        )}
                     </div>
 
                     {/* PRIORITÉ SPLIT */}
                     <div className="stats-section">
-                        <h2 className="stats-section-title">🎯 Répartition priorités</h2>
+                        <h2 className="stats-section-title">Répartition des priorités</h2>
                         <ResponsiveContainer width="100%" height={200}>
                             <PieChart>
                                 <Pie data={prioritySplit} dataKey="count" nameKey="priority" cx="50%" cy="50%" innerRadius={50} outerRadius={80}>
                                     {prioritySplit.map((entry, index) => (
-                                        <Cell key={index} fill={PRIORITY_COLORS[entry.priority as keyof typeof PRIORITY_COLORS] ?? "#6366f1"} />
+                                        <Cell key={index} fill={priorityColor(entry.priority)} />
                                     ))}
                                 </Pie>
-                                <Tooltip contentStyle={{ background: "#1e293b", border: "none", borderRadius: 8 }} labelStyle={{ color: "white" }} />
+                                <Tooltip contentStyle={{ background: "#1e293b", border: "none", borderRadius: 8 }} labelStyle={{ color: "var(--stats-tooltip-text)" }} />
                             </PieChart>
                         </ResponsiveContainer>
                         <div className="priority-legend">
                             {prioritySplit.map((p, i) => (
                                 <div key={i} className="priority-legend-item">
-                                    <div className="priority-legend-dot" style={{ background: PRIORITY_COLORS[p.priority as keyof typeof PRIORITY_COLORS] ?? "#6366f1" }} />
+                                    <div className="priority-legend-dot" style={{ background: priorityColor(p.priority) }} />
                                     <span>{p.priority}</span>
                                     <span className="priority-legend-count">{p.count}</span>
                                 </div>
@@ -308,13 +453,13 @@ export default function Stats() {
                 {/* RADAR */}
                 {radarData.length > 0 && (
                     <div className="stats-section">
-                        <h2 className="stats-section-title">🕸 Performance par thème</h2>
+                        <h2 className="stats-section-title">Performance par thème</h2>
                         <ResponsiveContainer width="100%" height={350}>
                             <RadarChart data={radarData}>
-                                <PolarGrid stroke="rgba(255,255,255,0.1)" />
-                                <PolarAngleAxis dataKey="theme" tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 13 }} />
-                                <Radar name="Tâches" dataKey="tasks" stroke="#6366f1" fill="#6366f1" fillOpacity={0.3} />
-                                <Radar name="Complétées" dataKey="completed" stroke="#a855f7" fill="#a855f7" fillOpacity={0.3} />
+                                <PolarGrid stroke="var(--stats-grid)" />
+                                <PolarAngleAxis dataKey="theme" tick={{ fill: "var(--stats-axis)", fontSize: 11 }} />
+                                <Radar name="Activités prévues" dataKey="tasks" stroke={chartColors.radarTasks} fill={chartColors.radarTasks} fillOpacity={0.26} />
+                                <Radar name="Activités réalisées" dataKey="completed" stroke={chartColors.radarCompleted} fill={chartColors.radarCompleted} fillOpacity={0.26} />
                                 <Tooltip contentStyle={{ background: "#1e293b", border: "none", borderRadius: 8 }} labelStyle={{ color: "white" }} />
                             </RadarChart>
                         </ResponsiveContainer>

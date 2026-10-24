@@ -120,6 +120,14 @@ export default function Navbar({ rightExtra, notifCount = 0 }: NavbarProps) {
         root.style.setProperty("--bg-card", preset.card);
         root.style.setProperty("--bg-surface", preset.surface);
         root.style.setProperty("--topbar-custom-bg", topbar);
+        const hex = topbar.replace("#", "");
+        const brightness = (parseInt(hex.slice(0, 2), 16) * 299 + parseInt(hex.slice(2, 4), 16) * 587 + parseInt(hex.slice(4, 6), 16) * 114) / 1000;
+        const lightText = brightness < 145;
+        root.style.setProperty("--topbar-text", lightText ? "#f8fafc" : "#20202b");
+        root.style.setProperty("--topbar-muted", lightText ? "#c4c8d4" : "#5b6170");
+        root.style.setProperty("--topbar-border", lightText ? "rgba(255,255,255,.14)" : "rgba(22,22,35,.13)");
+        root.style.setProperty("--topbar-hover", lightText ? "rgba(255,255,255,.09)" : "rgba(22,22,35,.07)");
+        root.style.setProperty("--topbar-active-bg", lightText ? "rgba(255,255,255,.14)" : "rgba(22,22,35,.09)");
         root.classList.toggle("light-mode", nextLight);
         localStorage.setItem("grindly-theme", nextLight ? "light" : "dark");
         setLightMode(nextLight);
@@ -257,7 +265,7 @@ export default function Navbar({ rightExtra, notifCount = 0 }: NavbarProps) {
                         onClick={() => goTo(item.path)}
                         aria-current={isActive(item.path) ? "page" : undefined}
                     >
-                        {item.label}
+                        {t(language, NAV_TRANSLATION_KEYS[item.path as keyof typeof NAV_TRANSLATION_KEYS])}
                     </button>
                 ))}
                 <div className="nav-icons">
@@ -313,7 +321,7 @@ export default function Navbar({ rightExtra, notifCount = 0 }: NavbarProps) {
                             aria-current={isActive(item.path) ? "page" : undefined}
                             tabIndex={menuOpen ? 0 : -1}
                         >
-                            {item.label}
+                            {t(language, NAV_TRANSLATION_KEYS[item.path as keyof typeof NAV_TRANSLATION_KEYS])}
                         </button>
                     ))}
                 </nav>
@@ -349,7 +357,7 @@ export default function Navbar({ rightExtra, notifCount = 0 }: NavbarProps) {
                                     {matchingPages.map(item => (
                                         <button type="button" key={item.path} className="global-search-result" onClick={() => { navigate(item.path); setSearchOpen(false); setSearchTerm(""); }}>
                                             <span className="global-search-result-icon">↗</span>
-                                            <span>{item.label}</span>
+                                            <span>{t(language, NAV_TRANSLATION_KEYS[item.path as keyof typeof NAV_TRANSLATION_KEYS])}</span>
                                             <span className="global-search-result-path">{item.path}</span>
                                         </button>
                                     ))}

@@ -49,6 +49,17 @@ function applyPreferencesTheme(prefs: Partial<UserPreferences>) {
     root.style.setProperty("--bg-surface", preset.surface);
     const topbar = localStorage.getItem(dark ? "grindly-topbar-dark" : "grindly-topbar-light") || localStorage.getItem("grindly-topbar-color") || (dark ? "#10111a" : "#ffffff");
     root.style.setProperty("--topbar-custom-bg", topbar);
+    // Compute navigation foreground colors from the selected bar color on every page load.
+    const topbarHex = topbar.replace("#", "");
+    const topbarBrightness = (parseInt(topbarHex.slice(0, 2), 16) * 299
+        + parseInt(topbarHex.slice(2, 4), 16) * 587
+        + parseInt(topbarHex.slice(4, 6), 16) * 114) / 1000;
+    const useLightText = topbarBrightness < 145;
+    root.style.setProperty("--topbar-text", useLightText ? "#f8fafc" : "#20202b");
+    root.style.setProperty("--topbar-muted", useLightText ? "#c4c8d4" : "#5b6170");
+    root.style.setProperty("--topbar-border", useLightText ? "rgba(255,255,255,.14)" : "rgba(22,22,35,.13)");
+    root.style.setProperty("--topbar-hover", useLightText ? "rgba(255,255,255,.09)" : "rgba(22,22,35,.07)");
+    root.style.setProperty("--topbar-active-bg", useLightText ? "rgba(255,255,255,.14)" : "rgba(22,22,35,.09)");
     root.classList.toggle("light-mode", !dark);
     localStorage.setItem("grindly-theme", dark ? "dark" : "light");
     window.dispatchEvent(new CustomEvent("grindly-theme-change", { detail: { lightMode: !dark } }));

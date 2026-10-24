@@ -10,12 +10,6 @@ import {
     XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, LineChart
 } from "recharts"
 
-const PRIORITY_COLORS = {
-    Low: "#22c55e",
-    Medium: "#f59e0b",
-    High: "#ef4444"
-}
-
 const DAY_LABELS = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"]
 
 const MONTHS = ["Jan", "Fév", "Mar", "Avr", "Mai", "Jun", "Jul", "Aoû", "Sep", "Oct", "Nov", "Déc"]
@@ -103,7 +97,7 @@ function XpChart({ data, period, colors }: { data: { period: string; xp: number 
                 />
                 <YAxis
                     yAxisId="daily"
-                    tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 11 }}
+                    tick={{ fill: "var(--stats-axis)", fontSize: 11 }}
                     width={36}
                 />
                 <YAxis
@@ -169,7 +163,16 @@ export default function Stats() {
         if (typeof window === "undefined") return DEFAULT_CHART_COLORS
         try {
             const saved = window.localStorage.getItem("grindly-stats-colors")
-            return saved ? { ...DEFAULT_CHART_COLORS, ...JSON.parse(saved) } : DEFAULT_CHART_COLORS
+            if (!saved) return DEFAULT_CHART_COLORS
+            const parsed = JSON.parse(saved) as Partial<ChartColors>
+            const safeColors = { ...DEFAULT_CHART_COLORS }
+            ;(Object.keys(DEFAULT_CHART_COLORS) as (keyof ChartColors)[]).forEach(key => {
+                const value = parsed[key]
+                if (typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value)) {
+                    safeColors[key] = value
+                }
+            })
+            return safeColors
         } catch {
             return DEFAULT_CHART_COLORS
         }
@@ -312,6 +315,7 @@ export default function Stats() {
                             <input
                                 type="date"
                                 className="theme-input"
+                                max={new Date().toISOString().slice(0, 10)}
                                 value={heatmapFrom}
                                 onChange={e => setHeatmapFrom(e.target.value)}
                             />
@@ -427,44 +431,53 @@ export default function Stats() {
                     {/* PRIORITÉ SPLIT */}
                     <div className="stats-section">
                         <h2 className="stats-section-title">Répartition des priorités</h2>
-                        <ResponsiveContainer width="100%" height={200}>
-                            <PieChart>
-                                <Pie data={prioritySplit} dataKey="count" nameKey="priority" cx="50%" cy="50%" innerRadius={50} outerRadius={80}>
-                                    {prioritySplit.map((entry, index) => (
-                                        <Cell key={index} fill={priorityColor(entry.priority)} />
+                        {prioritySplit.some(item => item.count > 0) ? (
+                            <>
+                                <ResponsiveContainer width="100%" height={210}>
+                                    <PieChart>
+                                        <Pie data={prioritySplit.filter(item => item.count > 0)} dataKey="count" nameKey="priority" cx="50%" cy="50%" innerRadius={52} outerRadius={82} paddingAngle={3}>
+                                            {prioritySplit.filter(item => item.count > 0).map(entry => (
+                                                <Cell key={entry.priority} fill={priorityColor(entry.priority)} stroke="none" />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip contentStyle={{ background: "var(--stats-tooltip-bg)", color: "var(--stats-tooltip-text)", border: "1px solid var(--stats-border)", borderRadius: 10 }} labelStyle={{ color: "var(--stats-tooltip-text)" }} formatter={value => [Number(value) || 0, "Complétions"]} />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                                <div className="priority-legend">
+                                    {prioritySplit.filter(item => item.count > 0).map(item => (
+                                        <div key={item.priority} className="priority-legend-item">
+                                            <div className="priority-legend-dot" style={{ background: priorityColor(item.priority) }} />
+                                            <span>{item.priority}</span>
+                                            <span className="priority-legend-count">{item.count.toLocaleString("fr-FR")}</span>
+                                        </div>
                                     ))}
-                                </Pie>
-                                <Tooltip contentStyle={{ background: "#1e293b", border: "none", borderRadius: 8 }} labelStyle={{ color: "var(--stats-tooltip-text)" }} />
-                            </PieChart>
-                        </ResponsiveContainer>
-                        <div className="priority-legend">
-                            {prioritySplit.map((p, i) => (
-                                <div key={i} className="priority-legend-item">
-                                    <div className="priority-legend-dot" style={{ background: priorityColor(p.priority) }} />
-                                    <span>{p.priority}</span>
-                                    <span className="priority-legend-count">{p.count}</span>
                                 </div>
-                            ))}
-                        </div>
+                            </>
+                        ) : (
+                            <div className="stats-empty-state"><span className="stats-empty-icon">◉</span><span>Aucune tâche terminée pour répartir les priorités</span></div>
+                        )}
                     </div>
 
                 </div>
 
                 {/* RADAR */}
-                {radarData.length > 0 && (
-                    <div className="stats-section">
-                        <h2 className="stats-section-title">Performance par thème</h2>
-                        <ResponsiveContainer width="100%" height={350}>
+                <div className="stats-section">
+                    <h2 className="stats-section-title">Performance par thème</h2>
+                    {radarData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={320}>
                             <RadarChart data={radarData}>
                                 <PolarGrid stroke="var(--stats-grid)" />
                                 <PolarAngleAxis dataKey="theme" tick={{ fill: "var(--stats-axis)", fontSize: 11 }} />
-                                <Radar name="Activités prévues" dataKey="tasks" stroke={chartColors.radarTasks} fill={chartColors.radarTasks} fillOpacity={0.26} />
-                                <Radar name="Activités réalisées" dataKey="completed" stroke={chartColors.radarCompleted} fill={chartColors.radarCompleted} fillOpacity={0.26} />
-                                <Tooltip contentStyle={{ background: "#1e293b", border: "none", borderRadius: 8 }} labelStyle={{ color: "white" }} />
+                                <Radar name="Activités prévues" dataKey="tasks" stroke={chartColors.radarTasks} fill={chartColors.radarTasks} fillOpacity={0.24} />
+                                <Radar name="Activités réalisées" dataKey="completed" stroke={chartColors.radarCompleted} fill={chartColors.radarCompleted} fillOpacity={0.24} />
+                                <Tooltip contentStyle={{ background: "var(--stats-tooltip-bg)", color: "var(--stats-tooltip-text)", border: "1px solid var(--stats-border)", borderRadius: 10 }} labelStyle={{ color: "var(--stats-tooltip-text)" }} />
+                                <Legend wrapperStyle={{ fontSize: 11, color: "var(--stats-muted)" }} />
                             </RadarChart>
                         </ResponsiveContainer>
-                    </div>
-                )}
+                    ) : (
+                        <div className="stats-empty-state"><span className="stats-empty-icon">⌘</span><span>Pas encore de thèmes à comparer</span><span className="stats-empty-hint">Crée des thèmes et associe-leur des tâches ou des habitudes.</span></div>
+                    )}
+                </div>
 
             </main>
 

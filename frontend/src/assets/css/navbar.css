@@ -425,7 +425,7 @@
 }
 :root.light-mode body,
 :root.light-mode #root {
-    background: #f4f4f7;
+    background: var(--bg, #f4f4f7);
     color: #202333;
     border-color: rgba(30,41,59,.08);
 }
@@ -438,7 +438,7 @@
 :root.light-mode .stats-page,
 :root.light-mode .settings-page,
 :root.light-mode .historique-page {
-    background: #f4f4f7 !important;
+    background: var(--bg, #f4f4f7) !important;
     color: #202333 !important;
 }
 :root.light-mode .dashboard .title,

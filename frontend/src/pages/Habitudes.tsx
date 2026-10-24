@@ -695,19 +695,20 @@ export default function Habitudes() {
                 )}
 
                 {/* BONNES HABITUDES */}
+{typeFilter !== "quit" && (
                 <section className="habitudes-section">
                     <div className="habitudes-section-header">
-                        <h2 className="habitudes-section-title">✅ Habitudes</h2>
-                        <span className="habitudes-count">{buildHabits.filter(h => h.doneToday).length}/{buildHabits.length} aujourd'hui</span>
+                        <div><p className="habitudes-section-kicker">CONSTRUIRE</p><h2 className="habitudes-section-title">Bonnes habitudes</h2></div>
+                        <span className="habitudes-count">{todayGoodCount}/{buildHabits.length} aujourd’hui · {visibleBuildHabits.length} affichées</span>
                     </div>
 
-                    {buildHabits.length === 0 && (
+                    {visibleBuildHabits.length === 0 && (
                         <div className="habitudes-empty">
-                            <p>Aucune habitude — crée ta première !</p>
+                            <span aria-hidden="true">🌱</span><strong>{buildHabits.length === 0 ? "Tout commence par un premier geste." : "Aucun résultat pour ces filtres."}</strong><p>{buildHabits.length === 0 ? "Crée une habitude simple que tu pourras répéter chaque jour." : "Modifie la recherche ou la catégorie pour retrouver tes habitudes."}</p>
                         </div>
                     )}
 
-                    {buildHabits.map(habit => (
+                    {visibleBuildHabits.map(habit => (
                         <div key={habit.id} className={`habit-card ${habit.doneToday ? "done" : ""}`} style={{ borderLeft: `4px solid ${habit.color}` }}>
 
                             <div className="habit-top">
@@ -773,7 +774,7 @@ export default function Habitudes() {
 
                             <div className="habit-actions">
                                 {habit.doneToday ? (
-                                    <button className="habit-btn done" onClick={() => handleUndo(habit.id)}>
+                                    <button type="button" className="habit-btn done" disabled={loadingIds.has(habit.id)} onClick={() => handleUndo(habit.id)}>
                                         ✓ {habit.times_per_day > 1 ? `${habit.todayCount}/${habit.times_per_day}` : "Fait"} — Annuler
                                     </button>
                                 ) : (
@@ -786,29 +787,30 @@ export default function Habitudes() {
 
                                     </button>
                                 )}
-                                <button className="habit-btn delete" onClick={() => handleDelete(habit.id)}>🗑</button>
+                                <button type="button" className="habit-btn delete" aria-label={`Supprimer ${habit.name}`} title="Supprimer cette habitude" onClick={() => { if (window.confirm(`Supprimer l’habitude « ${habit.name} » ?`)) void handleDelete(habit.id) }}>Supprimer</button>
                             </div>
 
                             <p className="habit-next">⏭ Prochain : {habit.frequency === "daily" ? "Demain" : "Dans une semaine"}</p>
 
                         </div>
                     ))}
-                </section>
+                </section>}
 
                 {/* ADDICTIONS */}
+{typeFilter !== "build" && (
                 <section className="habitudes-section">
                     <div className="habitudes-section-header">
-                        <h2 className="habitudes-section-title">🚫 Addictions</h2>
-                        <span className="habitudes-count">{quitHabits.length} trackées</span>
+                        <div><p className="habitudes-section-kicker">RÉDUIRE AVEC BIENVEILLANCE</p><h2 className="habitudes-section-title">Habitudes à réduire / arrêter</h2></div>
+                        <span className="habitudes-count">{visibleQuitHabits.length} affichées · {quitHabits.length} au total</span>
                     </div>
 
-                    {quitHabits.length === 0 && (
+                    {visibleQuitHabits.length === 0 && (
                         <div className="habitudes-empty">
-                            <p>Aucune addiction trackée — tu peux en ajouter une ci-dessus.</p>
+                            <span aria-hidden="true">🫶</span><strong>{quitHabits.length === 0 ? "Un changement à la fois." : "Aucun résultat pour ces filtres."}</strong><p>{quitHabits.length === 0 ? "Tu peux suivre un objectif de réduction sans jugement et à ton rythme." : "Essaie un autre mot-clé ou une autre catégorie."}</p>
                         </div>
                     )}
 
-                    {quitHabits.map(habit => (
+                    {visibleQuitHabits.map(habit => (
                         <div key={habit.id} className="habit-card quit-card" style={{ borderLeft: `4px solid ${habit.color}` }}>
 
                             <div className="habit-top">
@@ -884,15 +886,15 @@ export default function Habitudes() {
                                 />
                             ) : (
                                 <div className="habit-actions">
-                                    <button className="habit-btn success" onClick={() => handleSuccess(habit.id)}>✓ Jour sans rechute</button>
-                                    <button className="habit-btn relapse" onClick={() => setRelapseHabitId(habit.id)}>↩ Rechute</button>
+                                    <button type="button" className="habit-btn success" disabled={loadingIds.has(habit.id)} onClick={() => handleSuccess(habit.id)}>{loadingIds.has(habit.id) ? "Enregistrement…" : "✓ Jour sans rechute"}</button>
+                                    <button type="button" className="habit-btn relapse" disabled={loadingIds.has(habit.id)} onClick={() => setRelapseHabitId(habit.id)}>↩ Rechute</button>
                                     <button className="habit-btn delete" onClick={() => handleDelete(habit.id)}>🗑</button>
                                 </div>
                             )}
 
                         </div>
                     ))}
-                </section>
+                </section>}
 
             </main>
         </div>

@@ -146,3 +146,106 @@
 .topbar-theme-note{margin:0;color:var(--page-muted,currentColor);font-size:11px;line-height:1.5}
 :root.light-mode .topbar-preset{background:#fff;border-color:rgba(30,41,59,.16)}
 @media(max-width:600px){.topbar-preset-grid{grid-template-columns:repeat(4,minmax(32px,1fr))}}
+
+
+/* Theme fix: apply the selected palette to the full settings surface, not only its borders. */
+.settings-page {
+  background: var(--bg) !important;
+  color: var(--page-text, var(--text-h, #f8fafc));
+}
+.settings-card {
+  background: var(--bg-card, rgba(255,255,255,.04));
+  color: var(--page-text, inherit);
+  border-color: var(--page-border, rgba(127,127,127,.18));
+}
+.settings-section-title,
+.settings-title,
+.setting-row-title,
+.setting-row-desc,
+.settings-subtitle,
+.settings-btn-outline,
+.settings-btn-ghost,
+.settings-select,
+.settings-input,
+.settings-subform,
+.data-summary,
+.rgpd-intro,
+.bg-preset-option,
+.bg-mode-tabs button {
+  transition: color .18s ease, background-color .18s ease, border-color .18s ease;
+}
+.settings-btn-outline,
+.settings-select,
+.settings-input {
+  background: var(--bg-surface, rgba(255,255,255,.06));
+  color: var(--page-text, inherit);
+  border-color: var(--page-border, rgba(127,127,127,.2));
+}
+.settings-subform,
+.data-summary {
+  background: var(--bg-surface, rgba(0,0,0,.08));
+  border-color: var(--page-border, rgba(127,127,127,.16));
+}
+:root.light-mode .settings-page {
+  --page-text: #263044;
+  --page-muted: #667085;
+  --page-border: rgba(38,48,68,.16);
+  color: var(--page-text);
+}
+:root.light-mode .settings-title,
+:root.light-mode .settings-section-title,
+:root.light-mode .setting-row-title,
+:root.light-mode .setting-row-desc,
+:root.light-mode .settings-subtitle,
+:root.light-mode .settings-footer p,
+:root.light-mode .settings-footer-links,
+:root.light-mode .settings-footer-link,
+:root.light-mode .settings-btn-outline,
+:root.light-mode .settings-btn-ghost,
+:root.light-mode .settings-input,
+:root.light-mode .settings-select,
+:root.light-mode .data-summary-title,
+:root.light-mode .data-summary-list li,
+:root.light-mode .rgpd-intro p,
+:root.light-mode .rgpd-intro strong {
+  color: var(--page-text);
+}
+:root.light-mode .settings-card {
+  background: var(--bg-card, rgba(255,255,255,.92));
+  border-color: var(--page-border);
+}
+:root.light-mode .settings-section-title,
+:root.light-mode .setting-row {
+  border-color: var(--page-border);
+}
+:root.light-mode .settings-btn-outline,
+:root.light-mode .settings-select,
+:root.light-mode .settings-input,
+:root.light-mode .settings-subform,
+:root.light-mode .data-summary,
+:root.light-mode .rgpd-intro {
+  background: var(--bg-surface, rgba(255,255,255,.8));
+  border-color: var(--page-border);
+}
+:root.light-mode .settings-input::placeholder {
+  color: #7b8494;
+}
+:root.light-mode .settings-btn-outline:hover,
+:root.light-mode .settings-btn-ghost:hover {
+  color: #111827;
+  background: rgba(15,23,42,.06);
+}
+:root.light-mode .bg-preset-option {
+  background: var(--bg-card, rgba(255,255,255,.9));
+  color: #263044;
+  border-color: var(--page-border);
+}
+:root.light-mode .bg-preset-option.selected {
+  background: var(--bg-surface, rgba(255,255,255,.98));
+  color: #172033;
+}
+:root.light-mode .bg-mode-tabs button {
+  background: var(--bg-card, #fff);
+  color: #263044;
+  border-color: var(--page-border);
+}

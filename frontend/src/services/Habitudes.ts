@@ -73,7 +73,7 @@ export function useHabitudes() {
 
     async function handleCreateHabit() {
         const cleanedName = name.trim()
-        if (!cleanedName || isCreating) return
+        if (!cleanedName || isCreating) return null
         setIsCreating(true)
         setActionError(null)
         try {
@@ -93,9 +93,11 @@ export function useHabitudes() {
             setHabits(prev => [habit, ...prev])
             resetForm()
             setShowForm(false)
+            return habit
         } catch (err) {
             console.error("Impossible de créer l’habitude :", err)
             setActionError("L’habitude n’a pas pu être créée. Vérifie ta connexion puis réessaie.")
+            return null
         } finally {
             setIsCreating(false)
         }

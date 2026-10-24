@@ -1,5 +1,5 @@
 import "../assets/css/dashboard.css"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useDashboard } from "../services/Dashboard"
 
 import Navbar from "../components/Navbar";

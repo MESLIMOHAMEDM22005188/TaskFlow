@@ -88,6 +88,34 @@ function RequireAuth({ children }: { children: React.ReactElement }) {
 function App() {
 
     useEffect(() => {
+        const root = document.documentElement
+        // Restore appearance locally before waiting for the preferences API.
+        const savedTheme = localStorage.getItem("grindly-theme")
+        const dark = savedTheme ? savedTheme === "dark" : true
+        const savedBg = localStorage.getItem(dark ? "grindly-bg-dark" : "grindly-bg-light")
+        const legacyBg = localStorage.getItem("grindly-bg-preset")
+        const presets = dark ? BG_PRESETS : LIGHT_BG_PRESETS
+        const fallback = dark ? "navy" : "pearl"
+        const requested = savedBg || legacyBg || fallback
+        const legacy: Record<string, string> = { dark: "navy", darker: "obsidian", warm: "cocoa" }
+        const key = presets[requested] ? requested : (dark ? (legacy[requested] || fallback) : fallback)
+        const initialPreset = presets[key] || presets[fallback]
+        root.style.setProperty("--bg", initialPreset.bg)
+        root.style.setProperty("--bg-card", initialPreset.card)
+        root.style.setProperty("--bg-surface", initialPreset.surface)
+        root.classList.toggle("light-mode", !dark)
+        const initialTopbar = localStorage.getItem(dark ? "grindly-topbar-dark" : "grindly-topbar-light") || localStorage.getItem("grindly-topbar-color")
+        if (initialTopbar && /^#[0-9a-f]{6}$/i.test(initialTopbar)) {
+            root.style.setProperty("--topbar-custom-bg", initialTopbar)
+            const hex = initialTopbar.slice(1)
+            const brightness = (parseInt(hex.slice(0, 2), 16) * 299 + parseInt(hex.slice(2, 4), 16) * 587 + parseInt(hex.slice(4, 6), 16) * 114) / 1000
+            const lightText = brightness < 145
+            root.style.setProperty("--topbar-text", lightText ? "#f8fafc" : "#20202b")
+            root.style.setProperty("--topbar-muted", lightText ? "#c4c8d4" : "#5b6170")
+            root.style.setProperty("--topbar-border", lightText ? "rgba(255,255,255,.14)" : "rgba(22,22,35,.13)")
+            root.style.setProperty("--topbar-hover", lightText ? "rgba(255,255,255,.09)" : "rgba(22,22,35,.07)")
+        }
+        window.dispatchEvent(new CustomEvent("grindly-theme-change", { detail: { lightMode: !dark } }))
         const token = localStorage.getItem("token")
         if (!token) return
 

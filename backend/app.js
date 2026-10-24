@@ -22,6 +22,8 @@ const authMiddleware = require("./src/middleware/auth")
 
 const app = express()
 const frontendPath = path.resolve(__dirname, "..", "frontend", "dist")
+const LOG_PREFIX = "[Grindly:Server]"
+const startedAt = Date.now()
 const defaultOrigins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
@@ -46,19 +48,57 @@ const authLimiter = rateLimit({
 app.set("trust proxy", 1)
 app.disable("x-powered-by")
 
+console.info(LOG_PREFIX, "Booting", {
+    node: process.version,
+    environment: process.env.NODE_ENV || "unspecified",
+    port: process.env.PORT || "8100",
+    host: process.env.HOST || "0.0.0.0",
+    frontendPath,
+    frontendExists: fs.existsSync(frontendPath),
+    frontendIndexExists: fs.existsSync(path.join(frontendPath, "index.html")),
+    databaseConfigPresent: Boolean(process.env.DATABASE_URL || (process.env.DB_HOST && process.env.DB_USER && process.env.DB_NAME)),
+    allowedOrigins,
+})
+
+app.use((req, res, next) => {
+    const startedAt = Date.now()
+    const requestId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+    res.setHeader("X-Request-Id", requestId)
+    console.info(LOG_PREFIX, "→", requestId, req.method, req.originalUrl)
+    res.on("finish", () => {
+        const line = {
+            requestId,
+            method: req.method,
+            path: req.originalUrl,
+            status: res.statusCode,
+            durationMs: Date.now() - startedAt,
+            contentLength: res.getHeader("content-length") || null,
+        }
+        const logger = res.statusCode >= 500 ? console.error : res.statusCode >= 400 ? console.warn : console.info
+        logger.call(console, LOG_PREFIX, "←", line)
+    })
+    next()
+})
+
+process.on("unhandledRejection", reason => {
+    console.error(LOG_PREFIX, "UNHANDLED REJECTION", reason)
+})
+process.on("uncaughtException", error => {
+    console.error(LOG_PREFIX, "UNCAUGHT EXCEPTION", error)
+    process.exit(1)
+})
+
 app.use(helmet({
     contentSecurityPolicy: false,
     crossOriginResourcePolicy: { policy: "cross-origin" },
 }))
 app.use(cors({
     origin(origin, callback) {
-        console.log("Origin:", origin)
-
+        console.debug(LOG_PREFIX, "CORS origin check", origin || "(no origin)")
         if (!origin || allowedOrigins.includes(origin)) {
             return callback(null, true)
         }
-
-        console.log("Blocked origin:", origin)
+        console.warn(LOG_PREFIX, "Blocked CORS origin", origin)
         return callback(new Error("Origin not allowed by CORS"))
     },
 }))
@@ -70,14 +110,11 @@ app.use("/sounds", express.static(path.join(__dirname, "public", "sounds"), {
 }))
 
 app.get("/api/health", (_req, res) => {
-    res.json({ ok: true })
+    res.json({ ok: true, uptimeSeconds: Math.round((Date.now() - startedAt) / 1000) })
 })
 
 app.get("/api/test", (_req, res) => {
-    res.json({
-        ok: true,
-        message: "Backend works",
-    })
+    res.json({ ok: true, message: "Backend works" })
 })
 
 app.use("/api/auth/login", authLimiter)
@@ -96,6 +133,7 @@ app.use("/api/preferences", authMiddleware, preferenceRoutes)
 app.use("/api/account", authMiddleware, accountRoutes)
 
 if (fs.existsSync(frontendPath)) {
+    console.info(LOG_PREFIX, "Serving frontend from", frontendPath)
     app.use(express.static(frontendPath, {
         index: false,
         maxAge: "1h",
@@ -108,15 +146,20 @@ if (fs.existsSync(frontendPath)) {
     app.get(/^\/(?!api(?:\/|$)).+/, (_req, res) => {
         res.sendFile(path.join(frontendPath, "index.html"))
     })
+} else {
+    console.error(LOG_PREFIX, "Frontend dist directory is missing:", frontendPath)
 }
 
-app.use((err, _req, res, _next) => {
-    console.error(err)
+app.use((err, req, res, _next) => {
+    console.error(LOG_PREFIX, "Express error", {
+        method: req.method,
+        path: req.originalUrl,
+        status: err.status || 500,
+        message: err.message,
+        stack: err.stack,
+    })
 
-    if (res.headersSent) {
-        return
-    }
-
+    if (res.headersSent) return
     res.status(err.status || 500).json({
         message: err.status === 429 ? err.message : "Internal server error",
     })
@@ -125,6 +168,7 @@ app.use((err, _req, res, _next) => {
 const PORT = Number(process.env.PORT) || 8100
 const HOST = process.env.HOST || "0.0.0.0"
 
-app.listen(PORT, HOST, () => {
-    console.log(`Server running on http://${HOST}:${PORT}`)
+const server = app.listen(PORT, HOST, () => {
+    console.info(LOG_PREFIX, "LISTENING", { address: `http://${HOST}:${PORT}`, pid: process.pid })
 })
+server.on("error", error => console.error(LOG_PREFIX, "HTTP SERVER ERROR", error))

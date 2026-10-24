@@ -79,7 +79,8 @@ function App() {
 
             // Background
             const preset = BG_PRESETS[prefs.bg_preset] ?? BG_PRESETS.navy
-            const dark = !!prefs.dark_mode
+            const savedTheme = localStorage.getItem("grindly-theme")
+            const dark = savedTheme ? savedTheme === "dark" : !!prefs.dark_mode
             root.style.setProperty("--bg",         dark ? preset.bg      : "#f4f4f7")
             root.style.setProperty("--bg-card",    dark ? preset.card    : "rgba(0,0,0,0.03)")
             root.style.setProperty("--bg-surface", dark ? preset.surface : "rgba(0,0,0,0.05)")

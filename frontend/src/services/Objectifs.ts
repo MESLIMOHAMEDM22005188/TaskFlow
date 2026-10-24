@@ -5,6 +5,11 @@ import {
     adoptTemplate, updateObjectiveProgress, updateObjectiveStatus, deleteObjective
 } from "./taskService"
 import type { Objective, ObjectiveTemplate } from "./taskService"
+import { LOCAL_OBJECTIVE_CATALOG } from "../data/objectiveCatalog"
+
+function normalizeObjectiveTitle(value: string | null | undefined) {
+    return (value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, " ").toLocaleLowerCase("fr-FR")
+}
 
 export function useObjectifs() {
 
@@ -29,10 +34,24 @@ export function useObjectifs() {
         Promise.all([getObjectives(), getObjectiveTemplates()])
             .then(([objs, tmps]) => {
                 setObjectives(objs)
-                setTemplates(tmps)
+                const merged: ObjectiveTemplate[] = [...LOCAL_OBJECTIVE_CATALOG]
+                const knownTitles = new Set(LOCAL_OBJECTIVE_CATALOG.map(template => normalizeObjectiveTitle(template.title)))
+                for (const template of tmps) {
+                    const key = normalizeObjectiveTitle(template.title)
+                    if (!knownTitles.has(key)) {
+                        merged.push(template)
+                        knownTitles.add(key)
+                    }
+                }
+                setTemplates(merged)
                 setLoading(false)
             })
-            .catch(err => console.error(err))
+            .catch(err => {
+                console.error(err)
+                // Le catalogue local reste utilisable si l'API des modèles est indisponible.
+                setTemplates(LOCAL_OBJECTIVE_CATALOG)
+                setLoading(false)
+            })
     }, [])
 
     async function handleCreateObjective() {
@@ -62,12 +81,39 @@ export function useObjectifs() {
 
     async function handleAdoptTemplate(templateId: number) {
         try {
-            const obj = await adoptTemplate(templateId)
-            setObjectives(prev => [obj, ...prev])
+            const template = templates.find(item => item.id === templateId)
+            if (templateId < 0 && template) {
+                const alreadyActive = objectives.some(objective =>
+                    objective.status === "active" &&
+                    normalizeObjectiveTitle(objective.title) === normalizeObjectiveTitle(template.title)
+                )
+                if (alreadyActive) {
+                    alert("Cet objectif est déjà présent dans ta liste.")
+                    return
+                }
+                let computedDeadline: string | null = null
+                if (template.suggested_days) {
+                    const date = new Date()
+                    date.setDate(date.getDate() + template.suggested_days)
+                    computedDeadline = String(date.getFullYear()) + "-" + String(date.getMonth() + 1).padStart(2, "0") + "-" + String(date.getDate()).padStart(2, "0")
+                }
+                const obj = await createObjective({
+                    title: template.title,
+                    description: template.description || undefined,
+                    emoji: template.emoji || undefined,
+                    target_value: template.target_value,
+                    target_unit: template.target_unit || undefined,
+                    deadline: computedDeadline
+                })
+                setObjectives(prev => [obj, ...prev])
+            } else {
+                const obj = await adoptTemplate(templateId)
+                setObjectives(prev => [obj, ...prev])
+            }
             setShowCatalogue(false)
         } catch (err) {
             console.error(err)
-            alert("Failed to adopt objective")
+            alert("Impossible d’ajouter cet objectif. Réessaie dans un instant.")
         }
     }
 

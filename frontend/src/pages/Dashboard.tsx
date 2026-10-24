@@ -44,6 +44,7 @@ export function Dashboard() {
     } = useDashboard()
 
     const [showThemesList, setShowThemesList] = useState(false)
+    const [deadlineMode, setDeadlineMode] = useState<"until_cancelled" | "date">("until_cancelled")
     const themeGroups: { theme: (typeof themes)[number]; ids: number[]; key: string }[] = []
     for (const theme of themes) {
         const key = normalizeThemeName(theme.name)
@@ -193,15 +194,17 @@ export function Dashboard() {
                                 <label className="theme-label">Échéance</label>
                                 <select
                                     className="theme-select"
-                                    value={deadline ? "date" : "until_cancelled"}
+                                    value={deadlineMode}
                                     onChange={e => {
-                                        if (e.target.value === "until_cancelled") setDeadline("")
+                                        const mode = e.target.value as "until_cancelled" | "date"
+                                        setDeadlineMode(mode)
+                                        if (mode === "until_cancelled") setDeadline("")
                                     }}
                                 >
                                     <option value="until_cancelled">Chaque jour jusqu’à annulation</option>
                                     <option value="date">Jusqu’à une date précise</option>
                                 </select>
-                                {deadline !== "" || false ? (
+                                {deadlineMode === "date" ? (
                                     <input className="theme-input" type="date" value={deadline} onChange={e => setDeadline(e.target.value)} />
                                 ) : null}
                                 <small className="theme-label-hint">

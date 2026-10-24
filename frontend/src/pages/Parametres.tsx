@@ -166,7 +166,8 @@ export default function Parametres() {
     // ── Chargement initial depuis l'API ──────────────────────
     useEffect(() => {
         getPreferences().then(prefs => {
-            setDarkMode(!!prefs.dark_mode)
+            const savedTheme = localStorage.getItem("grindly-theme")
+            setDarkMode(savedTheme ? savedTheme === "dark" : !!prefs.dark_mode)
             setAccentColor(prefs.accent_color)
             setBgPreset(prefs.bg_preset)
             setLanguage(prefs.language)

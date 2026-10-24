@@ -801,3 +801,141 @@
     .themes-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: 10px; }
     .dashboard .themes-grid .theme-card { min-height: 205px; padding: 14px; }
 }
+
+
+/* Task cards refinement — clearer hierarchy and ergonomic actions */
+.dashboard .task.dashboard-task-card {
+    align-items: center;
+    padding: 19px 20px;
+    gap: 22px;
+    border-radius: 18px;
+    border-left-width: 4px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .055);
+}
+.dashboard .task.dashboard-task-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 13px 30px rgba(0, 0, 0, .095);
+}
+.dashboard-task-card .task-content { gap: 7px; }
+.dashboard-task-card .task-title {
+    font-size: 15px;
+    letter-spacing: -.015em;
+}
+.dashboard-task-subline {
+    font-size: 11px;
+    opacity: .58;
+}
+.dashboard-task-card .task-meta { margin-top: 5px; gap: 7px; }
+.dashboard-task-card .badge,
+.dashboard-task-card .task-theme {
+    padding: 5px 9px;
+    font-size: 10px;
+    font-weight: 650;
+}
+.dashboard-task-card .task-actions {
+    gap: 7px;
+    padding: 5px;
+    border: 1px solid rgba(127,127,127,.13);
+    border-radius: 14px;
+    background: rgba(127,127,127,.045);
+}
+.dashboard-task-card .task-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 40px;
+    padding: 0 12px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 750;
+    white-space: nowrap;
+    transition: transform .18s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+.dashboard-task-card .task-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,.08);
+}
+.dashboard-task-card .task-action-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 19px;
+    height: 19px;
+    font-size: 15px;
+    line-height: 1;
+}
+.dashboard-task-card .task-action-label { line-height: 1; }
+.dashboard-task-card .done-btn {
+    color: white;
+    background: var(--accent);
+    border-color: color-mix(in srgb, var(--accent) 75%, transparent);
+}
+.dashboard-task-card .done-btn.active {
+    color: #16a34a;
+    background: rgba(34,197,94,.12);
+    border-color: rgba(34,197,94,.24);
+}
+.dashboard-task-card .archive-btn {
+    color: inherit;
+    opacity: .82;
+    background: rgba(127,127,127,.08);
+    border-color: rgba(127,127,127,.12);
+}
+.dashboard-task-card .archive-btn:hover {
+    opacity: 1;
+    background: rgba(127,127,127,.15);
+}
+.dashboard-task-card .delete-btn {
+    color: #ef4444;
+    background: rgba(239,68,68,.065);
+    border-color: rgba(239,68,68,.13);
+}
+.dashboard-task-card .delete-btn:hover {
+    background: rgba(239,68,68,.13);
+    border-color: rgba(239,68,68,.3);
+}
+.dashboard .task.dashboard-task-card.task-done {
+    background: color-mix(in srgb, #22c55e 4%, var(--bg-card, transparent));
+}
+.dashboard .task.dashboard-task-card.task-done .task-title { opacity: .72; }
+.dashboard.light .task.dashboard-task-card {
+    border-color: rgba(15,23,42,.09);
+    border-left-color: color-mix(in srgb, var(--accent) 65%, transparent);
+    box-shadow: 0 7px 22px rgba(15,23,42,.055);
+}
+.dashboard.light .task.dashboard-task-card:hover {
+    border-color: rgba(var(--accent-rgb),.25);
+    box-shadow: 0 12px 28px rgba(15,23,42,.09);
+}
+.dashboard.light .task.dashboard-task-card.task-done { border-left-color: #22c55e; }
+.dashboard .task-actions button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+@media (max-width: 700px) {
+    .dashboard .task.dashboard-task-card {
+        align-items: stretch;
+        gap: 14px;
+        padding: 16px;
+    }
+    .dashboard-task-card .task-actions {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        width: 100%;
+        gap: 6px;
+        padding: 4px;
+    }
+    .dashboard-task-card .task-btn {
+        min-width: 0;
+        min-height: 42px;
+        padding: 0 6px;
+        gap: 5px;
+        font-size: 10px;
+    }
+    .dashboard-task-card .task-action-icon { width: 16px; }
+}
+@media (max-width: 390px) {
+    .dashboard-task-card .task-btn { flex-direction: column; gap: 3px; }
+    .dashboard-task-card .task-action-icon { height: 16px; }
+    .dashboard-task-card .task-action-label { font-size: 9px; }
+}

@@ -7,6 +7,7 @@ import Navbar from "../components/Navbar";
 
 export function Dashboard() {
     const {
+        navigate,
         dark, setDark,
         tasks,
         themes,
@@ -35,20 +36,49 @@ export function Dashboard() {
     } = useDashboard()
 
     const [showThemesList, setShowThemesList] = useState(false)
+    const [taskFilter, setTaskFilter] = useState<"all" | "pending" | "done">("all")
     const [searchParams, setSearchParams] = useSearchParams()
     const taskSearch = searchParams.get("search")?.trim() ?? ""
-    const visibleTasks = taskSearch
+    const searchedTasks = taskSearch
         ? tasks.filter(task => task.title.toLocaleLowerCase("fr").includes(taskSearch.toLocaleLowerCase("fr")))
         : tasks
+    const visibleTasks = searchedTasks.filter(task => {
+        const isDone = dailyState.get(task.id)?.done_today ?? false
+        if (taskFilter === "pending") return !isDone
+        if (taskFilter === "done") return isDone
+        return true
+    })
 
-    const doneTasks = tasks.filter(t => dailyState.get(t.id)?.done_today).length
+    const doneTasks = tasks.filter(task => dailyState.get(task.id)?.done_today).length
+    const pendingTasks = Math.max(0, tasks.length - doneTasks)
+    const highPriorityTasks = tasks.filter(task => task.priority?.toLowerCase() === "high" && !dailyState.get(task.id)?.done_today).length
+    const completionPercent = tasks.length ? Math.round((doneTasks / tasks.length) * 100) : 0
+    const todayLabel = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" }).format(new Date())
 
     return (
         <div className={dark ? "dashboard dark" : "dashboard light"}>
             <Navbar notifCount={notifications.length} />
 
-            <main className="main">
-                <h1 className="title">Your workspace</h1>
+            <main className="main dashboard-main">
+                <section className="dashboard-hero">
+                    <div className="dashboard-hero-copy">
+                        <p className="dashboard-eyebrow">TON ESPACE PERSONNEL</p>
+                        <h1 className="dashboard-heading">Fais de la place à <span>l’essentiel.</span></h1>
+                        <p className="dashboard-subtitle">Une chose après l’autre. Chaque petite action compte.</p>
+                        <p className="dashboard-date">{todayLabel.charAt(0).toLocaleUpperCase("fr-FR") + todayLabel.slice(1)}</p>
+                    </div>
+                    <div className="dashboard-hero-actions">
+                        <button type="button" className="dashboard-primary-action" onClick={handleToggleTaskForm}>
+                            <span aria-hidden="true">＋</span> Nouvelle tâche
+                        </button>
+                        <button type="button" className="dashboard-flow-action" onClick={() => navigate("/flow")}>
+                            <span className="dashboard-flow-icon" aria-hidden="true">▶</span>
+                            <span><strong>Lancer une session</strong><small>Passer en mode Flow</small></span>
+                            <span aria-hidden="true">↗</span>
+                        </button>
+                    </div>
+                    <div className="dashboard-hero-orb" aria-hidden="true"><span>✦</span></div>
+                </section>
                 {taskSearch && (
                     <div className="task-search-active">
                         <span>Résultats pour <strong>{taskSearch}</strong> · {visibleTasks.length} tâche(s)</span>
@@ -56,25 +86,29 @@ export function Dashboard() {
                     </div>
                 )}
 
-                <div className="action-center">
-                    <button
-                        className={`main-button ${showTaskForm ? "active" : ""}`}
-                        onClick={handleToggleTaskForm}
-                    >
-                        Create Task
-                    </button>
-                    <button
-                        className={`main-button secondary ${showThemeForm ? "active" : ""}`}
-                        onClick={handleToggleThemeForm}
-                    >
-                        Create Theme
-                    </button>
-                    <button
-                        className={`main-button secondary ${showThemesList ? "active" : ""}`}
-                        onClick={() => setShowThemesList(prev => !prev)}
-                    >
-                        {showThemesList ? "Masquer les thèmes" : "Voir les thèmes existants"}
-                    </button>
+                <section className="dashboard-overview" aria-label="Résumé de la journée">
+                    <div className="dashboard-overview-heading">
+                        <div>
+                            <p className="dashboard-eyebrow">EN UN COUP D’ŒIL</p>
+                            <h2>Ta journée</h2>
+                        </div>
+                        <span className="dashboard-completion-pill">{completionPercent}% accompli</span>
+                    </div>
+                    <div className="dashboard-progress-track" role="progressbar" aria-label="Progression des tâches aujourd’hui" aria-valuemin={0} aria-valuemax={100} aria-valuenow={completionPercent}>
+                        <span style={{ width: `${completionPercent}%` }} />
+                    </div>
+                    <div className="dashboard-stat-grid">
+                        <article className="dashboard-stat-card stat-total"><span className="dashboard-stat-icon" aria-hidden="true">▤</span><span className="dashboard-stat-label">Tâches au total</span><strong>{tasks.length}</strong><small>Dans ton espace</small></article>
+                        <article className="dashboard-stat-card stat-pending"><span className="dashboard-stat-icon" aria-hidden="true">◷</span><span className="dashboard-stat-label">À faire</span><strong>{pendingTasks}</strong><small>{pendingTasks === 1 ? "Tâche à terminer" : "Tâches à terminer"}</small></article>
+                        <article className="dashboard-stat-card stat-done"><span className="dashboard-stat-icon" aria-hidden="true">✓</span><span className="dashboard-stat-label">Terminées aujourd’hui</span><strong>{doneTasks}</strong><small>{tasks.length ? `${completionPercent}% de ta liste` : "Commence avec une tâche"}</small></article>
+                        <article className="dashboard-stat-card stat-priority"><span className="dashboard-stat-icon" aria-hidden="true">↗</span><span className="dashboard-stat-label">Priorité haute</span><strong>{highPriorityTasks}</strong><small>{highPriorityTasks ? "À traiter en premier" : "Rien d’urgent détecté"}</small></article>
+                    </div>
+                </section>
+
+                <div className="action-center dashboard-actions">
+                    <button type="button" className={`main-button ${showTaskForm ? "active" : ""}`} onClick={handleToggleTaskForm}>＋ Nouvelle tâche</button>
+                    <button type="button" className={`main-button secondary ${showThemeForm ? "active" : ""}`} onClick={handleToggleThemeForm}>✦ Créer un thème</button>
+                    <button type="button" className={`main-button secondary ${showThemesList ? "active" : ""}`} onClick={() => setShowThemesList(prev => !prev)}>{showThemesList ? "Masquer les thèmes" : `Voir les thèmes · ${themes.length}`}</button>
                 </div>
 
                 {/* FORM TÂCHE */}
@@ -82,7 +116,7 @@ export function Dashboard() {
                     <div className="theme-create-wrapper">
                         <div className="theme-create">
                             <div className="theme-field">
-                                <label className="theme-label">Task title</label>
+                                <label className="theme-label">Nom de la tâche</label>
                                 <input
                                     className="theme-input"
                                     value={newTask}
@@ -118,31 +152,31 @@ export function Dashboard() {
                             </div>
 
                             <div className="theme-field">
-                                <label className="theme-label">Priority</label>
+                                <label className="theme-label">Priorité</label>
                                 <select className="theme-select" value={priority} onChange={e => setPriority(e.target.value)}>
-                                    <option value="Low">Low</option>
-                                    <option value="Medium">Medium</option>
-                                    <option value="High">High</option>
+                                    <option value="Low">Basse</option>
+                                    <option value="Medium">Moyenne</option>
+                                    <option value="High">Haute</option>
                                 </select>
                             </div>
 
                             <div className="theme-field">
-                                <label className="theme-label">Frequency</label>
+                                <label className="theme-label">Fréquence</label>
                                 <select className="theme-select" value={frequency} onChange={e => setFrequency(e.target.value)}>
-                                    <option value="daily">Daily</option>
-                                    <option value="weekly">Weekly</option>
-                                    <option value="monthly">Monthly</option>
-                                    <option value="once">One-time</option>
+                                    <option value="daily">Chaque jour</option>
+                                    <option value="weekly">Chaque semaine</option>
+                                    <option value="monthly">Chaque mois</option>
+                                    <option value="once">Une seule fois</option>
                                 </select>
                             </div>
 
                             <div className="theme-field">
-                                <label className="theme-label">Deadline</label>
+                                <label className="theme-label">Échéance</label>
                                 <input className="theme-input" type="date" value={deadline} onChange={e => setDeadline(e.target.value)} />
                             </div>
 
                             <div className="theme-field">
-                                <label className="theme-label">Note</label>
+                                <label className="theme-label">Note (facultatif)</label>
                                 <input className="theme-input" value={note} onChange={e => setNote(e.target.value)} />
                             </div>
 
@@ -156,14 +190,14 @@ export function Dashboard() {
                                         else { setFrequency("daily"); setCompletionTarget(1) }
                                     }}
                                 >
-                                    <option value="once">One-time — à faire une fois</option>
+                                    <option value="once">À faire une seule fois</option>
                                     <option value="recurring">Récurrente — revient chaque jour</option>
                                 </select>
                             </div>
 
                             {frequency !== "once" && (
                                 <div className="theme-field">
-                                    <label className="theme-label">Nombre de fois par jour</label>
+                                    <label className="theme-label">Nombre de répétitions par jour</label>
                                     <input
                                         className="theme-input"
                                         type="number" min={1} max={30}
@@ -174,7 +208,7 @@ export function Dashboard() {
                             )}
 
                             <button className="main-button" onClick={handleCreateTask}>
-                                Confirm Task
+                                Créer la tâche
                             </button>
                         </div>
                     </div>
@@ -184,7 +218,7 @@ export function Dashboard() {
                 {showThemeForm && (
                     <div className="theme-create-wrapper">
                         <div className="theme-create">
-                            <input className="theme-input" placeholder="Theme name" value={themeName} onChange={e => setThemeName(e.target.value)} />
+                            <input className="theme-input" placeholder="Nom du thème" value={themeName} onChange={e => setThemeName(e.target.value)} />
                             <input className="theme-input" placeholder="Emoji" value={themeEmoji} onChange={e => setThemeEmoji(e.target.value)} />
                             <div className="color-picker">
                                 {["#ef4444", "#f59e0b", "#22c55e", "#3b82f6", "#a855f7", "#ec4899"].map(color => (
@@ -196,24 +230,37 @@ export function Dashboard() {
                                     />
                                 ))}
                             </div>
-                            <button className="main-button" onClick={handleCreateTheme}>Create Theme</button>
+                            <button className="main-button" onClick={handleCreateTheme}>Créer le thème</button>
                         </div>
                     </div>
                 )}
 
-                {/* PROGRESS */}
-                <div className="progress-wrapper">
-                    <span>{doneTasks} / {tasks.length} done today</span>
-                    <div className="progress-bar">
-                        <div
-                            className="progress-fill"
-                            style={{ width: tasks.length ? `${(doneTasks / tasks.length) * 100}%` : "0%" }}
-                        />
+                <section className="dashboard-task-list-section">
+                    <div className="dashboard-list-heading">
+                        <div>
+                            <p className="dashboard-eyebrow">PASSE À L’ACTION</p>
+                            <h2>Mes tâches</h2>
+                            <p className="dashboard-list-subtitle">{visibleTasks.length} résultat{visibleTasks.length > 1 ? "s" : ""} · coche une tâche quand tu l’as terminée.</p>
+                        </div>
+                        <div className="dashboard-task-filters" role="group" aria-label="Filtrer les tâches">
+                            <button type="button" className={taskFilter === "all" ? "active" : ""} aria-pressed={taskFilter === "all"} onClick={() => setTaskFilter("all")}>Toutes <span>{searchedTasks.length}</span></button>
+                            <button type="button" className={taskFilter === "pending" ? "active" : ""} aria-pressed={taskFilter === "pending"} onClick={() => setTaskFilter("pending")}>À faire <span>{searchedTasks.filter(task => !dailyState.get(task.id)?.done_today).length}</span></button>
+                            <button type="button" className={taskFilter === "done" ? "active" : ""} aria-pressed={taskFilter === "done"} onClick={() => setTaskFilter("done")}>Terminées <span>{searchedTasks.filter(task => dailyState.get(task.id)?.done_today).length}</span></button>
+                        </div>
                     </div>
-                </div>
+                </section>
+
+                {visibleTasks.length === 0 && !taskSearch && (
+                    <div className="dashboard-empty-state">
+                        <span className="dashboard-empty-icon" aria-hidden="true">{taskFilter === "done" ? "✦" : "☀"}</span>
+                        <h3>{taskFilter === "done" ? "Pas encore de tâche terminée" : taskFilter === "pending" ? "Tout est à jour !" : "Ton espace est prêt"}</h3>
+                        <p>{taskFilter === "done" ? "Les tâches cochées aujourd’hui apparaîtront ici." : taskFilter === "pending" ? "Tu as terminé toutes tes tâches du moment." : "Ajoute ta première tâche pour organiser ta journée."}</p>
+                        {taskFilter === "all" && <button type="button" className="main-button" onClick={handleToggleTaskForm}>＋ Créer ma première tâche</button>}
+                    </div>
+                }
 
                 {taskSearch && visibleTasks.length === 0 && (
-                    <div className="task-search-empty">Aucune tâche ne correspond à « {taskSearch} ».</div>
+                    <div className="task-search-empty">Aucune tâche ne correspond à « {taskSearch} ». Essaie un autre mot ou efface la recherche.</div>
                 )}
 
                 {visibleTasks.map(task => {
@@ -237,22 +284,23 @@ export function Dashboard() {
                     return (
                         <div
                             key={task.id}
-                            className={`task ${doneToday ? "task-done" : ""}`}
+                            className={`task dashboard-task-card ${doneToday ? "task-done" : ""}`}
                         >
                             <div className="task-content">
 
                 <span className="task-title">
                     {task.title}
                 </span>
+                                <span className="dashboard-task-subline">{doneToday ? "Terminée pour aujourd’hui" : task.deadline ? `Échéance : ${new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" }).format(new Date(task.deadline))}` : "À ton rythme, une étape à la fois"}</span>
 
                                 <div className="task-meta">
 
                     <span className={`badge priority-${task.priority?.toLowerCase()}`}>
-                        {task.priority}
+                        {task.priority === "High" ? "Haute" : task.priority === "Low" ? "Basse" : "Moyenne"}
                     </span>
 
                                     <span className={`badge type-${task.frequency}`}>
-                        {task.frequency}
+                        {({ daily: "Quotidienne", weekly: "Hebdomadaire", monthly: "Mensuelle", once: "Ponctuelle" } as Record<string, string>)[task.frequency] ?? task.frequency}
                     </span>
 
                                     {task.completion_target > 1 && (
@@ -282,14 +330,19 @@ export function Dashboard() {
                             <div className="task-actions">
 
                                 <button
+                                    type="button"
                                     className={`task-btn done-btn ${doneToday ? "active" : ""}`}
+                                    aria-label={doneToday ? `Marquer ${task.title} comme non terminée` : `Terminer ${task.title}`}
+                                    title={doneToday ? "Annuler la validation" : "Marquer comme terminée"}
                                     onClick={() => toggleDone(task.id)}
                                 >
                                     {doneToday ? "↩" : "✓"}
                                 </button>
 
                                 <button
+                                    type="button"
                                     className="task-btn archive-btn"
+                                    aria-label={`Archiver ${task.title}`}
                                     onClick={() => archiveTask(task.id)}
                                     title="Archiver"
                                 >
@@ -297,7 +350,9 @@ export function Dashboard() {
                                 </button>
 
                                 <button
+                                    type="button"
                                     className="task-btn delete-btn"
+                                    aria-label={`Supprimer ${task.title}`}
                                     onClick={() => deleteTask(task.id)}
                                 >
                                     🗑
@@ -312,9 +367,7 @@ export function Dashboard() {
                 {showThemesList && (
                     <section className="themes">
                         {themes.length === 0 && (
-                            <p style={{ fontSize: 13, color: "rgba(255,255,255,0.4)" }}>
-                                Aucun thème créé pour l'instant.
-                            </p>
+                            <p className="dashboard-theme-empty">Aucun thème pour le moment. Crée-en un pour classer tes tâches.</p>
                         )}
                         {themes.map(theme => {
                             // Compte les tâches via multi-thèmes ET via theme_id (compatibilité)

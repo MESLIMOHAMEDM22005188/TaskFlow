@@ -22,7 +22,7 @@ router.get("/", async (req, res) => {
                                    AND ds.user_id = ?
                                    AND ds.date = ?
                      LEFT JOIN themes th ON th.id = t.theme_id
-            WHERE t.user_id = ? AND t.status IN ('active', 'done', 'todo')
+            WHERE t.user_id = ? AND COALESCE(t.status, 'active') <> 'archived'
             ORDER BY
                 FIELD(t.priority, 'High', 'Medium', 'Low'),
                 t.deadline ASC,

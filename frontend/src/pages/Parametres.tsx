@@ -279,7 +279,7 @@ export default function Parametres() {
             const url = URL.createObjectURL(blob)
             const a = document.createElement("a")
             a.href = url
-            a.download = `grindly-st-mes-donnees-${new Date().toISOString().split("T")[0]}.json`
+            a.download = `grindly-mes-donnees-${new Date().toISOString().split("T")[0]}.json`
             a.click()
             URL.revokeObjectURL(url)
             setExportDone(true)
@@ -313,7 +313,7 @@ export default function Parametres() {
         <div className="settings-page">
 
             <header className="topbar">
-                <div className="logo">Grindly ST</div>
+                <div className="logo">Grindly</div>
                 <nav className="nav-menu">
                     <div className="nav-item" onClick={() => navigate("/dashboard")}>Dashboard</div>
                     <div className="nav-item" onClick={() => navigate("/objectifs")}>Objectifs</div>
@@ -336,7 +336,7 @@ export default function Parametres() {
                 <div className="settings-hero">
                     <h1 className="settings-title">Paramètres</h1>
                     <p className="settings-subtitle">
-                        Personnalise ton expérience Grindly ST
+                        Personnalise ton expérience Grindly
                         {saveStatus === "saving" && <span className="save-status saving"> · Sauvegarde...</span>}
                         {saveStatus === "saved" && <span className="save-status saved"> · ✓ Sauvegardé</span>}
                     </p>
@@ -560,7 +560,7 @@ export default function Parametres() {
                         <p>
                             Conformément au <strong>Règlement Général sur la Protection des Données (RGPD)</strong>,
                             tu as le droit d'accéder à tes données, de les télécharger et de les faire supprimer.
-                            Grindly ST ne revend jamais tes données à des tiers.
+                            Grindly ne revend jamais tes données à des tiers.
                         </p>
                     </div>
 
@@ -595,7 +595,7 @@ export default function Parametres() {
                                 <li>❌ <strong>Non collecté</strong> — données de navigation, cookies tiers, publicité</li>
                             </ul>
                             <p className="data-summary-contact">
-                                Pour toute question : <strong>privacy@grindly-st.app</strong> — Réponse sous 30 jours (délai légal RGPD).
+                                Pour toute question : <strong>privacy@grindly.app</strong> — Réponse sous 30 jours (délai légal RGPD).
                             </p>
                         </div>
                     )}
@@ -687,13 +687,13 @@ export default function Parametres() {
                 </div>
 
                 <div className="settings-footer">
-                    <p>Grindly ST respecte ta vie privée. Aucune publicité, aucune revente de données.</p>
+                    <p>Grindly respecte ta vie privée. Aucune publicité, aucune revente de données.</p>
                     <div className="settings-footer-links">
                         <a href="/politique-confidentialite" className="settings-footer-link">Politique de confidentialité</a>
                         <span>·</span>
                         <a href="/cgu" className="settings-footer-link">CGU</a>
                         <span>·</span>
-                        <a href="mailto:privacy@grindly-st.app" className="settings-footer-link">Contact DPO</a>
+                        <a href="mailto:privacy@grindly.app" className="settings-footer-link">Contact DPO</a>
                     </div>
                 </div>
 

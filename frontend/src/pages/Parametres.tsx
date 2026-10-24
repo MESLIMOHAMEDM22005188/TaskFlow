@@ -466,8 +466,8 @@ export default function Parametres() {
 
                     <SettingRow wide icon="🌌" title={t(language, "settings.background")} desc={t(language, "settings.backgroundDesc")}>
                         <div className="bg-mode-tabs" role="group" aria-label="Mode de fond">
-                            <button type="button" className={darkMode ? "active" : ""} onClick={() => setDarkMode(true)}>🌙 Thèmes sombres</button>
-                            <button type="button" className={!darkMode ? "active" : ""} onClick={() => setDarkMode(false)}>☀️ Thèmes clairs</button>
+                            <button type="button" className={darkMode ? "active" : ""} onClick={() => setDarkMode(true)}>🌙 {t(language, "settings.darkThemes")}</button>
+                            <button type="button" className={!darkMode ? "active" : ""} onClick={() => setDarkMode(false)}>☀️ {t(language, "settings.lightThemes")}</button>
                         </div>
                         <div className="bg-picker" role="radiogroup" aria-label={darkMode ? "Choisir un thème sombre" : "Choisir un thème clair"}>
                             {Object.entries(darkMode ? BG_PRESETS : LIGHT_BG_PRESETS).map(([key, preset]) => (

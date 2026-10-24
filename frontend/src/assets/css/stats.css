@@ -202,3 +202,24 @@
     .stats-chart-heading { align-items: flex-start; flex-direction: column; }
     .priority-legend { justify-content: flex-start; }
 }
+
+
+
+/* Accessible focus states for the updated stats controls */
+.stats-page button:focus-visible,
+.stats-page input:focus-visible,
+.stats-page select:focus-visible,
+.stats-page summary:focus-visible {
+    outline: 2px solid var(--accent, #6366f1);
+    outline-offset: 3px;
+}
+.stats-page button:disabled {
+    cursor: not-allowed;
+    opacity: .55;
+}
+.stats-page .stats-color-control input[type="color"] {
+    flex-shrink: 0;
+}
+.stats-page .stats-color-control input[type="color"]:focus-visible {
+    outline-offset: 2px;
+}

@@ -73,9 +73,12 @@ router.post("/", async (req, res) => {
         // On garde theme_id sur la tâche pour la compatibilité
         const mainThemeId = ids[0] ?? theme_id ?? null
 
+        // Force un statut visible dans la liste après rechargement.
+        // La route GET ne retourne que les tâches active/done : ne pas dépendre
+        // du statut par défaut défini dans le schéma SQL.
         const [result] = await db.execute(
-            `INSERT INTO tasks (user_id, theme_id, title, priority, frequency, deadline, note, completion_target)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO tasks (user_id, theme_id, title, priority, frequency, deadline, note, completion_target, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active')`,
             [req.userId, mainThemeId, title, priority || "Medium", frequency || "daily", deadline || null, note || null, completion_target || 1]
         )
 

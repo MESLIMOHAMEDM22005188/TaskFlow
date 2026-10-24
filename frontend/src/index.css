@@ -194,3 +194,6 @@ code {
     transition-duration: 0.01ms !important;
   }
 }
+
+
+/* Global appearance is synchronized through the shared Grindly theme controller. */

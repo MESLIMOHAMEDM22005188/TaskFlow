@@ -1,78 +1,27 @@
-import { useNavigate } from "react-router-dom";
-import type {CSSProperties} from "react";
+import { Link } from "react-router-dom";
+import AuthThemeToggle from "../components/AuthThemeToggle";
+import "../assets/css/auth.css";
 
 export function AuthChoice() {
-    const navigate = useNavigate();
-
     return (
-        <div style={container}>
-            <h1 style={title}>Grindly</h1>
-
-            <p style={subtitle}>
-                Organise tes tâches simplement
-            </p>
-
-            <div style={buttons}>
-                <button
-                    style={login}
-                    onClick={() => navigate("/login")}
-                >
-                    Login
-                </button>
-
-                <button
-                    style={signup}
-                    onClick={() => navigate("/signup")}
-                >
-                    Sign up
-                </button>
-            </div>
-        </div>
+        <main className="auth-screen auth-choice-screen">
+            <div className="auth-orb auth-orb-one" aria-hidden="true" />
+            <div className="auth-orb auth-orb-two" aria-hidden="true" />
+            <header className="auth-topbar">
+                <Link to="/" className="auth-brand" aria-label="Accueil Grindly"><span className="auth-brand-mark">G</span> grindly</Link>
+                <AuthThemeToggle />
+            </header>
+            <section className="auth-choice-content">
+                <span className="auth-eyebrow"><span className="auth-eyebrow-dot" /> FAÇONNE TON QUOTIDIEN</span>
+                <h1>Moins d’intentions.<br />Plus d’<span>actions.</span></h1>
+                <p>Organise tes tâches, construis des habitudes durables et avance vers tes objectifs, un jour à la fois.</p>
+                <div className="auth-choice-actions">
+                    <Link to="/signup" className="auth-choice-primary">Créer mon compte <span aria-hidden="true">→</span></Link>
+                    <Link to="/login" className="auth-choice-secondary">J’ai déjà un compte</Link>
+                </div>
+                <div className="auth-choice-note"><span>✓</span> Ton espace personnel pour suivre tes progrès.</div>
+            </section>
+            <footer className="auth-footer">GRINDLY <span>·</span> TES OBJECTIFS, UN JOUR À LA FOIS</footer>
+        </main>
     );
 }
-
-const container: CSSProperties = {
-    height: "100vh",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "center",
-    background: "#0f172a",
-    color: "white"
-};
-
-const title: CSSProperties = {
-    fontSize: "48px",
-    marginBottom: "10px"
-};
-
-const subtitle: CSSProperties = {
-    marginBottom: "40px",
-    opacity: 0.8
-};
-
-const buttons: CSSProperties = {
-    display: "flex",
-    gap: "20px"
-};
-
-const baseButton: CSSProperties = {
-    padding: "12px 30px",
-    borderRadius: "8px",
-    border: "none",
-    fontSize: "16px",
-    cursor: "pointer",
-    transition: "0.2s ease"
-};
-
-const login: CSSProperties = {
-    ...baseButton,
-    background: "#2563eb",
-    color: "white"
-};
-
-const signup: CSSProperties = {
-    ...baseButton,
-    background: "#16a34a",
-    color: "white"
-};

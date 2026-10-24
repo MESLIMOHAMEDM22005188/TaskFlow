@@ -118,11 +118,30 @@ export function useObjectifs() {
     }
 
     async function handleUpdateProgress(id: number, current_value: number) {
+        const safeValue = Math.max(0, Math.floor(Number(current_value) || 0))
+        const previous = objectives.find(objective => objective.id === id)
+        if (!previous) return
+
+        const numericTarget = previous.target_value == null ? null : Number(previous.target_value)
+        const optimisticStatus = numericTarget !== null && safeValue >= numericTarget
+            ? "completed"
+            : previous.status === "completed" ? "active" : previous.status
+
+        // Met à jour l'interface sans attendre le serveur.
+        setObjectives(prev => prev.map(objective =>
+            objective.id === id
+                ? { ...objective, current_value: safeValue, status: optimisticStatus }
+                : objective
+        ))
+
         try {
-            const updated = await updateObjectiveProgress(id, current_value)
-            setObjectives(prev => prev.map(o => o.id === id ? updated : o))
+            const updated = await updateObjectiveProgress(id, safeValue)
+            setObjectives(prev => prev.map(objective => objective.id === id ? updated : objective))
         } catch (err) {
-            console.error(err)
+            console.error("Impossible d’enregistrer la progression de l’objectif :", err)
+            // Retour à la valeur précédente si l'API refuse la modification.
+            setObjectives(prev => prev.map(objective => objective.id === id ? previous : objective))
+            alert("La progression n’a pas pu être enregistrée. Vérifie ta connexion puis réessaie.")
         }
     }
 

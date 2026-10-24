@@ -1,11 +1,11 @@
 services:
   mysql:
     image: mysql:8
-    container_name: taskflow-mysql
+    container_name: grindly-st-mysql
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: password
-      MYSQL_DATABASE: taskflow
+      MYSQL_DATABASE: grindly_st
     ports:
       - "3306:3306"
     volumes:

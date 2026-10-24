@@ -875,7 +875,7 @@ export default function Habitudes() {
 
                         </div>
                     ))}
-                </section>}
+                </section>)}
 
                 {/* ADDICTIONS */}
 {typeFilter !== "build" && (
@@ -975,7 +975,7 @@ export default function Habitudes() {
 
                         </div>
                     ))}
-                </section>}
+                </section>)}
 
             </main>
         </div>

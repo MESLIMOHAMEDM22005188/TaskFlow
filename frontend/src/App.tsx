@@ -1,6 +1,7 @@
 import { useEffect } from "react"
 import { Routes, Route, Navigate } from "react-router-dom"
 import { getPreferences } from "./services/taskService"
+import { applyLanguage, type GrindlyLanguage } from "./i18n"
 
 import { AuthChoice } from "./pages/AuthChoice"
 import Login from "./pages/Login"
@@ -89,6 +90,11 @@ function App() {
         getPreferences().then(prefs => {
             const root = document.documentElement
 
+            const language = (localStorage.getItem("grindly-language") || prefs.language || "fr") as GrindlyLanguage
+            applyLanguage(language)
+            const topbarColor = localStorage.getItem("grindly-topbar-color")
+            if (topbarColor && /^#[0-9a-f]{6}$/i.test(topbarColor)) root.style.setProperty("--topbar-custom-bg", topbarColor)
+
             // Accent color
             root.style.setProperty("--accent", prefs.accent_color)
             const r = parseInt(prefs.accent_color.slice(1, 3), 16)
@@ -104,9 +110,9 @@ function App() {
             const preset = BG_PRESETS[bgPresetKey] ?? BG_PRESETS.navy
             const savedTheme = localStorage.getItem("grindly-theme")
             const dark = savedTheme ? savedTheme === "dark" : !!prefs.dark_mode
-            root.style.setProperty("--bg",         dark ? preset.bg      : "#f4f4f7")
+            root.style.setProperty("--bg",         dark ? preset.bg      : `color-mix(in srgb, ${preset.bg} 9%, #ffffff)`)
             root.style.setProperty("--bg-card",    dark ? preset.card    : "rgba(0,0,0,0.03)")
-            root.style.setProperty("--bg-surface", dark ? preset.surface : "rgba(0,0,0,0.05)")
+            root.style.setProperty("--bg-surface", dark ? preset.surface : "rgba(255,255,255,0.82)")
             root.classList.toggle("light-mode", !dark)
             localStorage.setItem("grindly-theme", dark ? "dark" : "light")
             window.dispatchEvent(new CustomEvent("grindly-theme-change", { detail: { lightMode: !dark } }))

@@ -12,7 +12,6 @@ export default function Profil() {
     const [loading, setLoading] = useState(true)
     const [achievements, setAchievements] = useState<Achievement[]>([])
     const [saved, setSaved] = useState(false)
-    const [avatar, setAvatar] = useState<string>("https://i.pravatar.cc/120")
     const [stats, setStats] = useState({
         tasksCompleted: 0,
         themesCreated: 0,
@@ -45,7 +44,6 @@ export default function Profil() {
                 setBio(data.bio ?? "")
                 setEmail(data.email)
                 setStats(data.stats)
-                setAvatar(data.avatar_url ?? "https://i.pravatar.cc/120")
                 setLoading(false)
                 setAchievements(data.achievements ?? [])
             })

@@ -251,7 +251,17 @@ export default function Parametres() {
         if (/^#[0-9a-f]{6}$/i.test(topbarColor)) {
             localStorage.setItem(darkMode ? "grindly-topbar-dark" : "grindly-topbar-light", topbarColor)
             localStorage.setItem("grindly-topbar-color", topbarColor)
-            document.documentElement.style.setProperty("--topbar-custom-bg", topbarColor)
+            const root = document.documentElement
+            root.style.setProperty("--topbar-custom-bg", topbarColor)
+            // Keep text readable on both light and dark custom topbar colors.
+            const hex = topbarColor.slice(1)
+            const brightness = (parseInt(hex.slice(0, 2), 16) * 299 + parseInt(hex.slice(2, 4), 16) * 587 + parseInt(hex.slice(4, 6), 16) * 114) / 1000
+            const lightText = brightness < 145
+            root.style.setProperty("--topbar-text", lightText ? "#f8fafc" : "#20202b")
+            root.style.setProperty("--topbar-muted", lightText ? "#c4c8d4" : "#5b6170")
+            root.style.setProperty("--topbar-border", lightText ? "rgba(255,255,255,.14)" : "rgba(22,22,35,.13)")
+            root.style.setProperty("--topbar-hover", lightText ? "rgba(255,255,255,.09)" : "rgba(22,22,35,.07)")
+            root.style.setProperty("--topbar-active-bg", lightText ? "rgba(255,255,255,.14)" : "rgba(22,22,35,.09)")
         }
     }, [accentColor, darkMode, darkBgPreset, lightBgPreset, topbarColor])
 

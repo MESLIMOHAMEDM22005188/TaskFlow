@@ -9,13 +9,14 @@ import {
     getTasks
 } from "./taskService"
 
-import { ASSET_ROOT } from "./api"
 
 import type {
     FlowSettings,
     FlowStats,
     Task
 } from "./taskService"
+import { createAmbientAudioController } from "./ambientAudio"
+import type { AmbientAudioController } from "./ambientAudio"
 
 type TimerMode = "focus" | "short_break" | "long_break"
 
@@ -24,7 +25,7 @@ function useFlow() {
     const navigate = useNavigate()
 
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-    const audioRef = useRef<HTMLAudioElement | null>(null)
+    const ambientAudioRef = useRef<AmbientAudioController | null>(null)
 
     const [settings, setSettings] = useState<FlowSettings | null>(null)
     const [showSettings, setShowSettings] = useState(false)
@@ -45,8 +46,14 @@ function useFlow() {
         totalMinutes: 0
     })
 
-    const [ambientSound, setAmbientSound] = useState("none")
+    const [ambientSound, setAmbientSoundState] = useState("none")
     const [ambientVolume, setAmbientVolume] = useState(50)
+
+    const setAmbientSound = useCallback((sound: string) => {
+        setAmbientSoundState(sound)
+        if (!ambientAudioRef.current) ambientAudioRef.current = createAmbientAudioController()
+        ambientAudioRef.current.play(sound, ambientVolume)
+    }, [ambientVolume])
 
     const [lastXp, setLastXp] = useState<number | null>(null)
 
@@ -65,7 +72,7 @@ function useFlow() {
                 setStats(flowStats)
                 setTasks(userTasks)
 
-                setAmbientSound(flowSettings.ambient_sound)
+                setAmbientSoundState(flowSettings.ambient_sound)
                 setAmbientVolume(flowSettings.ambient_volume)
 
                 setTimeLeft(flowSettings.focus_duration * 60)
@@ -80,9 +87,6 @@ function useFlow() {
     }, [])
 
     const switchMode = useCallback((newMode: TimerMode) => {
-
-        if (!settings) return
-
         setIsRunning(false)
 
         if (intervalRef.current) {
@@ -92,21 +96,18 @@ function useFlow() {
 
         setMode(newMode)
 
-        switch (newMode) {
-
-            case "focus":
-                setTimeLeft(settings.focus_duration * 60)
-                break
-
-            case "short_break":
-                setTimeLeft(settings.short_break * 60)
-                break
-
-            case "long_break":
-                setTimeLeft(settings.long_break * 60)
-                break
+        // Switching modes must work even while preferences are still loading or unavailable.
+        const durations = settings ?? {
+            focus_duration: 25,
+            short_break: 5,
+            long_break: 15,
         }
-
+        const duration = newMode === "focus"
+            ? durations.focus_duration
+            : newMode === "short_break"
+                ? durations.short_break
+                : durations.long_break
+        setTimeLeft(Math.max(1, duration) * 60)
     }, [settings])
     const handleTimerEnd = useCallback(async () => {
         setIsRunning(false)
@@ -212,44 +213,15 @@ function useFlow() {
 
     }, [isRunning, handleTimerEnd])
 
+    // The selected ambience is generated locally; sound buttons preview it immediately.
     useEffect(() => {
-        if (audioRef.current) {
-            audioRef.current.pause()
-            audioRef.current = null
-        }
-        if (ambientSound !== "none" && isRunning) {
-            const sounds: Record<string, string> = {
-                rain: "https://www.fesliyanstudios.com/play-mp3/387",
-                heavy_rain: "https://www.fesliyanstudios.com/play-mp3/388",
-                forest: "https://www.fesliyanstudios.com/play-mp3/390",
-                waves: "https://www.fesliyanstudios.com/play-mp3/391",
-                fire: `${ASSET_ROOT}/sounds/fire.mp3`,
-                cafe: "https://www.fesliyanstudios.com/play-mp3/393",
-                wind: "https://www.fesliyanstudios.com/play-mp3/394",
-                night: "https://www.fesliyanstudios.com/play-mp3/395",
-                river: "https://www.fesliyanstudios.com/play-mp3/396",
-                lofi: "https://www.fesliyanstudios.com/play-mp3/2400",
-            }
-            if (sounds[ambientSound]) {
-                audioRef.current = new Audio(sounds[ambientSound])
-                audioRef.current.loop = true
-                audioRef.current.volume = ambientVolume / 100
-                audioRef.current.play().catch(() => {
-                    // Le navigateur peut attendre une interaction avant d'autoriser l'audio.
-                })
-            }
-        }
-    }, [ambientSound, isRunning])
-
-    useEffect(() => {
-        if (audioRef.current) audioRef.current.volume = ambientVolume / 100
+        if (!ambientAudioRef.current) return
+        ambientAudioRef.current.setVolume(ambientVolume)
     }, [ambientVolume])
 
     useEffect(() => () => {
-        if (audioRef.current) {
-            audioRef.current.pause()
-            audioRef.current = null
-        }
+        ambientAudioRef.current?.dispose()
+        ambientAudioRef.current = null
     }, [])
 
 
@@ -281,11 +253,42 @@ function useFlow() {
     }
 
     async function handleSaveSettings(newSettings: Partial<FlowSettings>) {
+        const defaults: FlowSettings = {
+            id: 0,
+            user_id: 0,
+            focus_duration: 25,
+            short_break: 5,
+            long_break: 15,
+            pomodoros_until_long: 4,
+            auto_start_break: false,
+            ambient_sound: "none",
+            ambient_volume: 50,
+        }
+        const optimistic = { ...defaults, ...(settings ?? {}), ...newSettings }
+
+        // Update the UI first so changing a method or a break always responds to the click.
+        setIsRunning(false)
+        if (intervalRef.current) {
+            clearInterval(intervalRef.current)
+            intervalRef.current = null
+        }
+        setSettings(optimistic)
+        setAmbientSoundState(optimistic.ambient_sound)
+        setAmbientVolume(optimistic.ambient_volume)
+        const currentDuration = mode === "focus"
+            ? optimistic.focus_duration
+            : mode === "short_break" ? optimistic.short_break : optimistic.long_break
+        setTimeLeft(Math.max(1, currentDuration) * 60)
+
         const updated = await updateFlowSettings(newSettings)
-        setSettings(updated)
-        setAmbientSound(updated.ambient_sound)
-        setAmbientVolume(updated.ambient_volume)
-        switchMode(mode)
+        const merged: FlowSettings = { ...optimistic, ...updated, ...newSettings }
+        setSettings(merged)
+        setAmbientSoundState(merged.ambient_sound)
+        setAmbientVolume(merged.ambient_volume)
+        const updatedDuration = mode === "focus"
+            ? merged.focus_duration
+            : mode === "short_break" ? merged.short_break : merged.long_break
+        setTimeLeft(Math.max(1, updatedDuration) * 60)
         setShowSettings(false)
     }
 

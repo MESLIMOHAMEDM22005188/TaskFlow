@@ -99,7 +99,7 @@ export default function Navbar({
     return (
         <header className="topbar">
             <div className="logo" onClick={() => goTo("/dashboard")}>
-                Grindly ST
+                Grindly
             </div>
             <nav className="nav-menu">
                 {NAV_ITEMS.map((item) => (
@@ -164,7 +164,7 @@ export default function Navbar({
                 onTouchEnd={handleTouchEnd}
             >
                 <div className="mobile-panel-header">
-                    <div className="logo">Grindly ST</div>
+                    <div className="logo">Grindly</div>
                     <button
                         className="mobile-close"
                         onClick={closeMenu}

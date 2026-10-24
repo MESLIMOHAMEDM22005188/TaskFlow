@@ -37,27 +37,64 @@ export function useStats() {
     const [focusPerDay, setFocusPerDay] = useState<FocusPerDay[]>([])
     const [heatmap, setHeatmap] = useState<TaskPerDay[]>([])
 
+    const [hasLoadError, setHasLoadError] = useState(false)
+
     useEffect(() => {
+        let cancelled = false
+        setLoading(true)
+        setHasLoadError(false)
+
+        const safeLoad = async <T,>(request: () => Promise<T>, fallback: T): Promise<T> => {
+            try {
+                return await request()
+            } catch (err) {
+                console.error("Stats request failed:", err)
+                if (!cancelled) setHasLoadError(true)
+                return fallback
+            }
+        }
+
         Promise.all([
-            getStatsOverview(),
-            getTasksPerDay(period),
-            getXpOverTime(period),
-            getRadarData(),
-            getPrioritySplit(),
-            getFocusPerDay(period),
-            getHeatmap()
-        ])
-            .then(([ov, tpd, xot, rd, ps, fpd, hm]) => {
-                setOverview(ov)
-                setTasksPerDay(tpd)
-                setXpOverTime(xot)
-                setRadarData(rd)
-                setPrioritySplit(ps)
-                setFocusPerDay(fpd)
-                setHeatmap(hm)
-                setLoading(false)
+            safeLoad(getStatsOverview, {
+                totalTasks: 0, totalXp: 0, totalFocus: 0,
+                bestStreak: 0, bestDay: "—", bestHour: null
+            }),
+            safeLoad(() => getTasksPerDay(period), [] as TaskPerDay[]),
+            safeLoad(() => getXpOverTime(period), [] as XpOverTime[]),
+            safeLoad(getRadarData, [] as RadarData[]),
+            safeLoad(getPrioritySplit, [] as PrioritySplit[]),
+            safeLoad(() => getFocusPerDay(period), [] as FocusPerDay[]),
+            safeLoad(getHeatmap, [] as TaskPerDay[])
+        ]).then(([ov, tpd, xot, rd, ps, fpd, hm]) => {
+            if (cancelled) return
+            setOverview({
+                totalTasks: Number(ov.totalTasks) || 0,
+                totalXp: Number(ov.totalXp) || 0,
+                totalFocus: Number(ov.totalFocus) || 0,
+                bestStreak: Number(ov.bestStreak) || 0,
+                bestDay: ov.bestDay || "—",
+                bestHour: ov.bestHour == null ? null : Number(ov.bestHour)
             })
-            .catch(err => console.error(err))
+            setTasksPerDay(tpd.map(item => ({ ...item, count: Number(item.count) || 0 })))
+            setXpOverTime(xot.map(item => ({ ...item, xp: Number(item.xp) || 0 })))
+            setRadarData(rd.map(item => ({
+                ...item,
+                tasks: Number(item.tasks) || 0,
+                completed: Number(item.completed) || 0
+            })))
+            setPrioritySplit(ps.map(item => ({ ...item, count: Number(item.count) || 0 })))
+            setFocusPerDay(fpd.map(item => ({ ...item, minutes: Number(item.minutes) || 0 })))
+            setHeatmap(hm.map(item => ({ ...item, count: Number(item.count) || 0 })))
+            setLoading(false)
+        }).catch(err => {
+            console.error("Unable to initialize statistics:", err)
+            if (!cancelled) {
+                setHasLoadError(true)
+                setLoading(false)
+            }
+        })
+
+        return () => { cancelled = true }
     }, [period])
 
     function formatHour(hour: number | null): string {
@@ -68,51 +105,61 @@ export function useStats() {
         return `${hour}h`
     }
 
-    function getHeatmapColor(count: number): string {
-        if (count === 0) return "rgba(255,255,255,0.05)"
-        if (count <= 2) return "rgba(99,102,241,0.3)"
-        if (count <= 4) return "rgba(99,102,241,0.5)"
-        if (count <= 6) return "rgba(99,102,241,0.7)"
-        return "#6366f1"
+    function getHeatmapColor(count: number, baseColor = "#6366f1"): string {
+        if (count <= 0) return "var(--stats-heatmap-empty, rgba(127,127,127,.09))"
+        const safe = /^#[0-9a-f]{6}$/i.test(baseColor) ? baseColor : "#6366f1"
+        const red = parseInt(safe.slice(1, 3), 16)
+        const green = parseInt(safe.slice(3, 5), 16)
+        const blue = parseInt(safe.slice(5, 7), 16)
+        const opacity = count <= 2 ? 0.28 : count <= 4 ? 0.48 : count <= 6 ? 0.7 : 0.95
+        return `rgba(${red}, ${green}, ${blue}, ${opacity})`
     }
 
     function getHeatmapDays(): { date: string, count: number, dayOfWeek: number }[] {
         const heatmapMap: Record<string, number> = {}
-        heatmap.forEach(h => { heatmapMap[h.date] = h.count })
+        heatmap.forEach(item => {
+            const key = typeof item.date === "string" ? item.date.slice(0, 10) : String(item.date)
+            heatmapMap[key] = Number(item.count) || 0
+        })
 
         const now = new Date()
+        now.setHours(0, 0, 0, 0)
+        const parseLocalDate = (value: string) => {
+            const [year, month, day] = value.slice(0, 10).split("-").map(Number)
+            return new Date(year, month - 1, day)
+        }
         let start: Date
 
         if (heatmapFrom) {
-            start = new Date(heatmapFrom)
+            start = parseLocalDate(heatmapFrom)
         } else if (heatmapPeriod === "week") {
-            start = new Date()
-            start.setDate(now.getDate() - 7)
+            start = new Date(now)
+            start.setDate(start.getDate() - 6)
         } else if (heatmapPeriod === "month") {
-            start = new Date()
-            start.setMonth(now.getMonth() - 1)
+            start = new Date(now)
+            start.setDate(start.getDate() - 29)
         } else if (heatmapPeriod === "3months") {
-            start = new Date()
-            start.setMonth(now.getMonth() - 3)
+            start = new Date(now)
+            start.setMonth(start.getMonth() - 3)
         } else if (heatmapPeriod === "6months") {
-            start = new Date()
-            start.setMonth(now.getMonth() - 6)
+            start = new Date(now)
+            start.setMonth(start.getMonth() - 6)
         } else if (heatmapPeriod === "all") {
-            start = new Date("2024-01-01")
+            const knownDates = Object.keys(heatmapMap).sort()
+            start = knownDates.length ? parseLocalDate(knownDates[0]) : new Date(now)
+            if (!knownDates.length) start.setDate(start.getDate() - 364)
         } else {
-            start = new Date()
-            start.setDate(now.getDate() - 365)
+            start = new Date(now)
+            start.setDate(start.getDate() - 364)
         }
 
+        if (start > now) return []
         const days: { date: string, count: number, dayOfWeek: number }[] = []
         const current = new Date(start)
+        current.setHours(0, 0, 0, 0)
         while (current <= now) {
-            const key = current.toISOString().split("T")[0]
-            days.push({
-                date: key,
-                count: heatmapMap[key] ?? 0,
-                dayOfWeek: current.getDay()
-            })
+            const key = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, "0")}-${String(current.getDate()).padStart(2, "0")}`
+            days.push({ date: key, count: heatmapMap[key] ?? 0, dayOfWeek: current.getDay() })
             current.setDate(current.getDate() + 1)
         }
         return days
@@ -121,6 +168,7 @@ export function useStats() {
     return {
         navigate,
         loading,
+        hasLoadError,
         period, setPeriod,
         heatmapPeriod, setHeatmapPeriod,
         heatmapFrom, setHeatmapFrom,

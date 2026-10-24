@@ -255,7 +255,7 @@ export default function Flow() {
                         <section className="flow-card flow-settings-card">
                             <button type="button" className="flow-settings-btn" onClick={() => { setShowSettings(!showSettings); setSettingsError(""); }} aria-expanded={showSettings}>
                                 <span className="flow-settings-icon" aria-hidden="true">⚙</span>
-                                <span><strong>Personnaliser le minuteur</strong><small>Durées, cycles et démarrage automatique</small></span>
+                                <span><strong>Personnaliser le minuteur</strong><small>{settingsSaved ? "Paramètres enregistrés" : "Durées, cycles et démarrage automatique"}</small></span>
                                 <span className={"flow-settings-chevron" + (showSettings ? " open" : "")} aria-hidden="true">⌄</span>
                             </button>
 

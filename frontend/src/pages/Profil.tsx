@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import "../assets/css/profil.css"
-import { getProfil, updateProfil, uploadAvatar } from "../services/taskService"
+import { getProfil, updateProfil } from "../services/taskService"
 import type { Achievement } from "../services/taskService"
 import { useNavigate } from "react-router-dom"
 import Navbar from "../components/Navbar.tsx";
@@ -52,18 +52,6 @@ export default function Profil() {
             .catch(err => console.error(err))
     }, [])
 
-    async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
-        const file = e.target.files?.[0]
-        if (!file) return
-        try {
-            const url = await uploadAvatar(file)
-            setAvatar(url)
-        } catch (err) {
-            console.error(err)
-            alert("Failed to upload avatar")
-        }
-    }
-
     async function handleSave() {
         try {
             await updateProfil({ username, bio })
@@ -91,17 +79,11 @@ export default function Profil() {
                 <h1 className="profil-title">Profile</h1>
 
                 <section className="profil-card">
-                    <div className="profil-avatar">
-                        <img src={avatar} alt="avatar" />
-                        <label className="avatar-upload-btn">
-                            📷
-                            <input
-                                type="file"
-                                accept="image/jpeg,image/png,image/webp"
-                                onChange={handleAvatarChange}
-                                style={{ display: "none" }}
-                            />
-                        </label>
+                    <div className="profil-avatar" aria-label="Avatar du profil">
+                        <div className="profil-avatar-circle" aria-hidden="true">
+                            {(username.trim().charAt(0) || "G").toUpperCase()}
+                        </div>
+                        <span className="profil-avatar-caption">Ton espace</span>
                     </div>
                     <div className="profil-form">
                         <label>Username</label>

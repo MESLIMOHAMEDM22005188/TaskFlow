@@ -2,17 +2,33 @@ import { API_ROOT } from "./api"
 
 function getHeaders() {
     const token = localStorage.getItem("token")
-    return {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
+    const headers: Record<string, string> = {
+        "Content-Type": "application/json"
     }
+
+    if (token && token !== "null" && token !== "undefined") {
+        headers.Authorization = `Bearer ${token}`
+    }
+
+    return headers
 }
 
 async function handleResponse(res: Response) {
     if (!res.ok) {
         const text = await res.text()
+
+        if (res.status === 401) {
+            localStorage.removeItem("token")
+
+            const publicPaths = ["/", "/login", "/signup"]
+            if (!publicPaths.includes(window.location.pathname)) {
+                window.location.replace("/login")
+            }
+        }
+
         throw new Error(`HTTP ${res.status}: ${text}`)
     }
+
     return res.json()
 }
 

@@ -257,7 +257,7 @@ export function Dashboard() {
                         <p>{taskFilter === "done" ? "Les tâches cochées aujourd’hui apparaîtront ici." : taskFilter === "pending" ? "Tu as terminé toutes tes tâches du moment." : "Ajoute ta première tâche pour organiser ta journée."}</p>
                         {taskFilter === "all" && <button type="button" className="main-button" onClick={handleToggleTaskForm}>＋ Créer ma première tâche</button>}
                     </div>
-                }
+                )}`
 
                 {taskSearch && visibleTasks.length === 0 && (
                     <div className="task-search-empty">Aucune tâche ne correspond à « {taskSearch} ». Essaie un autre mot ou efface la recherche.</div>

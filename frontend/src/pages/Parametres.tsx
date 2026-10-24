@@ -151,7 +151,9 @@ export default function Parametres() {
     const [accentColor, setAccentColor] = useState("#6366f1")
     const [darkBgPreset, setDarkBgPreset] = useState(() => localStorage.getItem("grindly-bg-dark") || localStorage.getItem("grindly-bg-preset") || "navy")
     const [lightBgPreset, setLightBgPreset] = useState(() => localStorage.getItem("grindly-bg-light") || "pearl")
-    const [topbarColor, setTopbarColor] = useState(() => localStorage.getItem("grindly-topbar-color") || "#10111a")
+    const [darkTopbarColor, setDarkTopbarColor] = useState(() => localStorage.getItem("grindly-topbar-dark") || localStorage.getItem("grindly-topbar-color") || "#10111a")
+    const [lightTopbarColor, setLightTopbarColor] = useState(() => localStorage.getItem("grindly-topbar-light") || "#ffffff")
+    const topbarColor = darkMode ? darkTopbarColor : lightTopbarColor
     const [language, setLanguage] = useState("fr")
     const [compactMode, setCompactMode] = useState(false)
     const [reducedMotion, setReducedMotion] = useState(false)
@@ -216,7 +218,10 @@ export default function Parametres() {
             setLanguage(storedLanguage)
             applyLanguage(storedLanguage)
             const storedTopbar = localStorage.getItem("grindly-topbar-color")
-            if (storedTopbar && /^#[0-9a-f]{6}$/i.test(storedTopbar)) setTopbarColor(storedTopbar)
+            const storedDarkTopbar = localStorage.getItem("grindly-topbar-dark") || storedTopbar
+            const storedLightTopbar = localStorage.getItem("grindly-topbar-light") || "#ffffff"
+            if (storedDarkTopbar && /^#[0-9a-f]{6}$/i.test(storedDarkTopbar)) setDarkTopbarColor(storedDarkTopbar)
+            if (storedLightTopbar && /^#[0-9a-f]{6}$/i.test(storedLightTopbar)) setLightTopbarColor(storedLightTopbar)
             setCompactMode(!!prefs.compact_mode)
             setReducedMotion(!!prefs.reduced_motion)
             setNotifs({
@@ -244,6 +249,7 @@ export default function Parametres() {
     useEffect(() => {
         applyTheme(accentColor, darkMode, darkMode ? darkBgPreset : lightBgPreset)
         if (/^#[0-9a-f]{6}$/i.test(topbarColor)) {
+            localStorage.setItem(darkMode ? "grindly-topbar-dark" : "grindly-topbar-light", topbarColor)
             localStorage.setItem("grindly-topbar-color", topbarColor)
             document.documentElement.style.setProperty("--topbar-custom-bg", topbarColor)
         }
@@ -417,10 +423,34 @@ export default function Parametres() {
                     </SettingRow>
 
                     <SettingRow icon="▰" title={t(language, "settings.topbar")} desc={t(language, "settings.topbarDesc")}>
-                        <div className="topbar-color-control">
-                            <input aria-label="Couleur de la barre supérieure" type="color" value={topbarColor} onChange={e => setTopbarColor(e.target.value)} />
-                            <span>{topbarColor.toUpperCase()}</span>
-                            <button type="button" className="settings-btn-outline" onClick={() => setTopbarColor(darkMode ? "#10111a" : "#ffffff")}>Réinitialiser</button>
+                        <div className="topbar-theme-picker">
+                            <div className="bg-mode-tabs" role="group" aria-label="Mode de couleur de la barre supérieure">
+                                <button type="button" className={darkMode ? "active" : ""} onClick={() => setDarkMode(true)}>🌙 Sombre</button>
+                                <button type="button" className={!darkMode ? "active" : ""} onClick={() => setDarkMode(false)}>☀️ Clair</button>
+                            </div>
+                            <div className="topbar-preset-grid" role="radiogroup" aria-label="Choisir une couleur de barre supérieure">
+                                {(darkMode ? [
+                                    ["midnight", "#10111a"], ["obsidian", "#0a0a0f"], ["navy", "#0f172a"], ["charcoal", "#27272a"],
+                                    ["forest", "#10231b"], ["ocean", "#083344"], ["plum", "#2a102b"], ["wine", "#3b1025"],
+                                    ["indigo", "#211b55"], ["slate", "#334155"], ["cocoa", "#3a2922"], ["black", "#000000"]
+                                ] : [
+                                    ["white", "#ffffff"], ["pearl", "#f5f7fb"], ["mist", "#e9eef5"], ["sand", "#f6f0e5"],
+                                    ["lavender", "#f2efff"], ["rose", "#fff0f3"], ["sage", "#edf5ef"], ["sky", "#eaf5ff"],
+                                    ["peach", "#fff1e8"], ["mint", "#e8faf5"], ["stone", "#e7e5e4"], ["silver", "#dfe3ea"]
+                                ] as const).map(([name, color]) => (
+                                    <button key={name} type="button" className={topbarColor.toLowerCase() === color ? "topbar-preset selected" : "topbar-preset"}
+                                        aria-label={name} aria-pressed={topbarColor.toLowerCase() === color}
+                                        title={name} onClick={() => darkMode ? setDarkTopbarColor(color) : setLightTopbarColor(color)}>
+                                        <span style={{ background: color }} />
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="topbar-color-control">
+                                <input aria-label="Couleur personnalisée de la barre supérieure" type="color" value={topbarColor} onChange={e => darkMode ? setDarkTopbarColor(e.target.value) : setLightTopbarColor(e.target.value)} />
+                                <span>{topbarColor.toUpperCase()}</span>
+                                <button type="button" className="settings-btn-outline" onClick={() => darkMode ? setDarkTopbarColor("#10111a") : setLightTopbarColor("#ffffff")}>Réinitialiser</button>
+                            </div>
+                            <p className="topbar-theme-note">Les couleurs sombres et claires sont enregistrées séparément.</p>
                         </div>
                     </SettingRow>
 

@@ -219,3 +219,65 @@
 }
 
 /* Objectives catalogue refresh: source kept in sync with the latest page components. */
+
+
+/* Progress controls: explicit clickable hit area */
+.objectifs-list .objectif-progress-controls {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    width: fit-content;
+    min-height: 42px;
+    gap: 12px;
+    isolation: isolate;
+}
+.objectifs-list .objectif-progress-controls .progress-btn {
+    position: relative;
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    min-height: 42px;
+    padding: 0;
+    border: 1px solid rgba(var(--accent-rgb,99,102,241),.3);
+    border-radius: 50%;
+    background: rgba(var(--accent-rgb,99,102,241),.14);
+    color: var(--accent, #818cf8);
+    font-size: 24px;
+    font-weight: 650;
+    line-height: 1;
+    cursor: pointer;
+    pointer-events: auto;
+    touch-action: manipulation;
+    user-select: none;
+    transition: background .16s ease, transform .16s ease, box-shadow .16s ease;
+}
+.objectifs-list .objectif-progress-controls .progress-btn-increment {
+    color: #fff;
+    background: var(--accent, #6366f1);
+    border-color: var(--accent, #6366f1);
+    box-shadow: 0 4px 12px rgba(var(--accent-rgb,99,102,241),.22);
+}
+.objectifs-list .objectif-progress-controls .progress-btn:hover:not(:disabled) {
+    transform: scale(1.07);
+    background: color-mix(in srgb, var(--accent, #6366f1) 75%, white);
+    color: #fff;
+    box-shadow: 0 5px 16px rgba(var(--accent-rgb,99,102,241),.25);
+}
+.objectifs-list .objectif-progress-controls .progress-btn:active:not(:disabled) {
+    transform: scale(.96);
+}
+.objectifs-list .objectif-progress-controls .progress-btn:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--accent, #6366f1) 40%, transparent);
+    outline-offset: 3px;
+}
+.objectifs-list .objectif-progress-controls .progress-btn:disabled {
+    opacity: .28;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}

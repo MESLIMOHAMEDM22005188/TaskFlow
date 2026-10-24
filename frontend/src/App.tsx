@@ -47,6 +47,10 @@ const BG_PRESETS: Record<string, { bg: string; card: string; surface: string }> 
     garnet: { bg: "#2c1114", card: "rgba(248,113,113,0.06)", surface: "rgba(248,113,113,0.11)" },
 }
 
+const LIGHT_BG_PRESETS: Record<string, { bg: string; card: string; surface: string }> = {
+    pearl:{bg:"#f5f7fb",card:"rgba(255,255,255,0.92)",surface:"rgba(255,255,255,0.98)"}, snow:{bg:"#ffffff",card:"rgba(248,250,252,0.98)",surface:"rgba(241,245,249,0.96)"}, mist:{bg:"#edf2f7",card:"rgba(255,255,255,0.9)",surface:"rgba(226,232,240,0.72)"}, sand:{bg:"#f6f0e5",card:"rgba(255,255,255,0.82)",surface:"rgba(235,224,204,0.72)"}, lavender:{bg:"#f2efff",card:"rgba(255,255,255,0.86)",surface:"rgba(221,214,254,0.6)"}, rose:{bg:"#fff0f3",card:"rgba(255,255,255,0.88)",surface:"rgba(251,207,232,0.5)"}, sage:{bg:"#edf5ef",card:"rgba(255,255,255,0.88)",surface:"rgba(187,222,195,0.48)"}, sky:{bg:"#eaf5ff",card:"rgba(255,255,255,0.9)",surface:"rgba(186,230,253,0.55)"}, peach:{bg:"#fff1e8",card:"rgba(255,255,255,0.9)",surface:"rgba(254,215,170,0.52)"}, mint:{bg:"#e8faf5",card:"rgba(255,255,255,0.9)",surface:"rgba(153,246,228,0.42)"}, butter:{bg:"#fff9df",card:"rgba(255,255,255,0.9)",surface:"rgba(254,240,138,0.4)"}, stone:{bg:"#f0efed",card:"rgba(255,255,255,0.9)",surface:"rgba(214,211,209,0.5)"}
+};
+
 function hasValidToken(): boolean {
     const token = localStorage.getItem("token")
 
@@ -103,16 +107,17 @@ function App() {
             root.style.setProperty("--accent-rgb", `${r}, ${g}, ${b}`)
 
             // Background — preserve locally selected preset across navigation/reloads.
-            const savedBgPreset = localStorage.getItem("grindly-bg-preset")
+            const savedBgPreset = localStorage.getItem(dark ? "grindly-bg-dark" : "grindly-bg-light") || localStorage.getItem("grindly-bg-preset")
             const requestedPreset = savedBgPreset || prefs.bg_preset || "navy"
             const legacyBgPresets: Record<string, string> = { dark: "navy", darker: "obsidian", warm: "cocoa" }
-            const bgPresetKey = BG_PRESETS[requestedPreset] ? requestedPreset : (legacyBgPresets[requestedPreset] || "navy")
-            const preset = BG_PRESETS[bgPresetKey] ?? BG_PRESETS.navy
+            const availablePresets = dark ? BG_PRESETS : LIGHT_BG_PRESETS
+            const bgPresetKey = availablePresets[requestedPreset] ? requestedPreset : (dark ? (legacyBgPresets[requestedPreset] || "navy") : "pearl")
+            const preset = availablePresets[bgPresetKey] ?? (dark ? BG_PRESETS.navy : LIGHT_BG_PRESETS.pearl)
             const savedTheme = localStorage.getItem("grindly-theme")
             const dark = savedTheme ? savedTheme === "dark" : !!prefs.dark_mode
-            root.style.setProperty("--bg",         dark ? preset.bg      : `color-mix(in srgb, ${preset.bg} 9%, #ffffff)`)
-            root.style.setProperty("--bg-card",    dark ? preset.card    : "rgba(0,0,0,0.03)")
-            root.style.setProperty("--bg-surface", dark ? preset.surface : "rgba(255,255,255,0.82)")
+            root.style.setProperty("--bg",         preset.bg)
+            root.style.setProperty("--bg-card",    preset.card)
+            root.style.setProperty("--bg-surface", preset.surface)
             root.classList.toggle("light-mode", !dark)
             localStorage.setItem("grindly-theme", dark ? "dark" : "light")
             window.dispatchEvent(new CustomEvent("grindly-theme-change", { detail: { lightMode: !dark } }))

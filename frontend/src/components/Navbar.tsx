@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import type { ReactNode, TouchEvent, KeyboardEvent } from "react";
+import type { ReactNode, TouchEvent, KeyboardEvent as ReactKeyboardEvent } from "react";
 import { getTasks, getPreferences, savePreferences } from "../services/taskService";
 import type { Task, UserPreferences } from "../services/taskService";
 import "../assets/css/navbar.css";
@@ -142,7 +142,7 @@ export default function Navbar({ rightExtra, notifCount = 0 }: NavbarProps) {
         navigate("/dashboard?search=" + encodeURIComponent(task.title));
     }
 
-    function handleSearchKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    function handleSearchKeyDown(event: ReactKeyboardEvent<HTMLInputElement>) {
         if (event.key === "Escape") {
             setSearchOpen(false);
             setSearchTerm("");

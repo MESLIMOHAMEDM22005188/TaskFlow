@@ -245,11 +245,29 @@ function DailyConsumptionTracker({
     habit: Habit
     onLogConsumption: (habitId: number, count: number) => void
 }) {
-    const [todayCount, setTodayCount] = useState(0)
     const [isOpen, setIsOpen] = useState(false)
-    const baseline = (habit as Habit & { baseline_qty?: number }).baseline_qty ?? habit.times_per_day ?? 5
-    const unit = (habit as Habit & { unit?: string }).unit ?? "fois"
-
+    const [savedCount, setSavedCount] = useState(false)
+    const localDay = (() => {
+        const today = new Date()
+        return String(today.getFullYear()) + "-" + String(today.getMonth() + 1).padStart(2, "0") + "-" + String(today.getDate()).padStart(2, "0")
+    })()
+    const storageKey = "grindly-consumption-" + habit.id + "-" + localDay
+    const savedBaseline = (() => {
+        try {
+            return JSON.parse(localStorage.getItem("grindly-habit-baseline-" + habit.id) || "{}") as { quantity?: number; unit?: string }
+        } catch {
+            return {}
+        }
+    })()
+    const [todayCount, setTodayCount] = useState(() => {
+        try {
+            return Math.max(0, Number(localStorage.getItem(storageKey)) || 0)
+        } catch {
+            return 0
+        }
+    })
+    const baseline = Math.max(1, Number((habit as Habit & { baseline_qty?: number }).baseline_qty ?? savedBaseline.quantity ?? habit.times_per_day ?? 5) || 1)
+    const unit = (habit as Habit & { unit?: string }).unit ?? savedBaseline.unit ?? "fois"
     const reduction = baseline - todayCount
     const pct = Math.max(0, Math.min(100, (reduction / baseline) * 100))
 
@@ -266,22 +284,23 @@ function DailyConsumptionTracker({
 
     return (
         <div className="consumption-tracker">
-            <button className="consumption-toggle" onClick={() => setIsOpen(!isOpen)}>
-                {isOpen ? "▲" : "▼"} Suivi de consommation aujourd'hui
+            <button type="button" className="consumption-toggle" aria-expanded={isOpen} onClick={() => setIsOpen(!isOpen)}>
+                {isOpen ? "Masquer" : "Voir"} le suivi de consommation d’aujourd’hui
             </button>
             {isOpen && (
                 <div className="consumption-body">
                     <p className="consumption-baseline">
-                        Avant : <strong>{baseline} {unit}/jour</strong> — Objectif : <strong>0</strong> 🎯
+                        Référence : <strong>{baseline} {unit}</strong> · aujourd’hui : <strong>{todayCount} {unit}</strong>
                     </p>
+                    <p className="consumption-local-note">Ce suivi est conservé sur cet appareil uniquement.</p>
 
                     <div className="consumption-counter-row">
-                        <button className="consumption-btn minus" onClick={() => setTodayCount(Math.max(0, todayCount - 1))}>−</button>
+                        <button type="button" className="consumption-btn minus" aria-label="Retirer une unité" disabled={todayCount <= 0} onClick={() => { setTodayCount(Math.max(0, todayCount - 1)); setSavedCount(false) }}>−</button>
                         <div className="consumption-display">
                             <span className="consumption-number">{todayCount}</span>
                             <span className="consumption-unit">{unit} aujourd'hui</span>
                         </div>
-                        <button className="consumption-btn plus" onClick={() => setTodayCount(todayCount + 1)}>+</button>
+                        <button type="button" className="consumption-btn plus" aria-label="Ajouter une unité" onClick={() => { setTodayCount(todayCount + 1); setSavedCount(false) }}>+</button>
                     </div>
 
                     {/* Barre de progression réduction */}
@@ -298,10 +317,14 @@ function DailyConsumptionTracker({
                     <p className="consumption-motivation" style={{ color: msgColor }}>{msg}</p>
 
                     <button
+                        type="button"
                         className="consumption-log-btn"
-                        onClick={() => { onLogConsumption(habit.id, todayCount); setIsOpen(false) }}
+                        onClick={() => {
+                            onLogConsumption(habit.id, todayCount)
+                            try { localStorage.setItem(storageKey, String(todayCount)); setSavedCount(true) } catch (err) { console.error(err) }
+                        }}
                     >
-                        💾 Enregistrer
+                        {savedCount ? "✓ Enregistré sur cet appareil" : "Enregistrer sur cet appareil"}
                     </button>
                 </div>
             )}

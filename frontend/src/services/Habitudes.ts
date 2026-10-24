@@ -20,6 +20,8 @@ export function useHabitudes() {
     const [successNote, setSuccessNote] = useState("")
     const [lastXp, setLastXp] = useState<{ id: number, xp: number } | null>(null)
     const [loadingIds, setLoadingIds] = useState<Set<number>>(new Set())
+    const [actionError, setActionError] = useState<string | null>(null)
+    const [isCreating, setIsCreating] = useState(false)
 
     const [name, setName] = useState("")
     const [type, setType] = useState<"build" | "quit">("build")
@@ -38,13 +40,19 @@ export function useHabitudes() {
     const [themeIds, setThemeIds] = useState<number[]>([])
 
     useEffect(() => {
-        Promise.all([getHabits(), getThemes()])
-            .then(([data, th]) => {
-                setHabits(data)
-                setThemes(th)
-                setLoading(false)
-            })
-            .catch(err => console.error(err))
+        let cancelled = false
+        Promise.allSettled([getHabits(), getThemes()]).then(([habitsResult, themesResult]) => {
+            if (cancelled) return
+            if (habitsResult.status === "fulfilled") setHabits(habitsResult.value)
+            else {
+                console.error("Impossible de charger les habitudes :", habitsResult.reason)
+                setActionError("Impossible de charger les habitudes. Actualise la page ou reconnecte-toi.")
+            }
+            if (themesResult.status === "fulfilled") setThemes(themesResult.value)
+            else console.error("Impossible de charger les thèmes :", themesResult.reason)
+            setLoading(false)
+        })
+        return () => { cancelled = true }
     }, [])
 
     function toggleThemeSelection(id: number) {
@@ -64,10 +72,13 @@ export function useHabitudes() {
     }
 
     async function handleCreateHabit() {
-        if (!name.trim()) return
+        const cleanedName = name.trim()
+        if (!cleanedName || isCreating) return
+        setIsCreating(true)
+        setActionError(null)
         try {
             const habit = await createHabit({
-                name, type, category,
+                name: cleanedName, type, category,
                 emoji: emoji || undefined,
                 color, frequency, difficulty,
                 is_private: isPrivate,
@@ -75,7 +86,7 @@ export function useHabitudes() {
                 triggers: type === "quit" ? triggers || undefined : undefined,
                 relapse_plan: type === "quit" ? relapsePlan || undefined : undefined,
                 danger_level: type === "quit" ? dangerLevel : "low",
-                times_per_day: timesPerDay,
+                times_per_day: Math.max(1, Math.min(20, Math.floor(Number(timesPerDay) || 1))),
                 start_date: type === "quit" ? startDate || undefined : undefined,
                 theme_ids: themeIds
             })
@@ -83,25 +94,28 @@ export function useHabitudes() {
             resetForm()
             setShowForm(false)
         } catch (err) {
-            console.error(err)
-            alert("Failed to create habit")
+            console.error("Impossible de créer l’habitude :", err)
+            setActionError("L’habitude n’a pas pu être créée. Vérifie ta connexion puis réessaie.")
+        } finally {
+            setIsCreating(false)
         }
     }
 
     async function handleSuccess(id: number) {
         if (loadingIds.has(id)) return
         setLoadingIds(prev => new Set(prev).add(id))
+        setActionError(null)
         try {
             const result = await logHabitSuccess(id, successNote || undefined)
             setHabits(prev => prev.map(h => {
                 if (h.id !== id) return h
                 return {
                     ...h,
-                    todayCount: result.todayCount,
-                    doneToday: result.isFullDay,
-                    streak: result.isFullDay && !h.doneToday ? h.streak + 1 : h.streak,
-                    totalSuccess: result.isFullDay && !h.doneToday ? h.totalSuccess + 1 : h.totalSuccess,
-                    sparkCount: result.isSpark ? h.sparkCount + 1 : 0,
+                    todayCount: Number(result.todayCount) || 0,
+                    doneToday: Boolean(result.isFullDay),
+                    streak: result.isFullDay && !h.doneToday ? Number(h.streak || 0) + 1 : h.streak,
+                    totalSuccess: result.isFullDay && !h.doneToday ? Number(h.totalSuccess || 0) + 1 : h.totalSuccess,
+                    sparkCount: result.isSpark ? Number(h.sparkCount || 0) + 1 : 0,
                 }
             }))
             if (result.xpGained > 0) {
@@ -110,46 +124,71 @@ export function useHabitudes() {
             }
             setSuccessNote("")
         } catch (err: any) {
-            if (err?.message?.includes("400")) {
-                getHabits().then(data => setHabits(data))
-            } else {
-                console.error(err)
+            console.error("Impossible d’enregistrer l’habitude :", err)
+            try {
+                const freshHabits = await getHabits()
+                setHabits(freshHabits)
+            } catch (refreshError) {
+                console.error(refreshError)
             }
+            setActionError(err?.message?.includes("400")
+                ? "Cette action a déjà été enregistrée ou la limite du jour est atteinte."
+                : "Impossible d’enregistrer cette habitude. Réessaie.")
         } finally {
-            setLoadingIds(prev => { const s = new Set(prev); s.delete(id); return s })
+            setLoadingIds(prev => { const next = new Set(prev); next.delete(id); return next })
         }
     }
 
     async function handleUndo(id: number) {
+        if (loadingIds.has(id)) return
+        setLoadingIds(prev => new Set(prev).add(id))
+        setActionError(null)
         try {
             await undoHabitSuccess(id)
-            setHabits(prev => prev.map(h => h.id === id ? {
-                ...h, doneToday: false,
-                todayCount: Math.max(0, h.todayCount - 1),
-                streak: Math.max(0, h.streak - 1),
-                totalSuccess: Math.max(0, h.totalSuccess - 1)
-            } : h))
-        } catch (err) { console.error(err) }
+            // Recharger les valeurs calculées par le serveur : les streaks ne baissent
+            // pas forcément d'un jour quand une habitude se fait plusieurs fois par jour.
+            const freshHabits = await getHabits()
+            setHabits(freshHabits)
+        } catch (err) {
+            console.error("Impossible d’annuler cette validation :", err)
+            setActionError("Impossible d’annuler cette validation. Réessaie.")
+        } finally {
+            setLoadingIds(prev => { const next = new Set(prev); next.delete(id); return next })
+        }
     }
 
     async function handleRelapse(id: number) {
+        if (loadingIds.has(id)) return
+        setLoadingIds(prev => new Set(prev).add(id))
+        setActionError(null)
         try {
             await logHabitRelapse(id, relapseNote || undefined)
             setHabits(prev => prev.map(h => h.id === id ? {
                 ...h, streak: 0,
-                relapseCount: h.relapseCount + 1,
-                lastRelapse: new Date().toISOString()
+                relapseCount: Number(h.relapseCount || 0) + 1,
+                lastRelapse: new Date().toISOString(),
+                sparkCount: 0
             } : h))
             setRelapseHabitId(null)
             setRelapseNote("")
-        } catch (err) { console.error(err) }
+            getHabits().then(freshHabits => setHabits(freshHabits)).catch(console.error)
+        } catch (err) {
+            console.error("Impossible d’enregistrer cette rechute :", err)
+            setActionError("La rechute n’a pas pu être enregistrée. Réessaie.")
+        } finally {
+            setLoadingIds(prev => { const next = new Set(prev); next.delete(id); return next })
+        }
     }
 
     async function handleDelete(id: number) {
+        setActionError(null)
         try {
             await deleteHabit(id)
             setHabits(prev => prev.filter(h => h.id !== id))
-        } catch (err) { console.error(err) }
+        } catch (err) {
+            console.error("Impossible de supprimer l’habitude :", err)
+            setActionError("L’habitude n’a pas pu être supprimée. Réessaie.")
+        }
     }
 
     const buildHabits = habits.filter(h => h.type === "build")
@@ -186,7 +225,7 @@ export function useHabitudes() {
         timesPerDay, setTimesPerDay,
         startDate, setStartDate,
         themeIds, toggleThemeSelection,
-        lastXp, loadingIds,
+        lastXp, loadingIds, actionError, isCreating,
         name, setName,
         type, setType,
         category, setCategory,

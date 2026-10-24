@@ -594,7 +594,7 @@
 }
 :root.light-mode .task-search-active button { color: #344054; border-color: rgba(30,41,59,.15); }
 @media (max-width: 900px) {
-    .mobile-search-trigger { display: flex; margin: 8px 0 14px; }
+    .mobile-search-trigger { display: none; margin: 8px 0 14px; }
     .global-search-backdrop { padding-top: 7vh; }
     .global-search { max-height: 80vh; }
     .global-search-result-path { max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -626,5 +626,6 @@
 .mobile-search-trigger { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 12px; margin: 0 0 14px; border: 1px solid var(--topbar-border); border-radius: 12px; color: var(--topbar-muted); background: var(--topbar-hover); font: inherit; text-align: left; cursor: pointer; }
 .mobile-search-trigger:hover { color: var(--topbar-text); border-color: color-mix(in srgb, var(--accent) 40%, var(--topbar-border)); }
 .notif-badge { box-shadow: 0 0 0 2px var(--topbar-bg); }
+@media (max-width: 900px) { .mobile-search-trigger { display: flex; } }
 @media (max-width: 1180px) and (min-width: 901px) { .nav-menu { gap: 2px; } .nav-item { padding-inline: 7px; font-size: 12px; } .theme-button { padding-inline: 9px; } }
 @media (prefers-reduced-motion: reduce) { .topbar, .nav-item, .logo, .theme-button { transition: none !important; } }

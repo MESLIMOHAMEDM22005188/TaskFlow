@@ -212,12 +212,12 @@ function fillGaps(rows, period) {
             cur.setMonth(cur.getMonth() + 1)
         }
     } else {
-        const days = period === "month" ? 29 : 6
-        start = new Date(now)
-        start.setDate(now.getDate() - days)
-        fmt = d => d.toISOString().split("T")[0]
+        const daysBeforeToday = period === "month" ? 29 : 6
+        start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysBeforeToday)
+        fmt = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
         const cur = new Date(start)
-        while (cur <= now) {
+        while (cur <= today) {
             const key = fmt(cur)
             result.push({ period: key, xp: map[key] ?? 0 })
             cur.setDate(cur.getDate() + 1)

@@ -1,5 +1,6 @@
 import "../assets/css/dashboard.css"
 import { useState, useEffect } from "react"
+import { useSearchParams } from "react-router-dom"
 import { useDashboard } from "../services/Dashboard"
 
 import Navbar from "../components/Navbar";
@@ -34,6 +35,11 @@ export function Dashboard() {
     } = useDashboard()
 
     const [showThemesList, setShowThemesList] = useState(false)
+    const [searchParams, setSearchParams] = useSearchParams()
+    const taskSearch = searchParams.get("search")?.trim() ?? ""
+    const visibleTasks = taskSearch
+        ? tasks.filter(task => task.title.toLocaleLowerCase("fr").includes(taskSearch.toLocaleLowerCase("fr")))
+        : tasks
 
     const doneTasks = tasks.filter(t => dailyState.get(t.id)?.done_today).length
 
@@ -43,6 +49,12 @@ export function Dashboard() {
 
             <main className="main">
                 <h1 className="title">Your workspace</h1>
+                {taskSearch && (
+                    <div className="task-search-active">
+                        <span>Résultats pour <strong>{taskSearch}</strong> · {visibleTasks.length} tâche(s)</span>
+                        <button type="button" onClick={() => setSearchParams({})}>Effacer la recherche</button>
+                    </div>
+                )}
 
                 <div className="action-center">
                     <button
@@ -200,7 +212,11 @@ export function Dashboard() {
                     </div>
                 </div>
 
-                {tasks.map(task => {
+                {taskSearch && visibleTasks.length === 0 && (
+                    <div className="task-search-empty">Aucune tâche ne correspond à « {taskSearch} ».</div>
+                )}
+
+                {visibleTasks.map(task => {
                     const state = dailyState.get(task.id);
                     const todayCount = state?.today_count ?? 0;
                     const doneToday = state?.done_today ?? false;

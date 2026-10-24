@@ -30,7 +30,7 @@ router.post("/avatar", upload.single("avatar"), async (req, res) => {
         const result = await new Promise((resolve, reject) => {
             cloudinary.uploader.upload_stream(
                 {
-                    folder: "taskflow/avatars",
+                    folder: "grindly-st/avatars",
                     transformation: [
                         { width: 200, height: 200, crop: "fill", gravity: "face" },
                         { quality: "auto", fetch_format: "auto" }

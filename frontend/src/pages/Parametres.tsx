@@ -187,7 +187,7 @@ export default function Parametres() {
             setDarkMode(savedTheme ? savedTheme === "dark" : !!prefs.dark_mode)
             setAccentColor(prefs.accent_color)
             const legacyPresets: Record<string, string> = { dark: "navy", darker: "obsidian", warm: "cocoa" }
-            const savedPreset = prefs.bg_preset || localStorage.getItem("grindly-bg-preset") || "navy"
+            const savedPreset = localStorage.getItem("grindly-bg-preset") || prefs.bg_preset || "navy"
             setBgPreset(BG_PRESETS[savedPreset] ? savedPreset : (legacyPresets[savedPreset] || "navy"))
             setLanguage(prefs.language)
             setCompactMode(!!prefs.compact_mode)

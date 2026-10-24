@@ -1,5 +1,5 @@
 import { useEffect } from "react"
-import { Routes, Route } from "react-router-dom"
+import { Routes, Route, Navigate } from "react-router-dom"
 import { getPreferences } from "./services/taskService"
 
 import { AuthChoice } from "./pages/AuthChoice"
@@ -25,6 +25,11 @@ const BG_PRESETS: Record<string, { bg: string; card: string; surface: string }> 
     ember:    { bg: "#180d08", card: "rgba(239,100,68,0.06)",   surface: "rgba(239,100,68,0.1)"   },
     wine:     { bg: "#150812", card: "rgba(200,50,100,0.06)",   surface: "rgba(200,50,100,0.1)"   },
     dusk:     { bg: "#130d1f", card: "rgba(168,85,247,0.06)",   surface: "rgba(168,85,247,0.1)"   },
+}
+
+function RequireAuth({ children }: { children: React.ReactElement }) {
+    const token = localStorage.getItem("token")
+    return token ? children : <Navigate to="/login" replace />
 }
 
 function App() {
@@ -58,15 +63,15 @@ function App() {
             <Route path="/"           element={<AuthChoice />} />
             <Route path="/login"      element={<Login />} />
             <Route path="/signup"     element={<Signup />} />
-            <Route path="/dashboard"  element={<Dashboard />} />
-            <Route path="/objectifs"  element={<Objectifs />} />
-            <Route path="/flow"       element={<Flow />} />
-            <Route path="/profil"     element={<Profil />} />
-            <Route path="/communaute" element={<Communaute />} />
-            <Route path="/parametres" element={<Parametres />} />
-            <Route path="/stats"      element={<Stats />} />
-            <Route path="/habitudes"  element={<Habitudes />} />
-            <Route path="/historique" element={<Historique />} />
+            <Route path="/dashboard"  element={<RequireAuth><Dashboard /></RequireAuth>} />
+            <Route path="/objectifs"  element={<RequireAuth><Objectifs /></RequireAuth>} />
+            <Route path="/flow"       element={<RequireAuth><Flow /></RequireAuth>} />
+            <Route path="/profil"     element={<RequireAuth><Profil /></RequireAuth>} />
+            <Route path="/communaute" element={<RequireAuth><Communaute /></RequireAuth>} />
+            <Route path="/parametres" element={<RequireAuth><Parametres /></RequireAuth>} />
+            <Route path="/stats"      element={<RequireAuth><Stats /></RequireAuth>} />
+            <Route path="/habitudes"  element={<RequireAuth><Habitudes /></RequireAuth>} />
+            <Route path="/historique" element={<RequireAuth><Historique /></RequireAuth>} />
         </Routes>
     )
 }

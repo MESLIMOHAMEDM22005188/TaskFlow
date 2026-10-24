@@ -22,7 +22,7 @@ router.get("/", async (req, res) => {
                                    AND ds.user_id = ?
                                    AND ds.date = ?
                      LEFT JOIN themes th ON th.id = t.theme_id
-            WHERE t.user_id = ? AND t.status IN ('active', 'done')
+            WHERE t.user_id = ? AND t.status IN ('active', 'done', 'todo')
             ORDER BY
                 FIELD(t.priority, 'High', 'Medium', 'Low'),
                 t.deadline ASC,
@@ -50,6 +50,9 @@ router.get("/", async (req, res) => {
         // Ajouter themes[] à chaque tâche
         const result = tasks.map(t => ({
             ...t,
+            // Anciennes tâches créées avec le statut "todo" : les exposer comme actives
+            // pour rester compatibles avec les filtres et types du frontend.
+            status: t.status === "todo" ? "active" : t.status,
             themes: themesByTask[t.id] ?? []
         }))
 

@@ -379,7 +379,8 @@ export function Dashboard() {
                                     title={doneToday ? "Annuler la validation" : "Marquer comme terminée"}
                                     onClick={() => toggleDone(task.id)}
                                 >
-                                    {doneToday ? "↩" : "✓"}
+                                    <span className="task-action-icon" aria-hidden="true">{doneToday ? "↩" : "✓"}</span>
+                                    <span className="task-action-label">{doneToday ? "Annuler" : "Terminer"}</span>
                                 </button>
 
                                 <button
@@ -389,16 +390,19 @@ export function Dashboard() {
                                     onClick={() => archiveTask(task.id)}
                                     title="Archiver"
                                 >
-                                    🗃
+                                    <span className="task-action-icon" aria-hidden="true">▣</span>
+                                    <span className="task-action-label">Archiver</span>
                                 </button>
 
                                 <button
                                     type="button"
                                     className="task-btn delete-btn"
                                     aria-label={`Supprimer ${task.title}`}
+                                    title={`Supprimer ${task.title}`}
                                     onClick={() => deleteTask(task.id)}
                                 >
-                                    🗑
+                                    <span className="task-action-icon" aria-hidden="true">×</span>
+                                    <span className="task-action-label">Supprimer</span>
                                 </button>
 
                             </div>

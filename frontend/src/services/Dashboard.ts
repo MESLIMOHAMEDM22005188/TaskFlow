@@ -14,11 +14,22 @@ export function useDashboard() {
 
     const navigate = useNavigate()
 
-    const [dark, setDark] = useState(true)
+    const [dark, setDark] = useState(
+        () => typeof document === "undefined" || !document.documentElement.classList.contains("light-mode")
+    )
     const [tasks, setTasks] = useState<Task[]>([])
     const [themes, setThemes] = useState<Theme[]>([])
     const [dailyState, setDailyState] = useState<Map<number, TaskDailyState>>(new Map())
     const [notifications] = useState<Notification[]>([])
+
+    useEffect(() => {
+        const syncTheme = (event: Event) => {
+            const detail = (event as CustomEvent<{ lightMode?: boolean }>).detail
+            setDark(!(detail?.lightMode ?? document.documentElement.classList.contains("light-mode")))
+        }
+        window.addEventListener("grindly-theme-change", syncTheme)
+        return () => window.removeEventListener("grindly-theme-change", syncTheme)
+    }, [])
 
     // Form task
     const [newTask, setNewTask] = useState("")

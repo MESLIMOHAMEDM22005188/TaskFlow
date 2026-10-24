@@ -116,7 +116,6 @@ export default function Signup() {
 
                     <label className="auth-label" htmlFor="signup-confirm-password">Confirmer le mot de passe</label>
                     <input
-                        id="signup-confirm-password"
                         className="auth-input"
                         id="signup-confirm-password"
                         type={showPassword ? "text" : "password"}

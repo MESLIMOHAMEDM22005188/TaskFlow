@@ -1,9 +1,17 @@
 import "../assets/css/dashboard.css"
-import { useState, useEffect } from "react"
+import { useState, useEffect, type CSSProperties } from "react"
 import { useSearchParams } from "react-router-dom"
 import { useDashboard } from "../services/Dashboard"
 
 import Navbar from "../components/Navbar";
+
+const normalizeThemeName = (value: string | null | undefined) =>
+    (value ?? "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim()
+        .replace(/\s+/g, " ")
+        .toLocaleLowerCase("fr-FR")
 
 export function Dashboard() {
     const {
@@ -36,6 +44,17 @@ export function Dashboard() {
     } = useDashboard()
 
     const [showThemesList, setShowThemesList] = useState(false)
+    const themeGroups: { theme: (typeof themes)[number]; ids: number[]; key: string }[] = []
+    for (const theme of themes) {
+        const key = normalizeThemeName(theme.name)
+        const existing = themeGroups.find(group => group.key === key || group.ids.includes(theme.id))
+        if (existing) {
+            if (!existing.ids.includes(theme.id)) existing.ids.push(theme.id)
+        } else {
+            themeGroups.push({ theme, ids: [theme.id], key })
+        }
+    }
+    const uniqueThemes = themeGroups.map(group => group.theme)
     const [taskFilter, setTaskFilter] = useState<"all" | "pending" | "done">("all")
     const [searchParams, setSearchParams] = useSearchParams()
     const taskSearch = searchParams.get("search")?.trim() ?? ""
@@ -108,7 +127,7 @@ export function Dashboard() {
                 <div className="action-center dashboard-actions">
                     <button type="button" className={`main-button ${showTaskForm ? "active" : ""}`} onClick={handleToggleTaskForm}>＋ Nouvelle tâche</button>
                     <button type="button" className={`main-button secondary ${showThemeForm ? "active" : ""}`} onClick={handleToggleThemeForm}>✦ Créer un thème</button>
-                    <button type="button" className={`main-button secondary ${showThemesList ? "active" : ""}`} onClick={() => setShowThemesList(prev => !prev)}>{showThemesList ? "Masquer les thèmes" : `Voir les thèmes · ${themes.length}`}</button>
+                    <button type="button" className={`main-button secondary ${showThemesList ? "active" : ""}`} onClick={() => setShowThemesList(prev => !prev)}>{showThemesList ? "Masquer les thèmes" : `Voir les thèmes · ${uniqueThemes.length}`}</button>
                 </div>
 
                 {/* FORM TÂCHE */}
@@ -126,7 +145,7 @@ export function Dashboard() {
                                     Thèmes <span className="theme-label-hint">(3 max)</span>
                                 </label>
                                 <div className="theme-multi-picker">
-                                    {themes.map(t => (
+                                    {uniqueThemes.map(t => (
                                         <button
                                             key={t.id}
                                             type="button"
@@ -269,7 +288,7 @@ export function Dashboard() {
                     const doneToday = state?.done_today ?? false;
 
                     // Récupère les thèmes (nouveau système ou ancien)
-                    const taskThemes =
+                    const rawTaskThemes =
                         task.themes && task.themes.length > 0
                             ? task.themes
                             : task.theme_name
@@ -279,7 +298,13 @@ export function Dashboard() {
                                     emoji: task.theme_emoji,
                                     color: task.theme_color ?? "#ffffff"
                                 }]
-                                : [];
+                                : []
+                    const taskThemes = rawTaskThemes.filter((theme, index, all) =>
+                        all.findIndex(other =>
+                            (theme.id != null && other.id === theme.id) ||
+                            normalizeThemeName(other.name) === normalizeThemeName(theme.name)
+                        ) === index
+                    )
 
                     return (
                         <div
@@ -363,41 +388,79 @@ export function Dashboard() {
                     );
                 })}
 
-                {/* LISTE DES THÈMES EXISTANTS — visible uniquement au clic */}
+                {/* THÈMES — regroupés par nom pour éviter les doublons visuels */}
                 {showThemesList && (
-                    <section className="themes">
-                        {themes.length === 0 && (
-                            <p className="dashboard-theme-empty">Aucun thème pour le moment. Crée-en un pour classer tes tâches.</p>
-                        )}
-                        {themes.map(theme => {
-                            // Compte les tâches via multi-thèmes ET via theme_id (compatibilité)
-                            const themeTasks = tasks.filter(t =>
-                                (t.themes && t.themes.some(th => th.id === theme.id)) ||
-                                Number(t.theme_id) === Number(theme.id)
-                            )
-                            const done = themeTasks.filter(t => dailyState.get(t.id)?.done_today).length
+                    <section className="themes-section" aria-label="Mes thèmes">
+                        <header className="themes-section-header">
+                            <div>
+                                <p className="dashboard-eyebrow">ORGANISE TON ESPACE</p>
+                                <h2>Mes thèmes</h2>
+                                <p className="themes-section-subtitle">
+                                    {themeGroups.length} thème{themeGroups.length !== 1 ? "s" : ""} unique{themeGroups.length !== 1 ? "s" : ""} pour organiser tes tâches.
+                                </p>
+                            </div>
+                            <span className="themes-total-pill">{themeGroups.length} au total</span>
+                        </header>
 
-                            return (
-                                <div
-                                    key={theme.id}
-                                    className="theme-card"
-                                    style={{
-                                        borderLeft: `5px solid ${theme.color}`,
-                                        boxShadow: `0 0 18px ${theme.color}18`
-                                    }}
-                                >                                <div className="theme-card-left">
-                                    <span className="theme-emoji">{theme.emoji}</span>
-                                    <div className="theme-info">
-                                        <span className="theme-name">{theme.name}</span>
-                                        <span className="theme-stats">{themeTasks.length} tâches • {done} faites aujourd'hui</span>
-                                    </div>
-                                </div>
-                                    <button className="theme-delete-btn" onClick={() => handleDeleteTheme(theme.id)}>
-                                        Supprimer
-                                    </button>
-                                </div>
-                            )
-                        })}
+                        {themeGroups.length === 0 ? (
+                            <div className="dashboard-theme-empty">
+                                <span className="themes-empty-icon" aria-hidden="true">✦</span>
+                                <strong>Aucun thème pour le moment</strong>
+                                <span>Crée un thème pour classer tes tâches et suivre ta progression.</span>
+                                <button type="button" className="main-button" onClick={handleToggleThemeForm}>Créer un thème</button>
+                            </div>
+                        ) : (
+                            <div className="themes-grid">
+                                {themeGroups.map(({ theme, ids, key }) => {
+                                    const themeTasks = tasks.filter(task =>
+                                        (task.themes && task.themes.some(item => ids.includes(item.id))) ||
+                                        (task.theme_id != null && ids.includes(Number(task.theme_id)))
+                                    )
+                                    const done = themeTasks.filter(task => dailyState.get(task.id)?.done_today).length
+                                    const progress = themeTasks.length ? Math.round(done / themeTasks.length * 100) : 0
+                                    const duplicates = ids.length - 1
+
+                                    return (
+                                        <article
+                                            key={key}
+                                            className="theme-card"
+                                            style={{ "--theme-color": theme.color || "#6366f1" } as CSSProperties}
+                                        >
+                                            <div className="theme-card-top">
+                                                <span className="theme-emoji" aria-hidden="true">{theme.emoji || "✦"}</span>
+                                                <span className="theme-task-count">{themeTasks.length} tâche{themeTasks.length !== 1 ? "s" : ""}</span>
+                                            </div>
+                                            <div className="theme-info">
+                                                <h3 className="theme-name">{theme.name}</h3>
+                                                <p className="theme-stats">{done} terminée{done !== 1 ? "s" : ""} aujourd’hui</p>
+                                            </div>
+                                            <div className="theme-progress-track" role="progressbar" aria-label={`Progression du thème ${theme.name}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}>
+                                                <span style={{ width: `${progress}%` }} />
+                                            </div>
+                                            <div className="theme-card-footer">
+                                                <span>{progress}% accompli</span>
+                                                {duplicates > 0 && <span className="theme-duplicate-hint">{duplicates} doublon{duplicates > 1 ? "s" : ""} regroupé{duplicates > 1 ? "s" : ""}</span>}
+                                            </div>
+                                            <button
+                                                type="button"
+                                                className="theme-delete-btn"
+                                                aria-label={`Supprimer le thème ${theme.name} et ses doublons`}
+                                                title={duplicates > 0 ? `Supprimer ce thème et ses ${duplicates} doublon(s)` : `Supprimer ${theme.name}`}
+                                                onClick={() => {
+                                                    if (window.confirm(duplicates > 0
+                                                        ? `Supprimer « ${theme.name} » et ses ${duplicates} doublon(s) ? Les tâches resteront, mais cette association de thème sera retirée.`
+                                                        : `Supprimer le thème « ${theme.name} » ? Les tâches resteront, mais cette association de thème sera retirée.`)) {
+                                                        void Promise.all(ids.map(id => handleDeleteTheme(id)))
+                                                    }
+                                                }}
+                                            >
+                                                <span aria-hidden="true">×</span> Supprimer
+                                            </button>
+                                        </article>
+                                    )
+                                })}
+                            </div>
+                        )}
                     </section>
                 )}
 

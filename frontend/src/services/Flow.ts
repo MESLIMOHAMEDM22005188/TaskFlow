@@ -234,11 +234,23 @@ function useFlow() {
                 audioRef.current = new Audio(sounds[ambientSound])
                 audioRef.current.loop = true
                 audioRef.current.volume = ambientVolume / 100
-                audioRef.current.play().catch(err => console.error(err))
+                audioRef.current.play().catch(() => {
+                    // Le navigateur peut attendre une interaction avant d'autoriser l'audio.
+                })
             }
         }
     }, [ambientSound, isRunning])
 
+    useEffect(() => {
+        if (audioRef.current) audioRef.current.volume = ambientVolume / 100
+    }, [ambientVolume])
+
+    useEffect(() => () => {
+        if (audioRef.current) {
+            audioRef.current.pause()
+            audioRef.current = null
+        }
+    }, [])
 
 
     function handleStart() {

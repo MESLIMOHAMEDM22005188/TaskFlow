@@ -1,7 +1,7 @@
 services:
   mysql:
     image: mysql:8
-    container_name: grindly-st-mysql
+    container_name: grindly-mysql
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: password

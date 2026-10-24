@@ -357,3 +357,59 @@
 @media (prefers-reduced-motion: reduce) {
     .auth-screen *, .auth-screen *::before, .auth-screen *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+
+.auth-choice-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    max-width: 850px;
+    flex: 1;
+    justify-content: center;
+    margin: 0 auto;
+    padding: 30px 0 70px;
+}
+.auth-choice-content h1 {
+    margin: 23px 0 20px;
+    color: var(--auth-text);
+    font-size: clamp(54px, 8vw, 100px);
+    font-weight: 800;
+    letter-spacing: -.08em;
+    line-height: .98;
+}
+.auth-choice-content h1 span { color: #818cf8; }
+.auth-choice-content > p {
+    max-width: 540px;
+    color: var(--auth-muted);
+    font-size: clamp(15px, 1.5vw, 18px);
+    line-height: 1.8;
+}
+.auth-choice-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 31px; }
+.auth-choice-primary, .auth-choice-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    min-height: 49px;
+    padding: 13px 19px;
+    border-radius: 11px;
+    font-size: 13px;
+    font-weight: 750;
+    text-decoration: none;
+    transition: transform .18s ease, filter .18s ease, background .18s ease;
+}
+.auth-choice-primary { color: white; background: linear-gradient(110deg,#6366f1,#5558e8); box-shadow: 0 9px 24px rgba(79,70,229,.23); }
+.auth-choice-secondary { color: var(--auth-text); background: var(--auth-input); border: 1px solid var(--auth-input-border); }
+.auth-choice-primary:hover, .auth-choice-secondary:hover { transform: translateY(-2px); }
+.auth-choice-primary:hover { filter: brightness(1.1); }
+.auth-choice-note { display: flex; align-items: center; gap: 9px; margin-top: 24px; color: var(--auth-muted); font-size: 12px; }
+.auth-choice-note span { color: #34d399; font-weight: 900; }
+:root.light-mode .auth-choice-content h1 { color: #202333; }
+:root.light-mode .auth-choice-secondary { color: #344054; }
+@media (max-width: 720px) {
+    .auth-choice-content { padding: 40px 0 70px; }
+    .auth-choice-content h1 { font-size: clamp(48px, 12vw, 72px); }
+    .auth-choice-actions { width: 100%; flex-direction: column; align-items: stretch; }
+    .auth-choice-primary, .auth-choice-secondary { width: 100%; }
+}

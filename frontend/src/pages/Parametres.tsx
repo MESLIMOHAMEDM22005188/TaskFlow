@@ -397,7 +397,7 @@ export default function Parametres() {
             <main className="settings-main">
 
                 <div className="settings-hero">
-                    <h1 className="settings-title">Paramètres</h1>
+                    <h1 className="settings-title">{t(language, "settings.appearance")}</h1>
                     <p className="settings-subtitle">
                         Personnalise ton expérience Grindly
                         {saveStatus === "saving" && <span className="save-status saving"> · Sauvegarde...</span>}
@@ -407,15 +407,15 @@ export default function Parametres() {
 
                 {/* ── APPARENCE ── */}
                 <Section title={`🎨 ${t(language, "settings.appearance")}`}>
-                    <SettingRow icon="🌙" title="Mode sombre" desc="Thème sombre pour réduire la fatigue oculaire">
+                    <SettingRow icon="🌙" title={t(language, "settings.darkMode")} desc={t(language, "settings.darkModeDesc")}>
                         <Toggle checked={darkMode} onChange={() => setDarkMode(d => !d)} />
                     </SettingRow>
 
-                    <SettingRow icon="⚡" title="Mode compact" desc="Réduit l'espacement pour afficher plus de contenu">
+                    <SettingRow icon="⚡" title={t(language, "settings.compact")} desc={t(language, "settings.compactDesc")}>
                         <Toggle checked={compactMode} onChange={() => setCompactMode(v => !v)} />
                     </SettingRow>
 
-                    <SettingRow icon="✨" title="Réduire les animations" desc="Pour les personnes sensibles aux mouvements">
+                    <SettingRow icon="✨" title={t(language, "settings.motion")} desc={t(language, "settings.motionDesc")}>
                         <Toggle checked={reducedMotion} onChange={() => setReducedMotion(v => !v)} />
                     </SettingRow>
 
@@ -435,8 +435,8 @@ export default function Parametres() {
                     <SettingRow icon="▰" title={t(language, "settings.topbar")} desc={t(language, "settings.topbarDesc")}>
                         <div className="topbar-theme-picker">
                             <div className="bg-mode-tabs" role="group" aria-label="Mode de couleur de la barre supérieure">
-                                <button type="button" className={darkMode ? "active" : ""} onClick={() => setDarkMode(true)}>🌙 Sombre</button>
-                                <button type="button" className={!darkMode ? "active" : ""} onClick={() => setDarkMode(false)}>☀️ Clair</button>
+                                <button type="button" className={darkMode ? "active" : ""} onClick={() => setDarkMode(true)}>🌙 {t(language, "settings.dark")}</button>
+                                <button type="button" className={!darkMode ? "active" : ""} onClick={() => setDarkMode(false)}>☀️ {t(language, "settings.light")}</button>
                             </div>
                             <div className="topbar-preset-grid" role="radiogroup" aria-label="Choisir une couleur de barre supérieure">
                                 {(darkMode ? [
@@ -458,9 +458,9 @@ export default function Parametres() {
                             <div className="topbar-color-control">
                                 <input aria-label="Couleur personnalisée de la barre supérieure" type="color" value={topbarColor} onChange={e => darkMode ? setDarkTopbarColor(e.target.value) : setLightTopbarColor(e.target.value)} />
                                 <span>{topbarColor.toUpperCase()}</span>
-                                <button type="button" className="settings-btn-outline" onClick={() => darkMode ? setDarkTopbarColor("#10111a") : setLightTopbarColor("#ffffff")}>Réinitialiser</button>
+                                <button type="button" className="settings-btn-outline" onClick={() => darkMode ? setDarkTopbarColor("#10111a") : setLightTopbarColor("#ffffff")}>{t(language, "settings.reset")}</button>
                             </div>
-                            <p className="topbar-theme-note">Les couleurs sombres et claires sont enregistrées séparément.</p>
+                            <p className="topbar-theme-note">{t(language, "settings.topbarModeNote")}</p>
                         </div>
                     </SettingRow>
 

@@ -86,18 +86,15 @@ export default function Navbar({ rightExtra, notifCount = 0 }: NavbarProps) {
         setSearchOpen(true);
         closeMenu();
         window.setTimeout(() => searchInput.current?.focus(), 0);
-        if (!tasksLoaded.current) {
-            setSearchLoading(true);
-            setSearchError(false);
-            try {
-                const tasks = await getTasks() as Task[];
-                setSearchTasks(Array.isArray(tasks) ? tasks : []);
-                tasksLoaded.current = true;
-            } catch {
-                setSearchError(true);
-            } finally {
-                setSearchLoading(false);
-            }
+        setSearchLoading(true);
+        setSearchError(false);
+        try {
+            const tasks = await getTasks() as Task[];
+            setSearchTasks(Array.isArray(tasks) ? tasks : []);
+        } catch {
+            setSearchError(true);
+        } finally {
+            setSearchLoading(false);
         }
     }
 
@@ -161,8 +158,10 @@ export default function Navbar({ rightExtra, notifCount = 0 }: NavbarProps) {
         getPreferences().then(prefs => applyPreferencesTheme(prefs)).catch(() => {
             const saved = localStorage.getItem("grindly-theme");
             if (saved) {
-                document.documentElement.classList.toggle("light-mode", saved === "light");
-                setLightMode(saved === "light");
+                const light = saved === "light";
+                document.documentElement.classList.toggle("light-mode", light);
+                setLightMode(light);
+                window.dispatchEvent(new CustomEvent("grindly-theme-change", { detail: { lightMode: light } }));
             }
         });
     }, []);

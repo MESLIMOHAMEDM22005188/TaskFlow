@@ -1,4 +1,5 @@
 import "../assets/css/communaute.css"
+import Navbar from "../components/Navbar";
 import { useCommunaute } from "../services/Communaute"
 import type { Group } from "../services/taskService"
 
@@ -19,7 +20,7 @@ const GROUP_EMOJIS = ["💬", "💪", "🧠", "🎯", "🤝", "📚", "🏃", "�
 export default function Communaute() {
 
     const {
-        navigate, loading,
+        loading,
         activeTab, setActiveTab,
         activeGroupId,
         posts, groups, leaderboard,
@@ -57,24 +58,7 @@ export default function Communaute() {
     return (
         <div className="communaute-page">
 
-            <header className="topbar">
-                <div className="logo">Grindly</div>
-                <nav className="nav-menu">
-                    <div className="nav-item" onClick={() => navigate("/dashboard")}>Dashboard</div>
-                    <div className="nav-item" onClick={() => navigate("/objectifs")}>Objectifs</div>
-                    <div className="nav-item" onClick={() => navigate("/flow")}>Flow</div>
-                    <div className="nav-item" onClick={() => navigate("/stats")}>Stats</div>
-                    <div className="nav-item" onClick={() => navigate("/habitudes")}>Habitudes</div>
-                    <div className="nav-item" onClick={() => navigate("/profil")}>Profil</div>
-                    <div className="nav-item" onClick={() => navigate("/communaute")}>Communauté</div>
-                    <div className="nav-item" onClick={() => navigate("/historique")}>Historique</div>
-                    <div className="nav-item" onClick={() => navigate("/parametres")}>Paramètres</div>
-                    <div className="nav-icons">
-                        <div className="nav-item nav-search">🔍</div>
-                        <div className="nav-item nav-notif">🔔</div>
-                    </div>
-                </nav>
-            </header>
+            <Navbar />
 
             <main className="communaute-main">
 

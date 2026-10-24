@@ -563,7 +563,7 @@
 :root.light-mode .pw-strength-bar {
     background: rgba(15,23,42,.1);
 }
-:root.light-mode .task-search-active {
+.task-search-active {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -573,9 +573,10 @@
     border: 1px solid rgba(99,102,241,.2);
     border-radius: 12px;
     background: rgba(99,102,241,.07);
-    color: #344054;
+    color: var(--page-text);
     font-size: 13px;
 }
+:root.light-mode .task-search-active { color: #344054; }
 .task-search-active button {
     border: 1px solid var(--topbar-border);
     border-radius: 8px;

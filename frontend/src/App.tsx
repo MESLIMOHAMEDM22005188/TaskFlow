@@ -106,15 +106,19 @@ function App() {
             const b = parseInt(prefs.accent_color.slice(5, 7), 16)
             root.style.setProperty("--accent-rgb", `${r}, ${g}, ${b}`)
 
-            // Background — preserve locally selected preset across navigation/reloads.
-            const savedBgPreset = localStorage.getItem(dark ? "grindly-bg-dark" : "grindly-bg-light") || localStorage.getItem("grindly-bg-preset")
-            const requestedPreset = savedBgPreset || prefs.bg_preset || "navy"
+            const savedTheme = localStorage.getItem("grindly-theme")
+            const dark = savedTheme ? savedTheme === "dark" : !!prefs.dark_mode
+
+            // Restore the selected background for the active mode.
+            const savedBgPreset = localStorage.getItem(dark ? "grindly-bg-dark" : "grindly-bg-light")
+            const legacyBgPreset = localStorage.getItem("grindly-bg-preset")
+            const requestedPreset = savedBgPreset || legacyBgPreset || prefs.bg_preset || "navy"
             const legacyBgPresets: Record<string, string> = { dark: "navy", darker: "obsidian", warm: "cocoa" }
             const availablePresets = dark ? BG_PRESETS : LIGHT_BG_PRESETS
             const bgPresetKey = availablePresets[requestedPreset] ? requestedPreset : (dark ? (legacyBgPresets[requestedPreset] || "navy") : "pearl")
             const preset = availablePresets[bgPresetKey] ?? (dark ? BG_PRESETS.navy : LIGHT_BG_PRESETS.pearl)
-            const savedTheme = localStorage.getItem("grindly-theme")
-            const dark = savedTheme ? savedTheme === "dark" : !!prefs.dark_mode
+            const savedTopbar = localStorage.getItem(dark ? "grindly-topbar-dark" : "grindly-topbar-light") || localStorage.getItem("grindly-topbar-color")
+            if (savedTopbar && /^#[0-9a-f]{6}$/i.test(savedTopbar)) root.style.setProperty("--topbar-custom-bg", savedTopbar)
             root.style.setProperty("--bg",         preset.bg)
             root.style.setProperty("--bg-card",    preset.card)
             root.style.setProperty("--bg-surface", preset.surface)

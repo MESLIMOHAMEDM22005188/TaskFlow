@@ -187,8 +187,8 @@ export default function Flow() {
                                         aria-pressed={isMethodSelected(method)}
                                         onClick={() => {
                                             setSettingsError("")
-                                            void handleSaveSettings({ focus_duration: method.focus, short_break: method.short, long_break: method.long })
-                                                .catch(() => setSettingsError("Impossible d’appliquer cette méthode. Réessaie."))
+                                            void handleSaveSettings({ focus_duration: method.focus, short_break: method.short, long_break: method.long }, "focus")
+                                                .catch(() => setSettingsError("La méthode est appliquée localement, mais n’a pas pu être enregistrée. Vérifie ta connexion."))
                                         }}
                                     >
                                         <span className="flow-method-emoji">{method.emoji}</span>
@@ -249,7 +249,7 @@ export default function Flow() {
                                     <span className="flow-volume-value">{ambientVolume}%</span>
                                 </div>
                             )}
-                            <p className="flow-sound-note">{ambientSound === "none" ? "Le silence est aussi une bonne option." : "Le son démarre pendant le minuteur."}</p>
+                            <p className="flow-sound-note">{ambientSound === "none" ? "Le silence est aussi une bonne option." : "Son généré localement : écoute-le dès sa sélection, même avant le minuteur."}</p>
                         </section>
 
                         <section className="flow-card flow-settings-card">

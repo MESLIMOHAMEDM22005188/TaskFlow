@@ -176,7 +176,16 @@ export default function Navbar({ rightExtra, notifCount = 0 }: NavbarProps) {
     useEffect(() => {
         getPreferences().then(prefs => {
             const savedTheme = localStorage.getItem("grindly-theme");
-            applyPreferencesTheme(savedTheme ? { ...prefs, dark_mode: savedTheme === "dark" } : prefs);
+            const storedPreset = localStorage.getItem("grindly-bg-preset");
+            const legacyBgPresets: Record<string, string> = { dark: "navy", darker: "obsidian", warm: "cocoa" };
+            const normalizedPreset = storedPreset
+                ? (BG_PRESETS[storedPreset] ? storedPreset : legacyBgPresets[storedPreset])
+                : undefined;
+            applyPreferencesTheme({
+                ...prefs,
+                ...(savedTheme ? { dark_mode: savedTheme === "dark" } : {}),
+                ...(normalizedPreset ? { bg_preset: normalizedPreset } : {}),
+            });
         }).catch(() => {
             const saved = localStorage.getItem("grindly-theme");
             if (saved) {

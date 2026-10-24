@@ -1,0 +1,50 @@
+name: Build frontend assets
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "frontend/src/**"
+      - "frontend/index.html"
+      - "frontend/vite.config.*"
+      - "frontend/package.json"
+      - "frontend/package-lock.json"
+      - ".github/workflows/build-frontend.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend bundle
+        working-directory: frontend
+        run: npx vite build
+
+      - name: Commit updated production assets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A frontend/dist
+          if ! git diff --cached --quiet; then
+            git commit -m "build: refresh frontend dist"
+            git push
+          else
+            echo "Production assets are already up to date."
+          fi

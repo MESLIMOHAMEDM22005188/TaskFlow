@@ -31,7 +31,7 @@
     min-height: 64px;
     padding: 10px clamp(14px, 2.5vw, 32px);
     color: var(--topbar-text);
-    background: var(--topbar-bg);
+    background: var(--topbar-custom-bg, var(--topbar-bg));
     border-bottom: 1px solid var(--topbar-border);
     box-shadow: var(--topbar-shadow);
     backdrop-filter: blur(16px);
@@ -216,7 +216,7 @@
     flex-direction: column;
     overflow-y: auto;
     color: var(--topbar-text);
-    background: var(--topbar-bg);
+    background: var(--topbar-custom-bg, var(--topbar-bg));
     border-left: 1px solid var(--topbar-border);
     box-shadow: -20px 0 60px rgba(0,0,0,.18);
     transform: translateX(102%);
@@ -303,7 +303,7 @@
     flex-direction: column;
     overflow: hidden;
     color: var(--topbar-text);
-    background: var(--topbar-bg);
+    background: var(--topbar-custom-bg, var(--topbar-bg));
     border: 1px solid var(--topbar-border);
     border-radius: 18px;
     box-shadow: 0 24px 90px rgba(0,0,0,.28);

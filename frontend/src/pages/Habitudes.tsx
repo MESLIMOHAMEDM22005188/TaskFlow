@@ -498,6 +498,27 @@ export default function Habitudes() {
     // State pour le baseline qty par addiction
     const [baselineQty, setBaselineQty] = useState(5)
     const [baselineUnit, setBaselineUnit] = useState("fois/jour")
+    const [typeFilter, setTypeFilter] = useState<"all" | "build" | "quit">("all")
+    const [searchTerm, setSearchTerm] = useState("")
+    const [categoryFilter, setCategoryFilter] = useState("all")
+    const [sortBy, setSortBy] = useState<"default" | "name" | "streak" | "pending">("default")
+
+    const normalizedSearch = searchTerm.trim().toLocaleLowerCase("fr")
+    const filterHabits = (items: Habit[]) => items
+        .filter(habit => categoryFilter === "all" || habit.category === categoryFilter)
+        .filter(habit => !normalizedSearch || [habit.name, habit.motivation ?? "", habit.category ?? ""]
+            .some(value => value.toLocaleLowerCase("fr").includes(normalizedSearch)))
+        .sort((a, b) => {
+            if (sortBy === "name") return a.name.localeCompare(b.name, "fr")
+            if (sortBy === "streak") return Number(b.streak || 0) - Number(a.streak || 0)
+            if (sortBy === "pending") return Number(Boolean(a.doneToday)) - Number(Boolean(b.doneToday))
+            return 0
+        })
+    const visibleBuildHabits = filterHabits(buildHabits)
+    const visibleQuitHabits = filterHabits(quitHabits)
+    const todayGoodCount = buildHabits.filter(habit => habit.doneToday).length
+    const todayQuitCount = quitHabits.filter(habit => habit.doneToday).length
+
 
     function applySuggestion(s: typeof ADDICTION_SUGGESTIONS[0]) {
         setName(s.name)
@@ -524,18 +545,55 @@ export default function Habitudes() {
             <main className="habitudes-main">
 
                 <div className="habitudes-hero">
-                    <h1 className="habitudes-title">Habitudes</h1>
-                    <p className="habitudes-subtitle">Construis ta meilleure version, un jour à la fois.</p>
+                    <p className="habitudes-eyebrow">TON ESPACE DE PROGRESSION</p>
+                    <h1 className="habitudes-title">Tes habitudes, à ton rythme.</h1>
+                    <p className="habitudes-subtitle">Les petits gestes répétés finissent par changer les choses.</p>
+                    <div className="habitudes-overview" aria-label="Résumé des habitudes">
+                        <div className="habitudes-overview-card"><span className="overview-icon">✓</span><strong>{todayGoodCount}<small> / {buildHabits.length}</small></strong><span>Habitudes réalisées</span></div>
+                        <div className="habitudes-overview-card"><span className="overview-icon">↗</span><strong>{buildHabits.length}</strong><span>Habitudes à construire</span></div>
+                        <div className="habitudes-overview-card"><span className="overview-icon">◎</span><strong>{quitHabits.length}</strong><span>Objectifs de réduction</span></div>
+                        <div className="habitudes-overview-card"><span className="overview-icon">✦</span><strong>{buildHabits.length ? Math.round(todayGoodCount / buildHabits.length * 100) : 0}%</strong><span>Progression du jour</span></div>
+                    </div>
                 </div>
 
                 {lastXp && (
                     <div className="habit-xp-badge">+{lastXp.xp} XP 🎉</div>
                 )}
 
-                <div className="action-center">
-                    <button className={`main-button ${showForm ? "active" : ""}`} onClick={() => setShowForm(!showForm)}>
-                        {showForm ? "✕ Fermer" : "+ Nouvelle habitude"}
-                    </button>
+                <div className="habitudes-controls">
+                    <div className="habitudes-controls-top">
+                        <label className="habitudes-search">
+                            <span aria-hidden="true">⌕</span>
+                            <input type="search" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Rechercher une habitude…" aria-label="Rechercher une habitude" />
+                            {searchTerm && <button type="button" onClick={() => setSearchTerm("")} aria-label="Effacer la recherche">×</button>}
+                        </label>
+                        <button className={`main-button ${showForm ? "active" : ""}`} onClick={() => setShowForm(!showForm)}>
+                            {showForm ? "✕ Fermer" : "+ Nouvelle habitude"}
+                        </button>
+                    </div>
+                    <div className="habitudes-filter-row" role="group" aria-label="Type d’habitude">
+                        {([{value:"all",label:"Toutes"},{value:"build",label:"À construire"},{value:"quit",label:"À réduire"}] as const).map(option => (
+                            <button type="button" key={option.value} className={`habitudes-filter-chip ${typeFilter === option.value ? "active" : ""}`} onClick={() => setTypeFilter(option.value)}>
+                                {option.label}
+                                <span>{option.value === "all" ? buildHabits.length + quitHabits.length : option.value === "build" ? buildHabits.length : quitHabits.length}</span>
+                            </button>
+                        ))}
+                        <label className="habitudes-select-wrap"><span>Catégorie</span>
+                            <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} aria-label="Filtrer par catégorie">
+                                <option value="all">Toutes</option>
+                                {CATEGORIES.map(category => <option key={category.value} value={category.value}>{category.label.replace(/^\S+\s/, "")}</option>)}
+                            </select>
+                        </label>
+                        <label className="habitudes-select-wrap"><span>Trier</span>
+                            <select value={sortBy} onChange={e => setSortBy(e.target.value as typeof sortBy)} aria-label="Trier les habitudes">
+                                <option value="default">Ordre initial</option>
+                                <option value="name">Nom A–Z</option>
+                                <option value="streak">Plus longue série</option>
+                                <option value="pending">À faire en premier</option>
+                            </select>
+                        </label>
+                    </div>
+                    {(searchTerm || categoryFilter !== "all") && <p className="habitudes-results">{visibleBuildHabits.length + visibleQuitHabits.length} résultat(s)</p>}
                 </div>
 
                 {showForm && (

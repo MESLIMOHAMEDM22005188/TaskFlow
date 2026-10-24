@@ -1,4 +1,4 @@
-# TaskFlow on AlwaysData
+# Grindly ST on AlwaysData
 
 ## Application type
 
@@ -60,7 +60,7 @@ npm start
 Node application:
 
 - Application type: `Node.js`
-- Working directory: `/www/TaskFlow/backend` or the directory where `backend/app.js` is deployed
+- Working directory: `/www/Grindly-ST/backend` or the directory where `backend/app.js` is deployed
 - Startup file: `app.js`
 - Node version: `20.x` or newer
 - Environment: `production`

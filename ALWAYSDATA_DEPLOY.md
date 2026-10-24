@@ -28,14 +28,14 @@ Backend:
 - `DB_NAME=database_name`
 - `DB_CONNECTION_LIMIT=10`
 - `JWT_SECRET=<long-random-secret>`
-- `CORS_ALLOWED_ORIGINS=https://your-app.alwaysdata.net`
+- `CORS_ALLOWED_ORIGINS=https://grindly-st.alwaysdata.net`
 - `CLOUDINARY_CLOUD_NAME=<cloudinary-cloud-name>`
 - `CLOUDINARY_API_KEY=<cloudinary-api-key>`
 - `CLOUDINARY_API_SECRET=<cloudinary-api-secret>`
 
 Frontend:
 
-- `VITE_API_URL=https://your-app.alwaysdata.net`
+- `VITE_API_URL=https://grindly-st.alwaysdata.net`
 
 ## Build commands
 

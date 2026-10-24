@@ -38,18 +38,34 @@ const BG_PRESETS: Record<string, { bg: string; card: string; surface: string; la
     garnet: { bg: "#2c1114", card: "rgba(248,113,113,0.06)", surface: "rgba(248,113,113,0.11)", label: "Grenat" },
 }
 
+const LIGHT_BG_PRESETS: Record<string, { bg: string; card: string; surface: string; label: string }> = {
+    pearl: { bg: "#f5f7fb", card: "rgba(255,255,255,0.92)", surface: "rgba(255,255,255,0.98)", label: "Perle" },
+    snow: { bg: "#ffffff", card: "rgba(248,250,252,0.98)", surface: "rgba(241,245,249,0.96)", label: "Neige" },
+    mist: { bg: "#edf2f7", card: "rgba(255,255,255,0.9)", surface: "rgba(226,232,240,0.72)", label: "Brume" },
+    sand: { bg: "#f6f0e5", card: "rgba(255,255,255,0.82)", surface: "rgba(235,224,204,0.72)", label: "Sable" },
+    lavender: { bg: "#f2efff", card: "rgba(255,255,255,0.86)", surface: "rgba(221,214,254,0.6)", label: "Lavande" },
+    rose: { bg: "#fff0f3", card: "rgba(255,255,255,0.88)", surface: "rgba(251,207,232,0.5)", label: "Rose poudré" },
+    sage: { bg: "#edf5ef", card: "rgba(255,255,255,0.88)", surface: "rgba(187,222,195,0.48)", label: "Sauge" },
+    sky: { bg: "#eaf5ff", card: "rgba(255,255,255,0.9)", surface: "rgba(186,230,253,0.55)", label: "Ciel" },
+    peach: { bg: "#fff1e8", card: "rgba(255,255,255,0.9)", surface: "rgba(254,215,170,0.52)", label: "Pêche" },
+    mint: { bg: "#e8faf5", card: "rgba(255,255,255,0.9)", surface: "rgba(153,246,228,0.42)", label: "Menthe" },
+    butter: { bg: "#fff9df", card: "rgba(255,255,255,0.9)", surface: "rgba(254,240,138,0.4)", label: "Vanille" },
+    stone: { bg: "#f0efed", card: "rgba(255,255,255,0.9)", surface: "rgba(214,211,209,0.5)", label: "Pierre" },
+};
+
 function applyTheme(color: string, dark: boolean, bgKey: string) {
     const root = document.documentElement
     root.style.setProperty("--accent", color)
     root.style.setProperty("--accent-rgb", hexToRgb(color))
-    const preset = BG_PRESETS[bgKey] ?? BG_PRESETS.navy
-    root.style.setProperty("--bg",         dark ? preset.bg      : `color-mix(in srgb, ${preset.bg} 9%, #ffffff)`)
-    root.style.setProperty("--bg-card",    dark ? preset.card    : "rgba(0,0,0,0.03)")
-    root.style.setProperty("--bg-surface", dark ? preset.surface : "rgba(255,255,255,0.82)")
+    const preset = (dark ? BG_PRESETS[bgKey] : LIGHT_BG_PRESETS[bgKey]) ?? (dark ? BG_PRESETS.navy : LIGHT_BG_PRESETS.pearl)
+    root.style.setProperty("--bg",         preset.bg)
+    root.style.setProperty("--bg-card",    preset.card)
+    root.style.setProperty("--bg-surface", preset.surface)
     const savedTopbar = localStorage.getItem("grindly-topbar-color")
     if (savedTopbar && /^#[0-9a-f]{6}$/i.test(savedTopbar)) root.style.setProperty("--topbar-custom-bg", savedTopbar)
     root.classList.toggle("light-mode", !dark)
     localStorage.setItem("grindly-theme", dark ? "dark" : "light")
+    localStorage.setItem(dark ? "grindly-bg-dark" : "grindly-bg-light", bgKey)
     localStorage.setItem("grindly-bg-preset", bgKey)
     window.dispatchEvent(new CustomEvent("grindly-theme-change", { detail: { lightMode: !dark } }))
 }
@@ -133,7 +149,8 @@ export default function Parametres() {
     const [loaded, setLoaded] = useState(false)
     const [darkMode, setDarkMode] = useState(true)
     const [accentColor, setAccentColor] = useState("#6366f1")
-    const [bgPreset, setBgPreset] = useState("navy")
+    const [darkBgPreset, setDarkBgPreset] = useState(() => localStorage.getItem("grindly-bg-dark") || localStorage.getItem("grindly-bg-preset") || "navy")
+    const [lightBgPreset, setLightBgPreset] = useState(() => localStorage.getItem("grindly-bg-light") || "pearl")
     const [topbarColor, setTopbarColor] = useState(() => localStorage.getItem("grindly-topbar-color") || "#10111a")
     const [language, setLanguage] = useState("fr")
     const [compactMode, setCompactMode] = useState(false)
@@ -192,7 +209,9 @@ export default function Parametres() {
             setAccentColor(prefs.accent_color)
             const legacyPresets: Record<string, string> = { dark: "navy", darker: "obsidian", warm: "cocoa" }
             const savedPreset = localStorage.getItem("grindly-bg-preset") || prefs.bg_preset || "navy"
-            setBgPreset(BG_PRESETS[savedPreset] ? savedPreset : (legacyPresets[savedPreset] || "navy"))
+            setDarkBgPreset(BG_PRESETS[savedPreset] ? savedPreset : (legacyPresets[savedPreset] || "navy"))
+            const savedLightPreset = localStorage.getItem("grindly-bg-light") || "pearl"
+            setLightBgPreset(LIGHT_BG_PRESETS[savedLightPreset] ? savedLightPreset : "pearl")
             const storedLanguage = (localStorage.getItem("grindly-language") || prefs.language || "fr") as GrindlyLanguage
             setLanguage(storedLanguage)
             applyLanguage(storedLanguage)
@@ -223,12 +242,12 @@ export default function Parametres() {
 
     // ── Appliquer le thème visuellement ─────────────────────
     useEffect(() => {
-        applyTheme(accentColor, darkMode, bgPreset)
+        applyTheme(accentColor, darkMode, darkMode ? darkBgPreset : lightBgPreset)
         if (/^#[0-9a-f]{6}$/i.test(topbarColor)) {
             localStorage.setItem("grindly-topbar-color", topbarColor)
             document.documentElement.style.setProperty("--topbar-custom-bg", topbarColor)
         }
-    }, [accentColor, darkMode, bgPreset, topbarColor])
+    }, [accentColor, darkMode, darkBgPreset, lightBgPreset, topbarColor])
 
     // ── Sauvegarde auto avec debounce 800ms ─────────────────
     useEffect(() => {
@@ -238,7 +257,7 @@ export default function Parametres() {
         saveTimer.current = setTimeout(() => {
             savePreferences({
                 accent_color: accentColor,
-                bg_preset: bgPreset,
+                bg_preset: darkBgPreset,
                 dark_mode: darkMode,
                 compact_mode: compactMode,
                 reduced_motion: reducedMotion,
@@ -261,7 +280,7 @@ export default function Parametres() {
                 .finally(() => setTimeout(() => setSaveStatus("idle"), 2000))
         }, 800)
     }, [
-        loaded, accentColor, bgPreset, darkMode, compactMode, reducedMotion,
+        loaded, accentColor, darkBgPreset, darkMode, compactMode, reducedMotion,
         language, notifs, privacy
     ])
 
@@ -406,16 +425,20 @@ export default function Parametres() {
                     </SettingRow>
 
                     <SettingRow wide icon="🌌" title={t(language, "settings.background")} desc={t(language, "settings.backgroundDesc")}>
-                        <div className="bg-picker" role="radiogroup" aria-label="Choisir le fond de l'interface">
-                            {Object.entries(BG_PRESETS).map(([key, preset]) => (
+                        <div className="bg-mode-tabs" role="group" aria-label="Mode de fond">
+                            <button type="button" className={darkMode ? "active" : ""} onClick={() => setDarkMode(true)}>🌙 Thèmes sombres</button>
+                            <button type="button" className={!darkMode ? "active" : ""} onClick={() => setDarkMode(false)}>☀️ Thèmes clairs</button>
+                        </div>
+                        <div className="bg-picker" role="radiogroup" aria-label={darkMode ? "Choisir un thème sombre" : "Choisir un thème clair"}>
+                            {Object.entries(darkMode ? BG_PRESETS : LIGHT_BG_PRESETS).map(([key, preset]) => (
                                 <button
                                     key={key}
                                     type="button"
                                     role="radio"
-                                    aria-checked={bgPreset === key}
-                                    aria-label={`Fond ${preset.label}`}
-                                    className={`bg-preset-option ${bgPreset === key ? "selected" : ""}`}
-                                    onClick={() => setBgPreset(key)}
+                                    aria-checked={(darkMode ? darkBgPreset : lightBgPreset) === key}
+                                    aria-label={`${darkMode ? "Thème sombre" : "Thème clair"} ${preset.label}`}
+                                    className={`bg-preset-option ${(darkMode ? darkBgPreset : lightBgPreset) === key ? "selected" : ""}`}
+                                    onClick={() => { if (darkMode) { setDarkBgPreset(key); localStorage.setItem("grindly-bg-dark", key); } else { setLightBgPreset(key); localStorage.setItem("grindly-bg-light", key); } }}
                                 >
                                     <span className="bg-preset-preview" style={{ background: preset.bg }}>
                                         <span className="bg-preset-preview-card" style={{ background: preset.card, borderColor: preset.surface }}>
@@ -425,7 +448,7 @@ export default function Parametres() {
                                         <span className="bg-preset-accent" style={{ background: accentColor }} />
                                     </span>
                                     <span className="bg-preset-label">{preset.label}</span>
-                                    {bgPreset === key && <span className="bg-preset-check" aria-hidden="true">✓</span>}
+                                    {(darkMode ? darkBgPreset : lightBgPreset) === key && <span className="bg-preset-check" aria-hidden="true">✓</span>}
                                 </button>
                             ))}
                         </div>

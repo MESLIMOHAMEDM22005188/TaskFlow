@@ -252,7 +252,7 @@ function useFlow() {
         }
     }
 
-    async function handleSaveSettings(newSettings: Partial<FlowSettings>) {
+    async function handleSaveSettings(newSettings: Partial<FlowSettings>, nextMode: TimerMode = mode) {
         const defaults: FlowSettings = {
             id: 0,
             user_id: 0,
@@ -273,11 +273,12 @@ function useFlow() {
             intervalRef.current = null
         }
         setSettings(optimistic)
+        setMode(nextMode)
         setAmbientSoundState(optimistic.ambient_sound)
         setAmbientVolume(optimistic.ambient_volume)
-        const currentDuration = mode === "focus"
+        const currentDuration = nextMode === "focus"
             ? optimistic.focus_duration
-            : mode === "short_break" ? optimistic.short_break : optimistic.long_break
+            : nextMode === "short_break" ? optimistic.short_break : optimistic.long_break
         setTimeLeft(Math.max(1, currentDuration) * 60)
 
         const updated = await updateFlowSettings(newSettings)
@@ -285,9 +286,10 @@ function useFlow() {
         setSettings(merged)
         setAmbientSoundState(merged.ambient_sound)
         setAmbientVolume(merged.ambient_volume)
-        const updatedDuration = mode === "focus"
+        setMode(nextMode)
+        const updatedDuration = nextMode === "focus"
             ? merged.focus_duration
-            : mode === "short_break" ? merged.short_break : merged.long_break
+            : nextMode === "short_break" ? merged.short_break : merged.long_break
         setTimeLeft(Math.max(1, updatedDuration) * 60)
         setShowSettings(false)
     }

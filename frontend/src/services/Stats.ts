@@ -41,7 +41,6 @@ export function useStats() {
 
     useEffect(() => {
         let cancelled = false
-        setLoading(true)
         setHasLoadError(false)
 
         const safeLoad = async <T,>(request: () => Promise<T>, fallback: T): Promise<T> => {

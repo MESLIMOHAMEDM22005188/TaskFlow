@@ -12,6 +12,10 @@ on:
       - "frontend/package-lock.json"
       - ".github/workflows/build-frontend.yml"
 
+concurrency:
+  group: frontend-build-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
 

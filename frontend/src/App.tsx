@@ -84,6 +84,8 @@ function App() {
             root.style.setProperty("--bg-card",    dark ? preset.card    : "rgba(0,0,0,0.03)")
             root.style.setProperty("--bg-surface", dark ? preset.surface : "rgba(0,0,0,0.05)")
             root.classList.toggle("light-mode", !dark)
+            localStorage.setItem("grindly-theme", dark ? "dark" : "light")
+            window.dispatchEvent(new CustomEvent("grindly-theme-change", { detail: { lightMode: !dark } }))
         }).catch(() => {})
     }, [])
 

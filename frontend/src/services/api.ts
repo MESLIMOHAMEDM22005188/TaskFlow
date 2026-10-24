@@ -1,5 +1,11 @@
 import axios from "axios";
 
+declare module "axios" {
+    interface InternalAxiosRequestConfig {
+        metadata?: { startedAt: number };
+    }
+}
+
 const LOG_PREFIX = "[Grindly:API]";
 
 function normalizeBaseUrl(value: string | undefined): string {
@@ -46,7 +52,7 @@ api.interceptors.request.use(
 
 api.interceptors.response.use(
     response => {
-        const startedAt = (response.config as typeof response.config & { metadata?: { startedAt: number } }).metadata?.startedAt;
+        const startedAt = response.config.metadata?.startedAt;
         console.debug(LOG_PREFIX, "← Response", {
             method: response.config.method?.toUpperCase(),
             url: response.config.url,
@@ -56,7 +62,7 @@ api.interceptors.response.use(
         return response;
     },
     error => {
-        const config = error?.config as (typeof error.config & { metadata?: { startedAt: number } }) | undefined;
+        const config = error?.config;
         console.error(LOG_PREFIX, "← Request failed", {
             method: config?.method?.toUpperCase(),
             url: config?.url,

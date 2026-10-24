@@ -63,9 +63,11 @@ router.post("/signup", async (req, res) => {
                     (?, 'Finance', '💰', '#f59e0b'),
                     (?, 'Personal Development', '🧠', '#06b6d4'),
                     (?, 'Leisure', '🎮', '#ec4899'),
-                    (?, 'Family', '👨‍👩‍👧', '#14b8a6')
+                    (?, 'Family', '👨‍👩‍👧', '#14b8a6'),
+                    (?, 'Faith', '🕌', '#0f766e')
             `,
             [
+                userId,
                 userId,
                 userId,
                 userId,

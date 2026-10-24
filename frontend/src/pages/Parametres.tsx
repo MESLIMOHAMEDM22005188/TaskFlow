@@ -31,6 +31,7 @@ function applyTheme(color: string, dark: boolean, bgKey: string) {
     root.style.setProperty("--bg-surface", dark ? preset.surface : "rgba(0,0,0,0.05)")
     root.classList.toggle("light-mode", !dark)
     localStorage.setItem("grindly-theme", dark ? "dark" : "light")
+    localStorage.setItem("grindly-bg-preset", bgKey)
     window.dispatchEvent(new CustomEvent("grindly-theme-change", { detail: { lightMode: !dark } }))
 }
 

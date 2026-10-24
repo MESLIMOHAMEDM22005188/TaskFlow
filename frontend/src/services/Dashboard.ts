@@ -66,17 +66,55 @@ export function useDashboard() {
     }
 
     useEffect(() => {
-        Promise.all([getTasks(), getThemes(), getTodayCompletions()])
-            .then(([t, th, completions]) => {
-                console.log("TASKS =", t)
-                console.log("THEMES =", th)
-                console.log("IS ARRAY ?", Array.isArray(th))
+        let cancelled = false
 
-                setTasks(t)
-                setThemes(th)
-                setDailyState(buildDailyMap(completions))
-            })
-            .catch(err => console.error("fetchAll error:", err))
+        // Chaque ressource est chargée indépendamment : une erreur sur les thèmes
+        // ou les complétions ne doit pas empêcher l'affichage des tâches.
+        async function loadTasks() {
+            try {
+                const result = await getTasks()
+                if (cancelled) return
+
+                if (!Array.isArray(result)) {
+                    console.error("GET /tasks n'a pas renvoyé une liste :", result)
+                    setTasks([])
+                    return
+                }
+
+                // La liste est affichée dès que la réponse des tâches arrive.
+                setTasks(result)
+            } catch (err) {
+                console.error("Impossible de charger les tâches :", err)
+            }
+        }
+
+        async function loadThemes() {
+            try {
+                const result = await getThemes()
+                if (!cancelled) setThemes(Array.isArray(result) ? result : [])
+            } catch (err) {
+                console.error("Impossible de charger les thèmes :", err)
+            }
+        }
+
+        async function loadDailyCompletions() {
+            try {
+                const result = await getTodayCompletions()
+                if (!cancelled) {
+                    setDailyState(buildDailyMap(Array.isArray(result) ? result : []))
+                }
+            } catch (err) {
+                console.error("Impossible de charger les complétions du jour :", err)
+            }
+        }
+
+        void loadTasks()
+        void loadThemes()
+        void loadDailyCompletions()
+
+        return () => {
+            cancelled = true
+        }
     }, [])
 
     function toggleThemeSelection(id: number) {

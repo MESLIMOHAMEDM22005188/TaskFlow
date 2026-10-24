@@ -146,7 +146,17 @@ function App() {
             const bgPresetKey = availablePresets[requestedPreset] ? requestedPreset : (dark ? (legacyBgPresets[requestedPreset] || "navy") : "pearl")
             const preset = availablePresets[bgPresetKey] ?? (dark ? BG_PRESETS.navy : LIGHT_BG_PRESETS.pearl)
             const savedTopbar = localStorage.getItem(dark ? "grindly-topbar-dark" : "grindly-topbar-light") || localStorage.getItem("grindly-topbar-color")
-            if (savedTopbar && /^#[0-9a-f]{6}$/i.test(savedTopbar)) root.style.setProperty("--topbar-custom-bg", savedTopbar)
+            if (savedTopbar && /^#[0-9a-f]{6}$/i.test(savedTopbar)) {
+                root.style.setProperty("--topbar-custom-bg", savedTopbar)
+                const hex = savedTopbar.slice(1)
+                const brightness = (parseInt(hex.slice(0, 2), 16) * 299 + parseInt(hex.slice(2, 4), 16) * 587 + parseInt(hex.slice(4, 6), 16) * 114) / 1000
+                const lightText = brightness < 145
+                root.style.setProperty("--topbar-text", lightText ? "#f8fafc" : "#20202b")
+                root.style.setProperty("--topbar-muted", lightText ? "#c4c8d4" : "#5b6170")
+                root.style.setProperty("--topbar-border", lightText ? "rgba(255,255,255,.14)" : "rgba(22,22,35,.13)")
+                root.style.setProperty("--topbar-hover", lightText ? "rgba(255,255,255,.09)" : "rgba(22,22,35,.07)")
+                root.style.setProperty("--topbar-active-bg", lightText ? "rgba(255,255,255,.14)" : "rgba(22,22,35,.09)")
+            }
             root.style.setProperty("--bg",         preset.bg)
             root.style.setProperty("--bg-card",    preset.card)
             root.style.setProperty("--bg-surface", preset.surface)

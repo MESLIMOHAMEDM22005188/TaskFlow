@@ -177,8 +177,20 @@ export default function Stats() {
             return DEFAULT_CHART_COLORS
         }
     })
-    const [taskChartType, setTaskChartType] = useState<"bar" | "line">("bar")
-    const [focusChartType, setFocusChartType] = useState<"bar" | "line">("bar")
+    const [taskChartType, setTaskChartType] = useState<"bar" | "line">(() => {
+        try {
+            return typeof window !== "undefined" && window.localStorage.getItem("grindly-stats-task-chart-type") === "line" ? "line" : "bar"
+        } catch {
+            return "bar"
+        }
+    })
+    const [focusChartType, setFocusChartType] = useState<"bar" | "line">(() => {
+        try {
+            return typeof window !== "undefined" && window.localStorage.getItem("grindly-stats-focus-chart-type") === "line" ? "line" : "bar"
+        } catch {
+            return "bar"
+        }
+    })
 
     useEffect(() => {
         try {
@@ -187,6 +199,15 @@ export default function Stats() {
             console.warn("Impossible de sauvegarder les couleurs des graphiques.", err)
         }
     }, [chartColors])
+
+    useEffect(() => {
+        try {
+            window.localStorage.setItem("grindly-stats-task-chart-type", taskChartType)
+            window.localStorage.setItem("grindly-stats-focus-chart-type", focusChartType)
+        } catch (err) {
+            console.warn("Impossible de sauvegarder le type des graphiques.", err)
+        }
+    }, [taskChartType, focusChartType])
 
     const updateChartColor = (key: keyof ChartColors, color: string) => {
         if (/^#[0-9a-f]{6}$/i.test(color)) {

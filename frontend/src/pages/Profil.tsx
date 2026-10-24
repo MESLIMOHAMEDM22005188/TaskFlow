@@ -106,15 +106,6 @@ export default function Profil() {
                         <button className="profil-save" onClick={handleSave}>
                             {saved ? "✓ Saved!" : "Save profile"}
                         </button>
-                        <label className="profil-save" style={{ textAlign: "center", cursor: "pointer" }}>
-                            📷 Changer la photo
-                            <input
-                                type="file"
-                                accept="image/jpeg,image/png,image/webp"
-                                onChange={handleAvatarChange}
-                                style={{ display: "none" }}
-                            />
-                        </label>
                         <button className="profil-logout" onClick={handleLogout}>
                             Logout
                         </button>

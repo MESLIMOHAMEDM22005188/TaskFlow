@@ -10,6 +10,15 @@ import type { Task, Theme, TaskDailyState } from "../services/taskService.ts"
 
 type Notification = { id: number; message: string; created_at: string; read?: boolean }
 
+function normalizeThemeName(value: string | null | undefined) {
+    return (value ?? "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim()
+        .replace(/\s+/g, " ")
+        .toLocaleLowerCase("fr-FR")
+}
+
 export function useDashboard() {
 
     const navigate = useNavigate()
@@ -117,9 +126,14 @@ export function useDashboard() {
     }
 
     async function handleCreateTheme() {
-        if (!themeName.trim()) return
+        const cleanedName = themeName.trim()
+        if (!cleanedName) return
+        if (themes.some(theme => normalizeThemeName(theme.name) === normalizeThemeName(cleanedName))) {
+            alert("Un thème portant ce nom existe déjà. Choisis un autre nom pour éviter les doublons.")
+            return
+        }
         try {
-            const theme = await createTheme({ name: themeName, emoji: themeEmoji || undefined, color: themeColor })
+            const theme = await createTheme({ name: cleanedName, emoji: themeEmoji || undefined, color: themeColor })
             setThemes(prev => [theme, ...prev])
             setThemeName("")
             setThemeEmoji("")

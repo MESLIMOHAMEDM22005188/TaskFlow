@@ -4,6 +4,7 @@ import "../assets/css/parametres.css"
 import { changePassword, getPreferences, savePreferences } from "../services/taskService"
 import { API_ROOT } from "../services/api"
 import Navbar from "../components/Navbar"
+import { applyLanguage, LANGUAGES, type GrindlyLanguage } from "../i18n"
 
 // ── Helpers thème ────────────────────────────────────────────
 const BG_PRESETS: Record<string, { bg: string; card: string; surface: string; label: string }> = {
@@ -42,9 +43,11 @@ function applyTheme(color: string, dark: boolean, bgKey: string) {
     root.style.setProperty("--accent", color)
     root.style.setProperty("--accent-rgb", hexToRgb(color))
     const preset = BG_PRESETS[bgKey] ?? BG_PRESETS.navy
-    root.style.setProperty("--bg",         dark ? preset.bg      : "#f4f4f7")
+    root.style.setProperty("--bg",         dark ? preset.bg      : `color-mix(in srgb, ${preset.bg} 9%, #ffffff)`)
     root.style.setProperty("--bg-card",    dark ? preset.card    : "rgba(0,0,0,0.03)")
-    root.style.setProperty("--bg-surface", dark ? preset.surface : "rgba(0,0,0,0.05)")
+    root.style.setProperty("--bg-surface", dark ? preset.surface : "rgba(255,255,255,0.82)")
+    const savedTopbar = localStorage.getItem("grindly-topbar-color")
+    if (savedTopbar && /^#[0-9a-f]{6}$/i.test(savedTopbar)) root.style.setProperty("--topbar-custom-bg", savedTopbar)
     root.classList.toggle("light-mode", !dark)
     localStorage.setItem("grindly-theme", dark ? "dark" : "light")
     localStorage.setItem("grindly-bg-preset", bgKey)
@@ -131,6 +134,7 @@ export default function Parametres() {
     const [darkMode, setDarkMode] = useState(true)
     const [accentColor, setAccentColor] = useState("#6366f1")
     const [bgPreset, setBgPreset] = useState("navy")
+    const [topbarColor, setTopbarColor] = useState(() => localStorage.getItem("grindly-topbar-color") || "#10111a")
     const [language, setLanguage] = useState("fr")
     const [compactMode, setCompactMode] = useState(false)
     const [reducedMotion, setReducedMotion] = useState(false)
@@ -189,7 +193,11 @@ export default function Parametres() {
             const legacyPresets: Record<string, string> = { dark: "navy", darker: "obsidian", warm: "cocoa" }
             const savedPreset = localStorage.getItem("grindly-bg-preset") || prefs.bg_preset || "navy"
             setBgPreset(BG_PRESETS[savedPreset] ? savedPreset : (legacyPresets[savedPreset] || "navy"))
-            setLanguage(prefs.language)
+            const storedLanguage = (localStorage.getItem("grindly-language") || prefs.language || "fr") as GrindlyLanguage
+            setLanguage(storedLanguage)
+            applyLanguage(storedLanguage)
+            const storedTopbar = localStorage.getItem("grindly-topbar-color")
+            if (storedTopbar && /^#[0-9a-f]{6}$/i.test(storedTopbar)) setTopbarColor(storedTopbar)
             setCompactMode(!!prefs.compact_mode)
             setReducedMotion(!!prefs.reduced_motion)
             setNotifs({
@@ -216,7 +224,11 @@ export default function Parametres() {
     // ── Appliquer le thème visuellement ─────────────────────
     useEffect(() => {
         applyTheme(accentColor, darkMode, bgPreset)
-    }, [accentColor, darkMode, bgPreset])
+        if (/^#[0-9a-f]{6}$/i.test(topbarColor)) {
+            localStorage.setItem("grindly-topbar-color", topbarColor)
+            document.documentElement.style.setProperty("--topbar-custom-bg", topbarColor)
+        }
+    }, [accentColor, darkMode, bgPreset, topbarColor])
 
     // ── Sauvegarde auto avec debounce 800ms ─────────────────
     useEffect(() => {
@@ -385,7 +397,15 @@ export default function Parametres() {
                         </div>
                     </SettingRow>
 
-                    <SettingRow wide icon="🌌" title="Fond de l'interface" desc="Choisis parmi 28 palettes. Le fond est appliqué immédiatement et conservé sur les autres pages.">
+                    <SettingRow icon="▰" title="Couleur de la barre supérieure" desc="Personnalise la barre de navigation. Ton choix est enregistré sur cet appareil.">
+                        <div className="topbar-color-control">
+                            <input aria-label="Couleur de la barre supérieure" type="color" value={topbarColor} onChange={e => setTopbarColor(e.target.value)} />
+                            <span>{topbarColor.toUpperCase()}</span>
+                            <button type="button" className="settings-btn-outline" onClick={() => setTopbarColor(darkMode ? "#10111a" : "#ffffff")}>Réinitialiser</button>
+                        </div>
+                    </SettingRow>
+
+                    <SettingRow wide icon="🌌" title="Fond de l'interface" desc="Choisis parmi 28 palettes. Le fond est appliqué immédiatement et conservé en mode sombre comme en mode clair.">
                         <div className="bg-picker" role="radiogroup" aria-label="Choisir le fond de l'interface">
                             {Object.entries(BG_PRESETS).map(([key, preset]) => (
                                 <button
@@ -415,12 +435,9 @@ export default function Parametres() {
                         <select
                             className="settings-select"
                             value={language}
-                            onChange={e => setLanguage(e.target.value)}
+                            onChange={e => { const next = e.target.value as GrindlyLanguage; setLanguage(next); applyLanguage(next); }}
                         >
-                            <option value="fr">🇫🇷 Français</option>
-                            <option value="en">🇬🇧 English</option>
-                            <option value="es">🇪🇸 Español</option>
-                            <option value="de">🇩🇪 Deutsch</option>
+                            {LANGUAGES.map(item => <option key={item.value} value={item.value}>{item.flag} {item.label}</option>)}
                         </select>
                     </SettingRow>
                 </Section>

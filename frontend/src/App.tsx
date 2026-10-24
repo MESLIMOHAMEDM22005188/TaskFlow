@@ -96,8 +96,12 @@ function App() {
             const b = parseInt(prefs.accent_color.slice(5, 7), 16)
             root.style.setProperty("--accent-rgb", `${r}, ${g}, ${b}`)
 
-            // Background
-            const preset = BG_PRESETS[prefs.bg_preset] ?? BG_PRESETS.navy
+            // Background — preserve locally selected preset across navigation/reloads.
+            const savedBgPreset = localStorage.getItem("grindly-bg-preset")
+            const requestedPreset = savedBgPreset || prefs.bg_preset || "navy"
+            const legacyBgPresets: Record<string, string> = { dark: "navy", darker: "obsidian", warm: "cocoa" }
+            const bgPresetKey = BG_PRESETS[requestedPreset] ? requestedPreset : (legacyBgPresets[requestedPreset] || "navy")
+            const preset = BG_PRESETS[bgPresetKey] ?? BG_PRESETS.navy
             const savedTheme = localStorage.getItem("grindly-theme")
             const dark = savedTheme ? savedTheme === "dark" : !!prefs.dark_mode
             root.style.setProperty("--bg",         dark ? preset.bg      : "#f4f4f7")

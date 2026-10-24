@@ -134,3 +134,15 @@
 
 .bg-mode-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}.bg-mode-tabs button{border:1px solid var(--page-border,rgba(255,255,255,.14));border-radius:10px;padding:9px 13px;background:var(--bg-surface);color:var(--page-text,currentColor);cursor:pointer;font-weight:600;font-size:12px}.bg-mode-tabs button.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);background:rgba(var(--accent-rgb),.1)}.bg-picker{max-height:none}
 :root.light-mode .bg-mode-tabs button{color:#303548;border-color:rgba(30,41,59,.16)}:root.light-mode .bg-mode-tabs button.active{border-color:var(--accent)}
+
+
+/* Topbar palette: separate presets for dark and light appearance */
+.topbar-theme-picker{display:flex;flex-direction:column;gap:12px;width:min(100%,420px)}
+.topbar-preset-grid{display:grid;grid-template-columns:repeat(6,minmax(32px,1fr));gap:8px}
+.topbar-preset{display:flex;align-items:center;justify-content:center;min-width:34px;height:38px;padding:4px;border:1px solid var(--page-border,rgba(255,255,255,.14));border-radius:10px;background:var(--bg-surface,transparent);cursor:pointer;transition:border-color .16s,transform .16s,box-shadow .16s}
+.topbar-preset:hover{transform:translateY(-1px);border-color:var(--accent)}
+.topbar-preset>span{display:block;width:100%;height:100%;border-radius:6px;border:1px solid rgba(127,127,127,.2)}
+.topbar-preset.selected{border-color:var(--accent);box-shadow:0 0 0 2px rgba(var(--accent-rgb),.22)}
+.topbar-theme-note{margin:0;color:var(--page-muted,currentColor);font-size:11px;line-height:1.5}
+:root.light-mode .topbar-preset{background:#fff;border-color:rgba(30,41,59,.16)}
+@media(max-width:600px){.topbar-preset-grid{grid-template-columns:repeat(4,minmax(32px,1fr))}}

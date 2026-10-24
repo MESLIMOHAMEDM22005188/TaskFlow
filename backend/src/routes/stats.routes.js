@@ -79,21 +79,21 @@ router.get("/overview", async (req, res) => {
 
 // GET tâches par jour (heatmap + barres)
 router.get("/tasks-per-day", async (req, res) => {
-    const { period } = req.query // 7, 30, 365
-
-    const days = period === "year" ? 364 : period === "month" ? 29 : 6
+    const { period } = req.query
+    const numberOfDays = period === "year" ? 365 : period === "month" ? 30 : 7
+    const lookbackDays = numberOfDays - 1
 
     const [rows] = await db.execute(`
-        SELECT 
-            DATE_FORMAT(completed_at, '%Y-%m-%d') as date,
-            COUNT(*) as count
+        SELECT
+            DATE_FORMAT(completed_at, '%Y-%m-%d') AS date,
+            COUNT(*) AS count
         FROM task_completions
         WHERE user_id = ? AND completed_at >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
         GROUP BY DATE_FORMAT(completed_at, '%Y-%m-%d')
         ORDER BY date ASC
-    `, [req.userId, days])
+    `, [req.userId, lookbackDays])
 
-    res.json(fillDailyGaps(rows, days))
+    res.json(fillDailyGaps(rows, numberOfDays))
 })
 
 // Remplit les jours absents de la réponse avec 0 pour garder un axe temporel continu.
@@ -203,7 +203,7 @@ function fillGaps(rows, period) {
     const now = new Date()
     let start, fmt
     if (period === "year") {
-        start = new Date(now.getFullYear() - 1, now.getMonth(), 1)
+        start = new Date(now.getFullYear(), now.getMonth() - 11, 1)
         fmt = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
         const cur = new Date(start)
         while (cur <= now) {
@@ -294,20 +294,21 @@ router.get("/priority-split", async (req, res) => {
 // GET focus par jour
 router.get("/focus-per-day", async (req, res) => {
     const { period } = req.query
-    const days = period === "year" ? 365 : period === "month" ? 30 : 7
+    const numberOfDays = period === "year" ? 365 : period === "month" ? 30 : 7
+    const lookbackDays = numberOfDays - 1
 
     const [rows] = await db.execute(`
-        SELECT 
-            DATE_FORMAT(created_at, '%Y-%m-%d') as date,
-            SUM(duration_minutes) as minutes
+        SELECT
+            DATE_FORMAT(created_at, '%Y-%m-%d') AS date,
+            SUM(duration_minutes) AS minutes
         FROM flow_sessions
         WHERE user_id = ? AND type = 'focus' AND completed = TRUE
-            AND created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
+            AND created_at >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
         GROUP BY DATE_FORMAT(created_at, '%Y-%m-%d')
         ORDER BY date ASC
-    `, [req.userId, days])
+    `, [req.userId, lookbackDays])
 
-    res.json(fillDailyGaps(rows, days))
+    res.json(fillDailyGaps(rows, numberOfDays).map(row => ({ date: row.date, minutes: Number(row.count) || 0 })))
 })
 
 // GET heatmap : toute l'historique pour que le filtre « Tout » soit exact

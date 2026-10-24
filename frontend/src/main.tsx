@@ -30,9 +30,6 @@ window.addEventListener("unhandledrejection", event => {
 
 window.addEventListener("online", () => console.info(LOG_PREFIX, "Network online"));
 window.addEventListener("offline", () => console.warn(LOG_PREFIX, "Network offline"));
-window.addEventListener("unhandledrejection", event => {
-    console.error(LOG_PREFIX, "Unhandled async error", event.reason);
-});
 
 type BoundaryState = {
     hasError: boolean;

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom"
 import "../assets/css/parametres.css"
 import { changePassword, getPreferences, savePreferences } from "../services/taskService"
 import { API_ROOT } from "../services/api"
+import Navbar from "../components/Navbar"
 
 // ── Helpers thème ────────────────────────────────────────────
 const BG_PRESETS: Record<string, { bg: string; card: string; surface: string; label: string }> = {
@@ -29,6 +30,8 @@ function applyTheme(color: string, dark: boolean, bgKey: string) {
     root.style.setProperty("--bg-card",    dark ? preset.card    : "rgba(0,0,0,0.03)")
     root.style.setProperty("--bg-surface", dark ? preset.surface : "rgba(0,0,0,0.05)")
     root.classList.toggle("light-mode", !dark)
+    localStorage.setItem("grindly-theme", dark ? "dark" : "light")
+    window.dispatchEvent(new CustomEvent("grindly-theme-change", { detail: { lightMode: !dark } }))
 }
 
 function hexToRgb(hex: string): string {
@@ -149,6 +152,15 @@ export default function Parametres() {
 
     // Debounce ref
     const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+    useEffect(() => {
+        const syncTheme = (event: Event) => {
+            const detail = (event as CustomEvent<{ lightMode?: boolean }>).detail
+            if (typeof detail?.lightMode === "boolean") setDarkMode(!detail.lightMode)
+        }
+        window.addEventListener("grindly-theme-change", syncTheme)
+        return () => window.removeEventListener("grindly-theme-change", syncTheme)
+    }, [])
 
     // ── Chargement initial depuis l'API ──────────────────────
     useEffect(() => {
@@ -312,24 +324,7 @@ export default function Parametres() {
     return (
         <div className="settings-page">
 
-            <header className="topbar">
-                <div className="logo">Grindly</div>
-                <nav className="nav-menu">
-                    <div className="nav-item" onClick={() => navigate("/dashboard")}>Dashboard</div>
-                    <div className="nav-item" onClick={() => navigate("/objectifs")}>Objectifs</div>
-                    <div className="nav-item" onClick={() => navigate("/flow")}>Flow</div>
-                    <div className="nav-item" onClick={() => navigate("/stats")}>Stats</div>
-                    <div className="nav-item" onClick={() => navigate("/habitudes")}>Habitudes</div>
-                    <div className="nav-item" onClick={() => navigate("/profil")}>Profil</div>
-                    <div className="nav-item" onClick={() => navigate("/communaute")}>Communauté</div>
-                    <div className="nav-item" onClick={() => navigate("/historique")}>Historique</div>
-                    <div className="nav-item" onClick={() => navigate("/parametres")}>Paramètres</div>
-                    <div className="nav-icons">
-                        <div className="nav-item nav-search">🔍</div>
-                        <div className="nav-item nav-notif">🔔</div>
-                    </div>
-                </nav>
-            </header>
+            <Navbar />
 
             <main className="settings-main">
 

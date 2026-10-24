@@ -155,7 +155,10 @@ export default function Navbar({ rightExtra, notifCount = 0 }: NavbarProps) {
     }
 
     useEffect(() => {
-        getPreferences().then(prefs => applyPreferencesTheme(prefs)).catch(() => {
+        getPreferences().then(prefs => {
+            const savedTheme = localStorage.getItem("grindly-theme");
+            applyPreferencesTheme(savedTheme ? { ...prefs, dark_mode: savedTheme === "dark" } : prefs);
+        }).catch(() => {
             const saved = localStorage.getItem("grindly-theme");
             if (saved) {
                 const light = saved === "light";

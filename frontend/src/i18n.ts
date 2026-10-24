@@ -48,6 +48,8 @@ const translations = {
     "settings.light": "Clair",
     "settings.reset": "Réinitialiser",
     "settings.topbarModeNote": "Les couleurs sombres et claires sont enregistrées séparément.",
+    "settings.darkThemes": "Thèmes sombres",
+    "settings.lightThemes": "Thèmes clairs",
 
     "settings.language": "Langue",
     "settings.languageDesc": "Langue de l'interface",
@@ -92,6 +94,8 @@ const translations = {
     "settings.light": "Light",
     "settings.reset": "Reset",
     "settings.topbarModeNote": "Dark and light colors are saved separately.",
+    "settings.darkThemes": "Dark themes",
+    "settings.lightThemes": "Light themes",
 
     "settings.language": "Language",
     "settings.languageDesc": "Interface language",
@@ -136,6 +140,8 @@ const translations = {
     "settings.light": "Claro",
     "settings.reset": "Restablecer",
     "settings.topbarModeNote": "Los colores oscuros y claros se guardan por separado.",
+    "settings.darkThemes": "Temas oscuros",
+    "settings.lightThemes": "Temas claros",
 
     "settings.language": "Idioma",
     "settings.languageDesc": "Idioma de la interfaz",
@@ -180,6 +186,8 @@ const translations = {
     "settings.light": "Hell",
     "settings.reset": "Zurücksetzen",
     "settings.topbarModeNote": "Dunkle und helle Farben werden getrennt gespeichert.",
+    "settings.darkThemes": "Dunkle Designs",
+    "settings.lightThemes": "Helle Designs",
 
     "settings.language": "Sprache",
     "settings.languageDesc": "Sprache der Oberfläche",
@@ -224,6 +232,8 @@ const translations = {
     "settings.light": "Chiaro",
     "settings.reset": "Ripristina",
     "settings.topbarModeNote": "I colori scuri e chiari vengono salvati separatamente.",
+    "settings.darkThemes": "Temi scuri",
+    "settings.lightThemes": "Temi chiari",
 
     "settings.language": "Lingua",
     "settings.languageDesc": "Lingua dell’interfaccia",
@@ -268,6 +278,8 @@ const translations = {
     "settings.light": "Claro",
     "settings.reset": "Redefinir",
     "settings.topbarModeNote": "As cores escuras e claras são guardadas separadamente.",
+    "settings.darkThemes": "Temas escuros",
+    "settings.lightThemes": "Temas claros",
 
     "settings.language": "Idioma",
     "settings.languageDesc": "Idioma da interface",
@@ -312,6 +324,8 @@ const translations = {
     "settings.light": "Licht",
     "settings.reset": "Herstellen",
     "settings.topbarModeNote": "Donkere en lichte kleuren worden apart opgeslagen.",
+    "settings.darkThemes": "Donkere thema's",
+    "settings.lightThemes": "Lichte thema's",
 
     "settings.language": "Taal",
     "settings.languageDesc": "Taal van de interface",
@@ -356,6 +370,8 @@ const translations = {
     "settings.light": "Jasny",
     "settings.reset": "Resetuj",
     "settings.topbarModeNote": "Ciemne i jasne kolory są zapisywane osobno.",
+    "settings.darkThemes": "Ciemne motywy",
+    "settings.lightThemes": "Jasne motywy",
 
     "settings.language": "Język",
     "settings.languageDesc": "Język interfejsu",
@@ -400,6 +416,8 @@ const translations = {
     "settings.light": "Luminos",
     "settings.reset": "Resetează",
     "settings.topbarModeNote": "Culorile întunecate și deschise sunt salvate separat.",
+    "settings.darkThemes": "Teme întunecate",
+    "settings.lightThemes": "Teme deschise",
 
     "settings.language": "Limbă",
     "settings.languageDesc": "Limba interfeței",
@@ -444,6 +462,8 @@ const translations = {
     "settings.light": "فاتح",
     "settings.reset": "إعادة الضبط",
     "settings.topbarModeNote": "يتم حفظ الألوان الداكنة والفاتحة بشكل منفصل.",
+    "settings.darkThemes": "المظاهر الداكنة",
+    "settings.lightThemes": "المظاهر الفاتحة",
 
     "settings.language": "اللغة",
     "settings.languageDesc": "لغة الواجهة",

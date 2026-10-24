@@ -107,7 +107,7 @@ function SoberHeatmap({ habitId, color }: { habitId: number; color: string }) {
     }
 
     const logMap: Record<string, string> = {}
-    logs.forEach(l => { logMap[l.date] = l.type })
+    logs.forEach(l => { logMap[String(l.date).slice(0, 10)] = l.type })
 
     // Build 52 semaines (364 jours)
     const weeks: { date: string; type: string | null; dayOfWeek: number }[][] = []
@@ -116,7 +116,7 @@ function SoberHeatmap({ habitId, color }: { habitId: number; color: string }) {
     for (let i = 363; i >= 0; i--) {
         const d = new Date()
         d.setDate(d.getDate() - i)
-        const key = d.toISOString().split("T")[0]
+        const key = String(d.getFullYear()) + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0")
         const dow = d.getDay() // 0=dim
         if (dow === 1 && currentWeek.length > 0) {
             weeks.push(currentWeek)
@@ -388,12 +388,12 @@ function HabitHeatmap({ habitId }: { habitId: number }) {
     }
 
     const logMap: Record<string, string> = {}
-    logs.forEach(l => { logMap[l.date] = l.type })
+    logs.forEach(l => { logMap[String(l.date).slice(0, 10)] = l.type })
     const days = []
     for (let i = 364; i >= 0; i--) {
         const d = new Date()
         d.setDate(d.getDate() - i)
-        const key = d.toISOString().split("T")[0]
+        const key = String(d.getFullYear()) + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0")
         days.push({ date: key, type: logMap[key] ?? null, dayOfWeek: d.getDay() })
     }
 
@@ -781,9 +781,9 @@ export default function Habitudes() {
                                     <button
                                         className="habit-btn success"
                                         onClick={() => handleSuccess(habit.id)}
-                                        disabled={habit.todayCount >= habit.times_per_day}
+                                        disabled={loadingIds.has(habit.id) || habit.todayCount >= habit.times_per_day}
                                     >
-                                        {habit.times_per_day > 1 ? `+ Faire (${habit.todayCount}/${habit.times_per_day})` : "✓ Fait aujourd'hui"}
+                                        {loadingIds.has(habit.id) ? "Enregistrement…" : habit.times_per_day > 1 ? `＋ Valider (${habit.todayCount}/${habit.times_per_day})` : "✓ Fait aujourd’hui"}
 
                                     </button>
                                 )}
@@ -888,7 +888,7 @@ export default function Habitudes() {
                                 <div className="habit-actions">
                                     <button type="button" className="habit-btn success" disabled={loadingIds.has(habit.id)} onClick={() => handleSuccess(habit.id)}>{loadingIds.has(habit.id) ? "Enregistrement…" : "✓ Jour sans rechute"}</button>
                                     <button type="button" className="habit-btn relapse" disabled={loadingIds.has(habit.id)} onClick={() => setRelapseHabitId(habit.id)}>↩ Rechute</button>
-                                    <button className="habit-btn delete" onClick={() => handleDelete(habit.id)}>🗑</button>
+                                    <button type="button" className="habit-btn delete" aria-label={`Supprimer ${habit.name}`} title="Supprimer cette habitude" onClick={() => { if (window.confirm(`Supprimer l’habitude « ${habit.name} » ?`)) void handleDelete(habit.id) }}>Supprimer</button>
                                 </div>
                             )}
 

@@ -468,6 +468,7 @@ export default function Habitudes() {
         relapseHabitId, setRelapseHabitId,
         relapseNote, setRelapseNote,
         lastXp,
+        loadingIds,
         name, setName,
         type, setType,
         emoji, setEmoji,
@@ -517,7 +518,6 @@ export default function Habitudes() {
     const visibleBuildHabits = filterHabits(buildHabits)
     const visibleQuitHabits = filterHabits(quitHabits)
     const todayGoodCount = buildHabits.filter(habit => habit.doneToday).length
-    const todayQuitCount = quitHabits.filter(habit => habit.doneToday).length
 
 
     function applySuggestion(s: typeof ADDICTION_SUGGESTIONS[0]) {

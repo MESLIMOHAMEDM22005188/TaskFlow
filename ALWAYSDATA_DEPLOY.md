@@ -1,4 +1,4 @@
-# Grindly ST on AlwaysData
+# Grindly on AlwaysData
 
 ## Application type
 
@@ -28,14 +28,14 @@ Backend:
 - `DB_NAME=database_name`
 - `DB_CONNECTION_LIMIT=10`
 - `JWT_SECRET=<long-random-secret>`
-- `CORS_ALLOWED_ORIGINS=https://grindly-st.alwaysdata.net`
+- `CORS_ALLOWED_ORIGINS=https://grindlyy.alwaysdata.net`
 - `CLOUDINARY_CLOUD_NAME=<cloudinary-cloud-name>`
 - `CLOUDINARY_API_KEY=<cloudinary-api-key>`
 - `CLOUDINARY_API_SECRET=<cloudinary-api-secret>`
 
 Frontend:
 
-- `VITE_API_URL=https://grindly-st.alwaysdata.net`
+- `VITE_API_URL=https://grindlyy.alwaysdata.net`
 
 ## Build commands
 
@@ -60,7 +60,7 @@ npm start
 Node application:
 
 - Application type: `Node.js`
-- Working directory: `/www/Grindly-ST/backend` or the directory where `backend/app.js` is deployed
+- Working directory: `/www/grindly/backend` or the directory where `backend/app.js` is deployed
 - Startup file: `app.js`
 - Node version: `20.x` or newer
 - Environment: `production`

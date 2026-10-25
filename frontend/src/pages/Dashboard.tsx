@@ -41,6 +41,7 @@ export function Dashboard() {
         handleDeleteTheme,
         toggleDone,
         archiveTask,
+        permanentlyDeleteTask,
         navigate,
     } = useDashboard()
 
@@ -260,7 +261,40 @@ export function Dashboard() {
                                             </div>
                                             {task.note && <p style={{ margin: "8px 0 0", opacity: 0.7, fontSize: 13 }}>{task.note}</p>}
                                         </div>
-                                        <button type="button" className="main-button secondary" onClick={() => void archiveTask(task.id)} aria-label={`Archiver ${task.title}`}>Archiver</button>
+                                        <div className="dashboard-task-actions">
+                                            <button
+                                                type="button"
+                                                className={isDone ? "dashboard-task-action is-complete" : "dashboard-task-action is-primary"}
+                                                onClick={() => void toggleDone(task.id)}
+                                                aria-label={isDone ? `Annuler la validation de ${task.title}` : `Valider ${task.title} comme effectuée`}
+                                                title={isDone ? "Annuler la validation du jour" : "Valider la tâche effectuée"}
+                                            >
+                                                <span aria-hidden="true">{isDone ? "✓" : "○"}</span>
+                                                {isDone ? "Terminée aujourd’hui" : "Valider"}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="dashboard-task-action is-archive"
+                                                onClick={() => void archiveTask(task.id)}
+                                                aria-label={`Archiver ${task.title}`}
+                                                title="Archiver la tâche"
+                                            >
+                                                Archiver
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="dashboard-task-action is-delete"
+                                                onClick={() => {
+                                                    if (window.confirm(`Supprimer définitivement « ${task.title} » ? Cette action est irréversible.`)) {
+                                                        void permanentlyDeleteTask(task.id)
+                                                    }
+                                                }}
+                                                aria-label={`Supprimer définitivement ${task.title}`}
+                                                title="Suppression définitive"
+                                            >
+                                                Supprimer
+                                            </button>
+                                        </div>
                                     </article>
                                 )
                             })}

@@ -184,16 +184,22 @@ export function useDashboard() {
     }
 
     async function toggleDone(taskId: number) {
+        const taskBefore = tasks.find(task => task.id === taskId)
+        if (!taskBefore) return
+
+        // Le serveur fournit aussi done_today : l'utiliser en secours si le
+        // chargement séparé de /tasks/completions/today a échoué.
+        const state = dailyState.get(taskId)
+        const isDone = state?.done_today ?? Boolean(taskBefore.done_today)
         try {
-            const state = dailyState.get(taskId)
-            const isDone = state?.done_today ?? false
             if (isDone) {
                 const { task } = await uncompleteTask(taskId)
-                setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...task } : t))
+                setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...task, done_today: false } : t))
                 setDailyState(prev => {
                     const next = new Map(prev)
-                    const current = next.get(taskId)
-                    if (current) next.set(taskId, { ...current, today_count: Math.max(0, current.today_count - 1), done_today: false })
+                    const current = next.get(taskId) ?? { task_id: taskId, today_count: 1, done_today: true }
+                    const todayCount = Math.max(0, Number(current.today_count || 0) - 1)
+                    next.set(taskId, { ...current, today_count: todayCount, done_today: todayCount >= (task.completion_target || 1) })
                     return next
                 })
             } else {
@@ -202,12 +208,16 @@ export function useDashboard() {
                 setDailyState(prev => {
                     const next = new Map(prev)
                     const current = next.get(taskId) ?? { task_id: taskId, today_count: 0, done_today: false }
-                    const newCount = current.today_count + 1
-                    next.set(taskId, { ...current, today_count: newCount, done_today: newCount >= task.completion_target })
+                    const newCount = Number(current.today_count || 0) + 1
+                    const doneToday = newCount >= (task.completion_target || 1)
+                    next.set(taskId, { ...current, today_count: newCount, done_today: doneToday })
                     return next
                 })
             }
-        } catch (err) { console.error(err) }
+        } catch (err) {
+            console.error("Échec de la validation/annulation de la tâche :", err)
+            alert(err instanceof Error ? err.message : "Action impossible. Vérifie ta connexion puis réessaie.")
+        }
     }
 
     async function handleDeleteTask(taskId: number) {

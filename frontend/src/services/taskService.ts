@@ -71,6 +71,15 @@ export async function deleteTask(id: number): Promise<{ message: string }> {
     return handleResponse(res)
 }
 
+/** Supprime définitivement une tâche, contrairement à deleteTask qui l'archive. */
+export async function permanentlyDeleteTask(id: number): Promise<{ message: string }> {
+    const res = await fetch(`${API_ROOT}/tasks/${id}/permanent`, {
+        method: "DELETE",
+        headers: getHeaders()
+    })
+    return handleResponse(res)
+}
+
 export async function getTaskHistory(): Promise<TaskHistory[]> {
     const res = await fetch(`${API_ROOT}/tasks/history`, {
         headers: getHeaders()

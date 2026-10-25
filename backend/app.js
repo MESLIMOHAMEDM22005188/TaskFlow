@@ -92,10 +92,36 @@ app.use(helmet({
     contentSecurityPolicy: false,
     crossOriginResourcePolicy: { policy: "cross-origin" },
 }))
+function isPrivateDevelopmentOrigin(origin) {
+    if (process.env.NODE_ENV === "production" || !origin) return false
+
+    try {
+        const parsed = new URL(origin)
+        if (parsed.protocol !== "http:") return false
+
+        const hostname = parsed.hostname
+        if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1") {
+            return true
+        }
+
+        const octets = hostname.split(".").map(Number)
+        if (octets.length !== 4 || octets.some(value => !Number.isInteger(value) || value < 0 || value > 255)) {
+            return false
+        }
+
+        return octets[0] === 10 ||
+            (octets[0] === 192 && octets[1] === 168) ||
+            (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31) ||
+            (octets[0] === 169 && octets[1] === 254)
+    } catch {
+        return false
+    }
+}
+
 app.use(cors({
     origin(origin, callback) {
         console.debug(LOG_PREFIX, "CORS origin check", origin || "(no origin)")
-        if (!origin || allowedOrigins.includes(origin)) {
+        if (!origin || allowedOrigins.includes(origin) || isPrivateDevelopmentOrigin(origin)) {
             return callback(null, true)
         }
         console.warn(LOG_PREFIX, "Blocked CORS origin", origin)

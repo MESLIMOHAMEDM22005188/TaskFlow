@@ -58,6 +58,14 @@ function getConnectionPool() {
 module.exports = {
 
     /**
+     * Acquires a pooled connection for transactions.
+     * The caller must release it in a finally block.
+     */
+    getConnection() {
+        return getConnectionPool().getConnection();
+    },
+
+    /**
      * Executes a prepared SQL statement.
      *
      * @param {string} sql

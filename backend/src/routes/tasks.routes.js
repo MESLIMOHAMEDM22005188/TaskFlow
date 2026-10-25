@@ -251,46 +251,61 @@ router.delete("/:id/complete", async (req, res) => {
         const taskId = req.params.id
         const today = new Date().toISOString().split("T")[0]
 
-        // Vérifie qu'il y a bien une complétion aujourd'hui
+        // Vérifier que la tâche appartient bien à l'utilisateur avant toute modification.
+        const [[task]] = await db.execute(
+            "SELECT id, completion_target, status FROM tasks WHERE id = ? AND user_id = ?",
+            [taskId, req.userId]
+        )
+        if (!task) return res.status(404).json({ message: "Task not found" })
+
         const [[state]] = await db.execute(
             "SELECT count FROM task_daily_state WHERE task_id = ? AND user_id = ? AND date = ?",
             [taskId, req.userId, today]
         )
-        if (!state || state.count === 0) {
+        const currentCount = Number(state?.count || 0)
+        if (currentCount < 1) {
             return res.status(400).json({ message: "Nothing to undo today" })
         }
 
-        // Retire une complétion du jour
+        // Retirer une seule complétion du jour et recalculer le seuil correctement.
+        const nextCount = currentCount - 1
+        const target = Math.max(1, Number(task.completion_target || 1))
         await db.execute(`
             UPDATE task_daily_state
-            SET count = count - 1,
-                done  = FALSE
+            SET count = ?,
+                done = (? >= ?)
             WHERE task_id = ? AND user_id = ? AND date = ?
-        `, [taskId, req.userId, today])
+        `, [nextCount, nextCount, target, taskId, req.userId, today])
 
-        // Supprime le dernier log dans l'historique
+        // Retirer la complétion la plus récente de cette journée, pas une ancienne.
         await db.execute(`
             DELETE FROM task_completions
-            WHERE task_id = ? AND user_id = ?
-            ORDER BY completed_at DESC
-            LIMIT 1
-        `, [taskId, req.userId])
+            WHERE id = (
+                SELECT id FROM (
+                    SELECT id
+                    FROM task_completions
+                    WHERE task_id = ? AND user_id = ? AND DATE(completed_at) = ?
+                    ORDER BY completed_at DESC, id DESC
+                    LIMIT 1
+                ) AS latest_completion
+            )
+        `, [taskId, req.userId, today])
 
-        // Décrémente le compteur global + repasse en active si besoin
+        // Mettre à jour le compteur global et le statut pour les tâches ponctuelles.
         await db.execute(`
             UPDATE tasks
             SET
                 completions_count = GREATEST(0, completions_count - 1),
                 status = CASE
-                    WHEN status = 'done' THEN 'active'
+                    WHEN frequency = 'once' AND status = 'done' THEN 'active'
                     ELSE status
                 END,
                 completed_at = CASE
-                    WHEN status = 'done' THEN NULL
+                    WHEN frequency = 'once' AND status = 'done' THEN NULL
                     ELSE completed_at
                 END
-            WHERE id = ?
-        `, [taskId])
+            WHERE id = ? AND user_id = ?
+        `, [taskId, req.userId])
 
         await db.execute(
             "UPDATE users SET xp = GREATEST(0, xp - 10) WHERE id = ?",
@@ -326,9 +341,12 @@ router.put("/:id/restore", async (req, res) => {
 })
 
 router.delete("/:id/permanent", async (req, res) => {
-    const connection = await db.getConnection()
+    let connection
+    let transactionStarted = false
     try {
+        connection = await db.getConnection()
         await connection.beginTransaction()
+        transactionStarted = true
 
         const [[task]] = await connection.execute(
             "SELECT id FROM tasks WHERE id = ? AND user_id = ? FOR UPDATE",
@@ -354,11 +372,15 @@ router.delete("/:id/permanent", async (req, res) => {
         await connection.commit()
         res.json({ message: "Task permanently deleted" })
     } catch (err) {
-        await connection.rollback()
+        if (connection && transactionStarted) {
+            try { await connection.rollback() } catch (rollbackError) {
+                console.error("[Grindly:Tasks] Rollback failed:", rollbackError)
+            }
+        }
         console.error("[Grindly:Tasks] Permanent delete failed:", err)
         res.status(500).json({ message: "Error deleting task", detail: err.message })
     } finally {
-        connection.release()
+        if (connection) connection.release()
     }
 })
 

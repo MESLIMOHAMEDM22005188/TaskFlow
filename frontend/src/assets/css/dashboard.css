@@ -1013,3 +1013,83 @@
     }
     .dashboard-task-action.is-delete { grid-column: 1 / -1; }
 }
+
+
+/* Grindly dashboard — refreshed task cards and reliable action affordances */
+.dashboard-main {
+    width: min(100% - 32px, 1100px);
+}
+.dashboard-main > header h1 {
+    letter-spacing: -.045em;
+    font-weight: 800;
+}
+.dashboard-main section[aria-label="Résumé de la journée"] {
+    background: linear-gradient(135deg, rgba(var(--accent-rgb, 124,110,230), .075), rgba(127,127,127,.025));
+    box-shadow: 0 14px 36px rgba(0,0,0,.045);
+    backdrop-filter: blur(10px);
+}
+.dashboard-main section[aria-label="Liste des tâches"] article {
+    position: relative;
+    background: var(--card-bg, rgba(127,127,127,.035));
+    box-shadow: 0 8px 24px rgba(0,0,0,.035);
+    transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+.dashboard-main section[aria-label="Liste des tâches"] article:hover {
+    border-color: var(--accent-color, #7c6ee6) !important;
+    box-shadow: 0 12px 30px rgba(0,0,0,.075);
+    transform: translateY(-1px);
+}
+.dashboard-task-actions {
+    flex: 0 1 auto;
+    padding: 5px;
+    border: 1px solid rgba(127,127,127,.12);
+    border-radius: 15px;
+    background: rgba(127,127,127,.045);
+}
+.dashboard-task-action {
+    min-height: 42px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 12px;
+}
+.dashboard-task-action.is-primary {
+    box-shadow: 0 4px 12px rgba(var(--accent-rgb, 124,110,230), .18);
+}
+.dashboard-task-action.is-complete {
+    color: #15803d;
+    background: rgba(34,197,94,.11);
+    border-color: rgba(34,197,94,.25);
+}
+.dashboard-task-action.is-archive {
+    color: var(--text-color, inherit);
+}
+.dashboard-task-action.is-delete {
+    font-weight: 800;
+}
+.dashboard-task-action:disabled {
+    cursor: wait;
+    opacity: .55;
+    transform: none;
+    box-shadow: none;
+}
+.dashboard-main input:focus-visible,
+.dashboard-main select:focus-visible {
+    outline: 2px solid var(--accent-color, #7c6ee6);
+    outline-offset: 2px;
+}
+@media (max-width: 760px) {
+    .dashboard-main {
+        width: min(100% - 20px, 1100px);
+        padding: 22px 0 42px !important;
+    }
+    .dashboard-task-actions {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .dashboard-task-action.is-delete { grid-column: auto; }
+}
+@media (max-width: 480px) {
+    .dashboard-task-actions {
+        grid-template-columns: 1fr;
+    }
+    .dashboard-task-action.is-delete { grid-column: auto; }
+}

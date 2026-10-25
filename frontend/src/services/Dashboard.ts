@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { toggle, closeAll } from "./uiManager.ts"
 import {
-    getTasks, createTask, deleteTask as apiDeleteTask,
+    getTasks, createTask, deleteTask as apiDeleteTask, permanentlyDeleteTask as apiPermanentlyDeleteTask,
     completeTask, uncompleteTask, getTodayCompletions,
     getThemes, createTheme, deleteTheme as apiDeleteTheme,
 } from "../services/taskService"
@@ -233,6 +233,21 @@ export function useDashboard() {
         } catch (err) { console.error(err) }
     }
 
+    async function handlePermanentlyDeleteTask(taskId: number) {
+        try {
+            await apiPermanentlyDeleteTask(taskId)
+            setTasks(prev => prev.filter(task => task.id !== taskId))
+            setDailyState(prev => {
+                const next = new Map(prev)
+                next.delete(taskId)
+                return next
+            })
+        } catch (err) {
+            console.error("Impossible de supprimer définitivement la tâche :", err)
+            alert("La suppression a échoué. Vérifie ta connexion puis réessaie.")
+        }
+    }
+
     return {
         navigate,
         dark, setDark,
@@ -253,6 +268,7 @@ export function useDashboard() {
         toggleDone,
         deleteTask: handleDeleteTask,
         archiveTask: handleArchiveTask,
+        permanentlyDeleteTask: handlePermanentlyDeleteTask,
         handleDeleteTheme,
     }
 }

@@ -5,43 +5,34 @@ const { updateAchievements } = require("../services/achievement.service")
 const router = express.Router()
 
 router.get("/", async (req, res) => {
-    const requestId = req.get("X-Request-Id") || `tasks-${Date.now().toString(36)}`
-    const userId = req.userId
-
     try {
-        const today = new Date().toISOString().slice(0, 10)
+        const today = new Date().toISOString().split("T")[0]
 
-        console.info("[Grindly:Tasks]", requestId, "GET /tasks start", { userId, today })
-
-        // Charger les tâches sans dépendre des tables auxiliaires de complétion.
-        // Les anciennes tâches peuvent avoir le statut "todo" au lieu de "active".
         const [tasks] = await db.execute(`
             SELECT
                 t.*,
-                th.name AS theme_name,
-                th.emoji AS theme_emoji,
-                th.color AS theme_color
+                COALESCE(ds.count, 0) as today_count,
+                COALESCE(ds.done, FALSE) as done_today,
+                th.name as theme_name,
+                th.emoji as theme_emoji,
+                th.color as theme_color
             FROM tasks t
-            LEFT JOIN themes th ON th.id = t.theme_id
-            WHERE t.user_id = ?
-              AND LOWER(COALESCE(t.status, 'active')) NOT IN ('archived', 'deleted')
-              AND COALESCE(t.is_archived, 0) = 0
+                     LEFT JOIN task_daily_state ds
+                               ON ds.task_id = t.id
+                                   AND ds.user_id = ?
+                                   AND ds.date = ?
+                     LEFT JOIN themes th ON th.id = t.theme_id
+            WHERE t.user_id = ? AND COALESCE(t.status, 'active') <> 'archived'
             ORDER BY
-                FIELD(LOWER(COALESCE(t.priority, 'medium')), 'high', 'medium', 'low'),
-                t.deadline IS NULL ASC,
+                FIELD(t.priority, 'High', 'Medium', 'Low'),
                 t.deadline ASC,
                 t.created_at DESC
-        `, [userId])
-
-        console.info("[Grindly:Tasks]", requestId, "base task rows", {
-            userId,
-            count: tasks.length,
-            ids: tasks.map(task => task.id),
-        })
+        `, [req.userId, today, req.userId])
 
         if (tasks.length === 0) return res.json([])
 
-        const taskIds = tasks.map(task => task.id)
+        // Charger les thèmes multi depuis task_themes
+        const taskIds = tasks.map(t => t.id)
         const placeholders = taskIds.map(() => "?").join(",")
         const [taskThemes] = await db.execute(`
             SELECT tt.task_id, th.id, th.name, th.emoji, th.color
@@ -51,60 +42,25 @@ router.get("/", async (req, res) => {
         `, taskIds)
 
         const themesByTask = {}
-        for (const theme of taskThemes) {
-            if (!themesByTask[theme.task_id]) themesByTask[theme.task_id] = []
-            themesByTask[theme.task_id].push({
-                id: theme.id,
-                name: theme.name,
-                emoji: theme.emoji,
-                color: theme.color,
-            })
-        }
-
-        // Les métadonnées quotidiennes ne doivent pas empêcher l'affichage des tâches.
-        let dailyByTask = {}
-        try {
-            const [dailyRows] = await db.execute(`
-                SELECT task_id, count AS today_count, done AS done_today
-                FROM task_daily_state
-                WHERE user_id = ? AND date = ? AND task_id IN (${placeholders})
-            `, [userId, today, ...taskIds])
-            dailyByTask = Object.fromEntries(dailyRows.map(row => [
-                row.task_id,
-                {
-                    today_count: Number(row.today_count) || 0,
-                    done_today: Boolean(row.done_today),
-                },
-            ]))
-        } catch (dailyError) {
-            console.warn("[Grindly:Tasks]", requestId, "daily-state metadata unavailable", dailyError.message)
-        }
-
-        const result = tasks.map(task => {
-            const normalizedStatus = String(task.status || "active").toLowerCase()
-            return {
-                ...task,
-                status: normalizedStatus === "todo" ? "active" : normalizedStatus,
-                today_count: dailyByTask[task.id]?.today_count ?? 0,
-                done_today: dailyByTask[task.id]?.done_today ?? false,
-                themes: themesByTask[task.id] ?? [],
-            }
+        taskThemes.forEach(tt => {
+            if (!themesByTask[tt.task_id]) themesByTask[tt.task_id] = []
+            themesByTask[tt.task_id].push({ id: tt.id, name: tt.name, emoji: tt.emoji, color: tt.color })
         })
 
-        console.info("[Grindly:Tasks]", requestId, "GET /tasks success", {
-            userId,
-            count: result.length,
-        })
-        return res.json(result)
+        // Ajouter themes[] à chaque tâche
+        const result = tasks.map(t => ({
+            ...t,
+            // Anciennes tâches créées avec le statut "todo" : les exposer comme actives
+            // pour rester compatibles avec les filtres et types du frontend.
+            status: t.status === "todo" ? "active" : t.status,
+            themes: themesByTask[t.id] ?? []
+        }))
+
+        res.json(result)
+
     } catch (err) {
-        console.error("[Grindly:Tasks]", requestId, "GET /tasks failed", {
-            userId,
-            message: err.message,
-            code: err.code,
-            sqlMessage: err.sqlMessage,
-            stack: err.stack,
-        })
-        return res.status(500).json({ message: "Error fetching tasks", requestId })
+        console.error(err)
+        res.status(500).json({ message: "Error fetching tasks" })
     }
 })
 

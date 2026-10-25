@@ -241,15 +241,6 @@ export function Dashboard() {
 
                                 return (
                                     <article key={task.id} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 14, padding: 16, border: "1px solid rgba(128,128,128,.25)", borderRadius: 14 }}>
-                                        <button
-                                            type="button"
-                                            onClick={() => void toggleDone(task.id)}
-                                            aria-label={isDone ? `Annuler la validation de ${task.title}` : `Terminer ${task.title}`}
-                                            title={isDone ? "Annuler" : "Marquer comme terminée"}
-                                            style={{ width: 30, height: 30, flex: "0 0 30px", borderRadius: "50%", border: "2px solid var(--accent-color, #7c6ee6)", background: isDone ? "var(--accent-color, #7c6ee6)" : "transparent", color: "white", cursor: "pointer", fontSize: 16 }}
-                                        >
-                                            {isDone ? "✓" : ""}
-                                        </button>
                                         <div style={{ flex: "1 1 220px", minWidth: 0 }}>
                                             <h3 style={{ margin: "0 0 6px", fontSize: 16, textDecoration: isDone ? "line-through" : "none", opacity: isDone ? 0.65 : 1, overflowWrap: "anywhere" }}>{task.title}</h3>
                                             <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, fontSize: 12, opacity: 0.75 }}>

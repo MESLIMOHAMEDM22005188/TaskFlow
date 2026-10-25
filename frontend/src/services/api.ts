@@ -11,8 +11,8 @@ const LOG_PREFIX = "[Grindly:API]";
 function normalizeBaseUrl(value: string | undefined): string {
     return (value || "")
         .trim()
-        .replace(/\\/+$/, "")
-        .replace(/\\/api$/, "")
+        .replace(/\/+$/, "")
+        .replace(/\/api$/, "")
 }
 
 export const APP_ORIGIN = normalizeBaseUrl(import.meta.env.VITE_API_URL)

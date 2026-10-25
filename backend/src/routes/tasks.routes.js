@@ -326,16 +326,39 @@ router.put("/:id/restore", async (req, res) => {
 })
 
 router.delete("/:id/permanent", async (req, res) => {
+    const connection = await db.getConnection()
     try {
-        const [result] = await db.execute(
+        await connection.beginTransaction()
+
+        const [[task]] = await connection.execute(
+            "SELECT id FROM tasks WHERE id = ? AND user_id = ? FOR UPDATE",
+            [req.params.id, req.userId]
+        )
+        if (!task) {
+            await connection.rollback()
+            return res.status(404).json({ message: "Task not found" })
+        }
+
+        // Nettoyer les dépendances avant la suppression pour éviter les erreurs
+        // de clés étrangères et garder la suppression atomique.
+        await connection.execute("DELETE FROM task_themes WHERE task_id = ?", [req.params.id])
+        await connection.execute("DELETE FROM task_daily_state WHERE task_id = ? AND user_id = ?", [req.params.id, req.userId])
+        await connection.execute("DELETE FROM task_completions WHERE task_id = ? AND user_id = ?", [req.params.id, req.userId])
+        await connection.execute("UPDATE flow_sessions SET task_id = NULL WHERE task_id = ?", [req.params.id])
+
+        await connection.execute(
             "DELETE FROM tasks WHERE id = ? AND user_id = ?",
             [req.params.id, req.userId]
         )
-        if (result.affectedRows === 0) return res.status(404).json({ message: "Task not found" })
+
+        await connection.commit()
         res.json({ message: "Task permanently deleted" })
     } catch (err) {
-        console.error(err)
-        res.status(500).json({ message: "Error deleting task" })
+        await connection.rollback()
+        console.error("[Grindly:Tasks] Permanent delete failed:", err)
+        res.status(500).json({ message: "Error deleting task", detail: err.message })
+    } finally {
+        connection.release()
     }
 })
 

@@ -2,6 +2,7 @@ import "../assets/css/communaute.css"
 import Navbar from "../components/Navbar";
 import { useCommunaute } from "../services/Communaute"
 import type { Group } from "../services/taskService"
+import { useNavigate } from "react-router-dom"
 
 const CROWNS = ["👑", "🥈", "🥉"]
 
@@ -18,6 +19,7 @@ const GROUP_CATEGORIES = [
 const GROUP_EMOJIS = ["💬", "💪", "🧠", "🎯", "🤝", "📚", "🏃", "🎮", "🌱", "🔥", "⚡", "🦋"]
 
 export default function Communaute() {
+    const navigate = useNavigate()
 
     const {
         loading,
@@ -61,6 +63,12 @@ export default function Communaute() {
             <Navbar />
 
             <main className="communaute-main">
+
+                <button className="season-community-entry" onClick={() => navigate("/seasons")}>
+                    <span className="season-community-icon">❄</span>
+                    <span className="season-community-copy"><strong>Winter Arc · Summer Arc</strong><small>Relève le défi saisonnier, gagne des XP et obtiens ton rang final.</small></span>
+                    <span className="season-community-arrow">Voir les saisons ↗</span>
+                </button>
 
                 {/* ONGLETS PRINCIPAUX */}
                 <div className="communaute-tabs">

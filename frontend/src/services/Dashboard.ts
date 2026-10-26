@@ -158,8 +158,9 @@ export function useDashboard() {
             setCompletionTarget(1)
             closeAll(setShowTaskForm, setShowThemeForm)
         } catch (err) {
-            console.error(err)
-            alert("Failed to create task")
+            console.error("Création de tâche impossible :", err)
+            const message = err instanceof Error ? err.message : "Erreur inconnue"
+            alert(`Impossible de créer la tâche. ${message}`)
         }
     }
 

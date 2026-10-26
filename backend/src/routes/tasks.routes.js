@@ -145,6 +145,58 @@ function isTaskDueToday(task) {
     return dateChoices.includes(todayMonthDay)
 }
 
+
+function formatSqlDate(date) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+}
+
+function addMonths(date, amount) {
+    return new Date(date.getFullYear(), date.getMonth() + amount, 1, 12)
+}
+
+// Bounds for the active recurring cycle; end is exclusive.
+function getTaskPeriodBounds(task, now = new Date()) {
+    if (!["weekly", "monthly", "yearly"].includes(task.frequency)) return null
+    const anchor = parseDateOnly(task.start_date) || parseDateOnly(task.created_at)
+    if (!anchor) return null
+    const interval = Math.max(1, Number(task.recurrence_interval || 1))
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12)
+
+    if (task.frequency === "weekly") {
+        const firstWeek = new Date(anchor)
+        firstWeek.setDate(firstWeek.getDate() - ((firstWeek.getDay() + 6) % 7))
+        const currentWeek = new Date(today)
+        currentWeek.setDate(currentWeek.getDate() - ((currentWeek.getDay() + 6) % 7))
+        const weekDistance = Math.floor(dayDifference(currentWeek, firstWeek) / 7)
+        if (weekDistance < 0) return null
+        const cycleIndex = Math.floor(weekDistance / interval)
+        const start = new Date(firstWeek)
+        start.setDate(start.getDate() + cycleIndex * interval * 7)
+        const end = new Date(start)
+        end.setDate(end.getDate() + interval * 7)
+        const firstCycleStart = cycleIndex === 0 && anchor > start ? anchor : start
+        return { start: formatSqlDate(firstCycleStart), end: formatSqlDate(end) }
+    }
+
+    if (task.frequency === "monthly") {
+        const monthDistance = (today.getFullYear() - anchor.getFullYear()) * 12 + today.getMonth() - anchor.getMonth()
+        if (monthDistance < 0) return null
+        const cycleIndex = Math.floor(monthDistance / interval)
+        const start = addMonths(new Date(anchor.getFullYear(), anchor.getMonth(), 1, 12), cycleIndex * interval)
+        const end = addMonths(start, interval)
+        const cycleStart = cycleIndex === 0 && anchor > start ? anchor : start
+        return { start: formatSqlDate(cycleStart), end: formatSqlDate(end) }
+    }
+
+    const yearDistance = today.getFullYear() - anchor.getFullYear()
+    if (yearDistance < 0) return null
+    const cycleIndex = Math.floor(yearDistance / interval)
+    const start = new Date(anchor.getFullYear() + cycleIndex * interval, 0, 1, 12)
+    const end = new Date(start.getFullYear() + interval, 0, 1, 12)
+    const cycleStart = cycleIndex === 0 && anchor > start ? anchor : start
+    return { start: formatSqlDate(cycleStart), end: formatSqlDate(end) }
+}
+
 function normalizeIntegerArray(value, min, max, limit) {
     if (!Array.isArray(value)) return []
     return [...new Set(value.map(Number).filter(number => Number.isInteger(number) && number >= min && number <= max))]
@@ -468,6 +520,7 @@ router.get("/history", async (req, res) => {
 // COMPLETE task
 router.post("/:id/complete", async (req, res) => {
     try {
+        await ensureTaskSchedulingSchema()
         const taskId = req.params.id
         const today = new Date().toISOString().split("T")[0]
 
@@ -476,6 +529,27 @@ router.post("/:id/complete", async (req, res) => {
             [taskId, req.userId]
         )
         if (!task) return res.status(404).json({ message: "Task not found" })
+
+        if (!isTaskDueToday(task)) {
+            return res.status(400).json({ message: "This task is not scheduled for today." })
+        }
+
+        if (["weekly", "monthly", "yearly"].includes(task.frequency)) {
+            const bounds = getTaskPeriodBounds(task)
+            const target = Math.max(1, Number(task.target_per_period || 1))
+            if (bounds) {
+                const [[periodState]] = await db.execute(
+                    `SELECT COUNT(*) AS count
+                     FROM task_completions
+                     WHERE task_id = ? AND user_id = ?
+                       AND completed_at >= ? AND completed_at < ?`,
+                    [taskId, req.userId, bounds.start, bounds.end]
+                )
+                if (Number(periodState?.count || 0) >= target) {
+                    return res.status(400).json({ message: "The completion target for this period has already been reached." })
+                }
+            }
+        }
 
         // Upsert daily state
         await db.execute(`

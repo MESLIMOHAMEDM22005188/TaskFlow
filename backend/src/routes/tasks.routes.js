@@ -4,8 +4,22 @@ const { updateAchievements } = require("../services/achievement.service")
 
 const router = express.Router()
 
+// Create the multi-theme relation table lazily so older production databases
+// can still serve tasks and accept new ones after deployment.
+async function ensureTaskThemesTable() {
+    await db.execute(`
+        CREATE TABLE IF NOT EXISTS task_themes (
+            task_id BIGINT NOT NULL,
+            theme_id BIGINT NOT NULL,
+            PRIMARY KEY (task_id, theme_id),
+            KEY idx_task_themes_theme_id (theme_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `)
+}
+
 router.get("/", async (req, res) => {
     try {
+        await ensureTaskThemesTable()
         const today = new Date().toISOString().split("T")[0]
 
         const [tasks] = await db.execute(`
@@ -53,7 +67,13 @@ router.get("/", async (req, res) => {
             // Anciennes tâches créées avec le statut "todo" : les exposer comme actives
             // pour rester compatibles avec les filtres et types du frontend.
             status: t.status === "todo" ? "active" : t.status,
-            themes: themesByTask[t.id] ?? []
+            // Compatibility with tasks created before task_themes existed.
+            themes: themesByTask[t.id] ?? (t.theme_id ? [{
+                id: Number(t.theme_id),
+                name: t.theme_name,
+                emoji: t.theme_emoji,
+                color: t.theme_color
+            }] : [])
         }))
 
         res.json(result)
@@ -66,6 +86,7 @@ router.get("/", async (req, res) => {
 
 router.post("/", async (req, res) => {
     try {
+        await ensureTaskThemesTable()
         const { title, priority, theme_id, theme_ids, frequency, deadline, note, completion_target } = req.body
 
         // Construire la liste des ids — priorité à theme_ids, fallback sur theme_id

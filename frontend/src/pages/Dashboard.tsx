@@ -259,11 +259,13 @@ export function Dashboard() {
                                     </label>
                                 </div>
 
-                                <label className="theme-field">
-                                    <span className="theme-label">{frequency === "daily" ? "Objectif de validations par jour" : "Validations nécessaires le même jour (avancé)"}</span>
-                                    <input className="theme-input" type="number" min={1} max={30} value={completionTarget} onChange={event => setCompletionTarget(Math.min(30, Math.max(1, Number(event.target.value) || 1)))} />
-                                    <span style={{ fontSize: 11, opacity: .62 }}>Pour une habitude comme boire de l’eau plusieurs fois par jour. L’objectif hebdomadaire/mensuel/annuel est réglé séparément.</span>
-                                </label>
+                                {frequency !== "once" && (
+                                    <label className="theme-field">
+                                        <span className="theme-label">{frequency === "daily" ? "Objectif de validations par jour" : "Validations nécessaires le même jour (avancé)"}</span>
+                                        <input className="theme-input" type="number" min={1} max={30} value={completionTarget} onChange={event => setCompletionTarget(Math.min(30, Math.max(1, Number(event.target.value) || 1)))} />
+                                        <span style={{ fontSize: 11, opacity: .62 }}>Pour une habitude comme boire de l’eau plusieurs fois par jour. L’objectif hebdomadaire/mensuel/annuel est réglé séparément.</span>
+                                    </label>
+                                )}
                             </section>
 
                             <label className="theme-field">

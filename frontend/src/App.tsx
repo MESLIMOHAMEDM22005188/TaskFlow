@@ -183,7 +183,8 @@ function App() {
             <Route path="/stats"      element={<RequireAuth><Stats /></RequireAuth>} />
             <Route path="/habitudes"  element={<RequireAuth><Habitudes /></RequireAuth>} />
             <Route path="/historique" element={<RequireAuth><Historique /></RequireAuth>} />
-            <Route path="/moderation" element={<RequireAuth><Moderation /></RequireAuth>} />
+            <Route path="/moderation/*" element={<RequireAuth><Moderation /></RequireAuth>} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
     )
 }

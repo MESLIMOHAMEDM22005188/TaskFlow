@@ -14,6 +14,7 @@ const NAV_ITEMS = [
     { path: "/habitudes", label: "Habitudes", keywords: "routine suivi quotidien" },
     { path: "/profil", label: "Profil", keywords: "compte avatar informations" },
     { path: "/communaute", label: "Communauté", keywords: "groupes publications discussions" },
+    { path: "/seasons", label: "Season Arc", keywords: "winter summer saison rang classement xp" },
     { path: "/historique", label: "Historique", keywords: "archives terminées passées" },
     { path: "/parametres", label: "Paramètres", keywords: "préférences apparence thème sombre clair" },
 ];

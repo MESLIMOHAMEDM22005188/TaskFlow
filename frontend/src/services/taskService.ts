@@ -50,6 +50,14 @@ export async function createTask(data: {
     theme_id?: number | null
     theme_ids?: number[]
     frequency?: string
+    recurrence_interval?: number
+    recurrence_days?: number[]
+    recurrence_month_days?: number[]
+    recurrence_dates?: string[]
+    target_per_period?: number
+    scheduled_time?: string | null
+    start_date?: string | null
+    end_date?: string | null
     deadline?: string | null
     note?: string | null
     completion_target?: number
@@ -151,6 +159,17 @@ export type Task = {
     title: string
     priority: string
     frequency: string
+    recurrence_interval?: number
+    recurrence_days?: number[]
+    recurrence_month_days?: number[]
+    recurrence_dates?: string[]
+    target_per_period?: number
+    scheduled_time?: string | null
+    start_date?: string | null
+    end_date?: string | null
+    period_count?: number
+    period_done?: boolean
+    is_due_today?: boolean
     theme_id: number | null
     deadline: string | null
     note: string | null

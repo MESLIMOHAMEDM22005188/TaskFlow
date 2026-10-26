@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { toggle, closeAll } from "./uiManager.ts"
 import {
-    getTasks, createTask, deleteTask as apiDeleteTask, permanentlyDeleteTask as apiPermanentlyDeleteTask,
+    getTasks, createTask, updateTask as apiUpdateTask, deleteTask as apiDeleteTask, permanentlyDeleteTask as apiPermanentlyDeleteTask,
     completeTask, uncompleteTask, getTodayCompletions,
     getThemes, createTheme, deleteTheme as apiDeleteTheme,
 } from "../services/taskService"
@@ -56,6 +56,7 @@ export function useDashboard() {
     const [deadline, setDeadline] = useState("")
     const [note, setNote] = useState("")
     const [completionTarget, setCompletionTarget] = useState(1)
+    const [editingTaskId, setEditingTaskId] = useState<number | null>(null)
 
     // Form theme
     const [themeName, setThemeName] = useState("")
@@ -133,9 +134,59 @@ export function useDashboard() {
         })
     }
 
+    function resetTaskFields() {
+        setNewTask("")
+        setPriority("Medium")
+        setThemeIds([])
+        setFrequency("daily")
+        setRecurrenceInterval(1)
+        setRecurrenceDays([])
+        setRecurrenceMonthDays([])
+        setRecurrenceDates([])
+        setTargetPerPeriod(1)
+        setScheduledTime("")
+        setStartDate("")
+        setEndDate("")
+        setDeadline("")
+        setNote("")
+        setCompletionTarget(1)
+        setEditingTaskId(null)
+    }
+
     function handleToggleTaskForm() {
         setShowThemeForm(false)
-        toggle(setShowTaskForm)
+        if (showTaskForm) {
+            resetTaskFields()
+            setShowTaskForm(false)
+        } else {
+            setShowTaskForm(true)
+        }
+    }
+
+    function handleCancelTaskForm() {
+        resetTaskFields()
+        closeAll(setShowTaskForm, setShowThemeForm)
+    }
+
+    function handleEditTask(task: Task) {
+        setNewTask(task.title || "")
+        setPriority(task.priority || "Medium")
+        setThemeIds(task.themes?.map(theme => Number(theme.id)) ?? (task.theme_id ? [Number(task.theme_id)] : []))
+        setFrequency(["once", "daily", "weekly", "monthly", "yearly"].includes(task.frequency) ? task.frequency : "daily")
+        setRecurrenceInterval(Math.max(1, Number(task.recurrence_interval || 1)))
+        setRecurrenceDays(Array.isArray(task.recurrence_days) ? task.recurrence_days.map(Number) : [])
+        setRecurrenceMonthDays(Array.isArray(task.recurrence_month_days) ? task.recurrence_month_days.map(Number) : [])
+        setRecurrenceDates(Array.isArray(task.recurrence_dates) ? task.recurrence_dates.map(String) : [])
+        setTargetPerPeriod(Math.max(1, Number(task.target_per_period || 1)))
+        setScheduledTime(String(task.scheduled_time || "").slice(0, 5))
+        setStartDate(String(task.start_date || "").slice(0, 10))
+        setEndDate(String(task.end_date || "").slice(0, 10))
+        setDeadline(String(task.deadline || "").slice(0, 10))
+        setNote(task.note || "")
+        setCompletionTarget(Math.max(1, Number(task.completion_target || 1)))
+        setEditingTaskId(task.id)
+        setShowThemeForm(false)
+        setShowTaskForm(true)
     }
 
     function handleToggleThemeForm() {
@@ -165,26 +216,46 @@ export function useDashboard() {
                 completion_target: completionTarget
             })
             setTasks(prev => [task, ...prev])
-            setNewTask("")
-            setPriority("Medium")
-            setThemeIds([])
-            setFrequency("daily")
-            setRecurrenceInterval(1)
-            setRecurrenceDays([])
-            setRecurrenceMonthDays([])
-            setRecurrenceDates([])
-            setTargetPerPeriod(1)
-            setScheduledTime("")
-            setStartDate("")
-            setEndDate("")
-            setDeadline("")
-            setNote("")
-            setCompletionTarget(1)
+            resetTaskFields()
             closeAll(setShowTaskForm, setShowThemeForm)
         } catch (err) {
             console.error("Création de tâche impossible :", err)
             const message = err instanceof Error ? err.message : "Erreur inconnue"
             alert(`Impossible de créer la tâche. ${message}`)
+        }
+    }
+
+    async function handleUpdateTask() {
+        if (editingTaskId === null || !newTask.trim()) return
+        const taskId = editingTaskId
+        try {
+            const updated = await apiUpdateTask(taskId, {
+                title: newTask.trim(),
+                priority,
+                theme_ids: themeIds,
+                theme_id: themeIds[0] ?? null,
+                frequency,
+                recurrence_interval: recurrenceInterval,
+                recurrence_days: recurrenceDays,
+                recurrence_month_days: recurrenceMonthDays,
+                recurrence_dates: recurrenceDates,
+                target_per_period: targetPerPeriod,
+                scheduled_time: scheduledTime || null,
+                start_date: startDate || null,
+                end_date: endDate || null,
+                deadline: deadline || null,
+                note: note || null,
+                completion_target: completionTarget,
+            })
+            setTasks(previous => previous.map(task => task.id === taskId
+                ? { ...task, ...updated, themes: updated.themes ?? task.themes }
+                : task))
+            resetTaskFields()
+            closeAll(setShowTaskForm, setShowThemeForm)
+        } catch (err) {
+            console.error("Modification de tâche impossible :", err)
+            const message = err instanceof Error ? err.message : "Erreur inconnue"
+            alert(`Impossible de modifier la tâche. ${message}`)
         }
     }
 
@@ -311,9 +382,9 @@ export function useDashboard() {
         themeName, setThemeName,
         themeEmoji, setThemeEmoji,
         themeColor, setThemeColor,
-        showTaskForm, showThemeForm,
-        handleToggleTaskForm, handleToggleThemeForm,
-        handleCreateTask, handleCreateTheme,
+        showTaskForm, showThemeForm, editingTaskId,
+        handleToggleTaskForm, handleCancelTaskForm, handleToggleThemeForm,
+        handleCreateTask, handleEditTask, handleUpdateTask, handleCreateTheme,
         toggleDone,
         deleteTask: handleDeleteTask,
         archiveTask: handleArchiveTask,

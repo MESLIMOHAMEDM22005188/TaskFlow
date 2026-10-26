@@ -134,6 +134,11 @@ app.use("/api/preferences", authMiddleware, preferenceRoutes)
 app.use("/api/account", authMiddleware, accountRoutes)
 app.use("/api/seasons", authMiddleware, seasonsRoutes)
 
+// API endpoints must never fall through to the frontend SPA (HTML) response.
+app.use("/api", (req, res) => {
+    res.status(404).json({ message: "API endpoint not found", path: req.originalUrl })
+})
+
 if (fs.existsSync(frontendPath)) {
     console.info(LOG_PREFIX, "Serving frontend from", frontendPath)
     app.use(express.static(frontendPath, {

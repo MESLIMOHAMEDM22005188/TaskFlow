@@ -197,7 +197,7 @@ export function Dashboard() {
                                         </label>
                                         {["weekly", "monthly", "yearly"].includes(frequency) && (
                                             <label className="theme-field">
-                                                <span className="theme-label">Objectif : fois par {periodLabels[frequency] || "période"}</span>
+                                                <span className="theme-label">Objectif : fois par {recurrenceInterval === 1 ? periodLabels[frequency] : `${recurrenceInterval} ${frequency === "weekly" ? "semaines" : frequency === "monthly" ? "mois" : "ans"}`}</span>
                                                 <input className="theme-input" type="number" min={1} max={60} value={targetPerPeriod} onChange={event => setTargetPerPeriod(Math.min(60, Math.max(1, Number(event.target.value) || 1)))} />
                                             </label>
                                         )}
@@ -214,7 +214,7 @@ export function Dashboard() {
                                             })}
                                         </div>
                                         <p style={{ margin: "8px 0 0", fontSize: 11, opacity: .62 }}>Aucun jour sélectionné = tous les jours pour « chaque jour », ou n’importe quel jour de la semaine jusqu’à l’objectif.</p>
-                                        {frequency === "weekly" && recurrenceDays.length > 0 && recurrenceDays.length < targetPerPeriod && <p role="status" style={{ margin: "7px 0 0", fontSize: 11, color: "#d97706" }}>Attention : tu as choisi moins de jours que ton objectif par semaine.</p>}
+                                        {frequency === "weekly" && recurrenceDays.length > 0 && recurrenceDays.length * recurrenceInterval < targetPerPeriod && <p role="status" style={{ margin: "7px 0 0", fontSize: 11, color: "#d97706" }}>Attention : les jours choisis risquent de ne pas suffire pour atteindre l’objectif sur {recurrenceInterval} semaine(s).</p>}
                                     </fieldset>
                                 )}
 
@@ -228,7 +228,7 @@ export function Dashboard() {
                                             })}
                                         </div>
                                         <p style={{ margin: "8px 0 0", fontSize: 11, opacity: .62 }}>Plusieurs dates possibles. Si aucune n’est choisie, le jour de départ est utilisé ; avec un objectif supérieur à une fois par mois, tu peux choisir n’importe quels jours du mois.</p>
-                                        {recurrenceMonthDays.length > 0 && recurrenceMonthDays.length < targetPerPeriod && <p role="status" style={{ margin: "7px 0 0", fontSize: 11, color: "#d97706" }}>Attention : tu as choisi moins de dates que ton objectif par mois.</p>}
+                                        {recurrenceMonthDays.length > 0 && recurrenceMonthDays.length * recurrenceInterval < targetPerPeriod && <p role="status" style={{ margin: "7px 0 0", fontSize: 11, color: "#d97706" }}>Attention : les dates choisies risquent de ne pas suffire sur {recurrenceInterval} mois.</p>}
                                     </fieldset>
                                 )}
 
@@ -243,7 +243,7 @@ export function Dashboard() {
                                             {recurrenceDates.map(date => <button key={date} type="button" onClick={() => setRecurrenceDates(previous => previous.filter(value => value !== date))} title="Retirer cette date" style={{ border: "1px solid rgba(128,128,128,.3)", borderRadius: 999, padding: "6px 9px", background: "rgba(128,128,128,.08)", color: "inherit", cursor: "pointer" }}>{new Date(`2000-${date}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })} ×</button>)}
                                         </div>}
                                         <p style={{ margin: "8px 0 0", fontSize: 11, opacity: .62 }}>Ajoute une ou plusieurs dates récurrentes, par exemple un anniversaire ou un contrôle annuel. Sans date précise, un objectif supérieur à une fois par an est possible n’importe quel jour de l’année.</p>
-                                        {recurrenceDates.length > 0 && recurrenceDates.length < targetPerPeriod && <p role="status" style={{ margin: "7px 0 0", fontSize: 11, color: "#d97706" }}>Attention : tu as choisi moins de dates que ton objectif par an.</p>}
+                                        {recurrenceDates.length > 0 && recurrenceDates.length < targetPerPeriod && <p role="status" style={{ margin: "7px 0 0", fontSize: 11, color: "#d97706" }}>Attention : les dates choisies risquent de ne pas suffire sur {recurrenceInterval} an(s).</p>}
                                     </fieldset>
                                 )}
 
@@ -474,9 +474,10 @@ function formatSchedule(task: {
     if (task.frequency === "once") return "Une seule fois"
     const interval = Math.max(1, Number(task.recurrence_interval || 1))
     const period = task.frequency === "daily" ? "jour" : task.frequency === "weekly" ? "semaine" : task.frequency === "monthly" ? "mois" : "an"
+    const pluralPeriod = task.frequency === "daily" ? "jours" : task.frequency === "weekly" ? "semaines" : task.frequency === "monthly" ? "mois" : "ans"
     const cadence = interval === 1
         ? ({ daily: "Chaque jour", weekly: "Chaque semaine", monthly: "Chaque mois", yearly: "Chaque année" } as Record<string, string>)[task.frequency] || "Récurrente"
-        : `Tous les ${interval} ${period}`
+        : `Tous les ${interval} ${pluralPeriod}`
     const weekdays = ["", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."]
     const details: string[] = []
     if ((task.frequency === "daily" || task.frequency === "weekly") && task.recurrence_days?.length) {
@@ -489,7 +490,7 @@ function formatSchedule(task: {
         details.push(task.recurrence_dates.map(value => new Date(`2000-${value}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })).join(", "))
     }
     const target = Math.max(1, Number(task.target_per_period || 1))
-    const targetText = task.frequency === "daily" ? "" : `${target} fois/${period}`
+    const targetText = task.frequency === "daily" ? "" : `${target} fois/${interval === 1 ? period : `${interval} ${pluralPeriod}`}`
     return [cadence, ...details, targetText].filter(Boolean).join(" · ")
 }
 

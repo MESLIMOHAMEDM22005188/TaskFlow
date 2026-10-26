@@ -27,13 +27,14 @@ router.get("/posts", async (req, res) => {
             : "WHERE p.group_id IS NULL AND p.is_anonymous = FALSE";
 
         const params = hasGroup
-            ? [req.userId, Number(group_id)]
-            : [req.userId];
+            ? [req.userId, req.userId, Number(group_id)]
+            : [req.userId, req.userId];
 
         const [posts] = await db.execute(`
             SELECT 
                 p.id, p.content, p.type, p.likes_count, p.created_at,
                 p.group_id, p.is_anonymous, p.anon_name,
+                (p.user_id = ?) AS is_mine,
                 u.username, u.avatar_url, u.xp,
                 (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comments_count,
                 (SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id AND pl.user_id = ?) as liked_by_me
@@ -72,13 +73,14 @@ router.get("/posts/anonymous", async (req, res) => {
             SELECT 
                 p.id, p.content, p.type, p.likes_count, p.created_at,
                 p.anon_name,
+                (p.user_id = ?) AS is_mine,
                 (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comments_count,
                 (SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id AND pl.user_id = ?) as liked_by_me
             FROM posts p
             WHERE p.is_anonymous = TRUE
             ORDER BY p.created_at DESC
             LIMIT 50
-        `, [req.userId])
+        `, [req.userId, req.userId])
 
         // On n'expose JAMAIS username/avatar/xp réels ici
         const sanitized = posts.map(p => ({

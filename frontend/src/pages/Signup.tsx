@@ -5,22 +5,18 @@ import AuthThemeToggle from "../components/AuthThemeToggle";
 import "../assets/css/auth.css";
 
 const USERNAME_REGEX = /^[A-Za-z0-9_-]{3,20}$/;
-const RESERVED_NAMES = [
-    "admin", "administrator", "moderator", "moderatrice", "moderateur",
-    "support", "helpdesk", "staff", "owner", "root", "system", "security",
-    "official", "webmaster", "grindly", "connard", "connasse", "conasse",
-    "encule", "enculee", "fdp", "filsdepute", "pute", "putain", "salope",
-    "salopard", "salaud", "batard", "merde", "ntm", "tafiolle", "tapette",
-    "pede", "poufiasse", "trouduc", "trouducul", "bite", "branleur",
-    "branleuse", "enfoire", "enfoiree", "bougnoule", "youpin", "facho",
-    "raciste", "pedophile", "pedo", "zoophile", "hitler", "nazi",
-    "fuck", "fucker", "fucking", "shit", "bitch", "bastard", "asshole",
-    "dickhead", "pussy", "whore", "slut", "nigger", "nigga", "faggot",
-    "retard", "rapist"
+const RESERVED_PREFIXES = [
+    "admin", "administrator", "moderator", "mod", "support", "helpdesk",
+    "staff", "owner", "root", "system", "security", "official", "webmaster",
+    "api", "null", "undefined", "grindly"
+];
+const FALLBACK_FORBIDDEN_NAMES = [
+    "pute", "putain", "salope", "connard", "connasse", "encule", "enculee",
+    "merde", "fuck", "shit", "bitch", "asshole", "whore", "slut"
 ];
 
 function normalizeUsername(value: string): string {
-    return value.normalize("NFKD")
+    return String(value).normalize("NFKD")
         .replace(/[\u0300-\u036f]/g, "")
         .toLowerCase()
         .replace(/0/g, "o")
@@ -39,10 +35,14 @@ function validateUsername(value: string): string {
     if (!USERNAME_REGEX.test(username)) return "Utilise uniquement des lettres sans accent, des chiffres, _ ou -, sans espaces.";
     const normalized = normalizeUsername(username);
     const words = username.toLowerCase().split(/[_-]+/).filter(Boolean).map(normalizeUsername);
-    if (["admin", "administrator", "moderator", "support", "helpdesk", "staff", "owner", "root", "system", "security", "official", "webmaster", "grindly"].some(name => normalized.startsWith(name))) {
+    if (RESERVED_PREFIXES.some(name => normalized.startsWith(normalizeUsername(name)))) {
         return "Ce pseudo est réservé.";
     }
-    if (RESERVED_NAMES.some(word => normalized === normalizeUsername(word) || words.includes(normalizeUsername(word)) || (word.length >= 5 && normalized.includes(normalizeUsername(word))))) {
+    if (FALLBACK_FORBIDDEN_NAMES.some(word =>
+        normalized === normalizeUsername(word) ||
+        words.includes(normalizeUsername(word)) ||
+        (word.length >= 4 && normalized.includes(normalizeUsername(word)))
+    )) {
         return "Ce pseudo contient un terme interdit. Choisis-en un autre.";
     }
     return "";
@@ -55,7 +55,7 @@ function validateEmail(value: string): string {
     if (parts.length !== 2) return "Saisis une adresse e-mail valide.";
     const [local, domain] = parts;
     if (!local || local.length > 64 || local.startsWith(".") || local.endsWith(".") || local.includes("..")) return "La partie avant @ est invalide.";
-    if (!/^[A-Za-z0-9.!#$%&'*+\/=?^`{|}~-]+$/.test(local)) return "La partie avant @ contient un caractère interdit.";
+    if (!/^[A-Za-z0-9.!#$%&'*+\/=?^\x60{|}~-]+$/.test(local)) return "La partie avant @ contient un caractère interdit.";
     const labels = domain.split(".");
     if (!domain.includes(".") || labels.some(label => !label || label.length > 63 || !/^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?$/.test(label)) || !/^[A-Za-z]{2,63}$/.test(labels[labels.length - 1] || "")) {
         return "Vérifie le nom de domaine de ton adresse e-mail.";

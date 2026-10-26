@@ -62,7 +62,9 @@ function getUsernameError(username) {
     // Exact matches catch short profanities; token and substring checks catch variants.
     if (FORBIDDEN_USERNAME_WORDS.has(normalized) ||
         words.some(word => FORBIDDEN_USERNAME_WORDS.has(word)) ||
-        [...FORBIDDEN_USERNAME_WORDS].some(word => word.length >= 4 && normalized.includes(word))) {
+        [...FORBIDDEN_USERNAME_WORDS].some(word =>
+            word.length >= 4 && normalized.startsWith(word)
+        )) {
         return "Ce pseudo contient un terme interdit. Choisis un autre pseudo.";
     }
     return null;

@@ -13,6 +13,24 @@ router.get("/access", async (req,res) => {
     res.status(500).json({message:"Unable to load moderation access"})
   }
 })
+router.get("/bans", async (req,res) => {
+  try {
+    const [rows] = await db.execute("SELECT s.id,s.target_user_id,s.actor_user_id,s.action,s.reason,s.expires_at,s.revoked_at,s.created_at,u.username,u.avatar_url FROM moderation_sanctions s LEFT JOIN users u ON u.id=s.target_user_id WHERE s.action IN ('temp_ban','permanent_ban') ORDER BY (s.revoked_at IS NULL AND (s.expires_at IS NULL OR s.expires_at>NOW())) DESC,s.created_at DESC LIMIT 300")
+    res.json(rows.map(row => ({...row, status: row.revoked_at ? "revoked" : (row.expires_at && new Date(row.expires_at).getTime() <= Date.now() ? "expired" : "active")})))
+  } catch(e) { console.error("[Moderation] bans",e); res.status(500).json({message:"Unable to load ban history"}) }
+})
+router.post("/presence", async (req,res) => {
+  try {
+    await db.execute("INSERT INTO moderation_presence (user_id,last_seen_at) VALUES (?,NOW()) ON DUPLICATE KEY UPDATE last_seen_at=NOW()", [req.userId])
+    res.json({ok:true})
+  } catch(e) { console.error("[Moderation] presence heartbeat",e); res.status(500).json({message:"Unable to update presence"}) }
+})
+router.get("/presence", async (_req,res) => {
+  try {
+    const [[row]] = await db.execute("SELECT COUNT(*) AS online_count FROM moderation_presence WHERE last_seen_at >= DATE_SUB(NOW(), INTERVAL 2 MINUTE)")
+    res.json({online_count:Number(row.online_count||0),window_seconds:120})
+  } catch(e) { console.error("[Moderation] presence count",e); res.status(500).json({message:"Unable to load online count"}) }
+})
 const validId = value => /^\d+$/.test(String(value || "")) && Number(value) > 0
 const reasonText = value => typeof value === "string" ? value.trim().slice(0, 500) : ""
 async function audit(actor, target, action, reason, metadata) {

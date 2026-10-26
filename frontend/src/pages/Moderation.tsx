@@ -7,7 +7,23 @@ type UserRow = {id:number;username:string|null;email?:string;avatar_url:string|n
 type AccessInfo = {role:"admin"|"moderator";stats:{members_count:number;active_warnings:number;active_bans:number};permissions:{manageRoles:boolean;auditLog:boolean}}
 type Detail = {user:UserRow & {bio:string|null};activity:{posts_count:number;comments_count:number;completions_count:number;tasks_count:number};posts:Array<{id:number;content:string;type:string;is_anonymous:boolean;created_at:string;likes_count:number}>;comments:Array<{id:number;post_id:number;content:string;is_anonymous:boolean;created_at:string}>;sanctions:Array<{id:number;action:string;reason:string;expires_at:string|null;revoked_at:string|null;created_at:string}>}
 function headers(){const token=localStorage.getItem("token");return {"Content-Type":"application/json",...(token?{Authorization:"Bearer "+token}:{})}}
-async function api<T>(path:string,options:RequestInit={}):Promise<T>{const response=await fetch(API_ROOT+"/moderation"+path,{...options,headers:{...headers(),...(options.headers||{})}});const data=await response.json().catch(()=>({message:"Réponse serveur invalide"}));if(!response.ok)throw new Error(data.message||("HTTP "+response.status));return data as T}
+async function api<T>(path:string,options:RequestInit={}):Promise<T>{
+ const url=API_ROOT+"/moderation"+path;
+ let response:Response;
+ try { response=await fetch(url,{...options,headers:{...headers(),...(options.headers||{})}}); }
+ catch { throw new Error("Impossible de joindre l’API Grindly. Vérifie le backend et l’URL de l’API."); }
+ const contentType=response.headers.get("content-type")||"";
+ const raw=await response.text();
+ if(!contentType.toLowerCase().includes("application/json")){
+  const html=raw.toLowerCase().includes("<html")||raw.toLowerCase().includes("<!doctype html");
+  throw new Error(html?"Le serveur renvoie la page du site au lieu du JSON API pour "+url+". Vérifie le déploiement du backend et le préfixe /api.":"Réponse API non JSON ("+response.status+"). Vérifie les logs du backend.");
+ }
+ let data:Record<string,unknown>;
+ try { data=JSON.parse(raw) as Record<string,unknown>; }
+ catch { throw new Error("Réponse JSON invalide de l’API ("+response.status+")."); }
+ if(!response.ok) throw new Error(typeof data.message==="string"?data.message:"Erreur API HTTP "+response.status);
+ return data as T;
+}
 export default function Moderation(){
  const [users,setUsers]=useState<UserRow[]>([]),[search,setSearch]=useState(""),[selected,setSelected]=useState<Detail|null>(null),[role,setRole]=useState("moderator"),[reason,setReason]=useState(""),[hours,setHours]=useState("24"),[error,setError]=useState(""),[notice,setNotice]=useState(""),[busy,setBusy]=useState(false),[audit,setAudit]=useState<Array<Record<string,unknown>>>([]),[access,setAccess]=useState<AccessInfo|null>(null)
  const load=useCallback(async()=>{try{setError("");setUsers(await api<UserRow[]>("/users?search="+encodeURIComponent(search)))}catch(e){setError(e instanceof Error?e.message:"Chargement impossible")}},[search])

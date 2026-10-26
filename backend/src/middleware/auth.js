@@ -22,6 +22,12 @@ async function authenticateToken(req, res, next) {
         const userId = Number(decodedToken.userId)
         const [[user]] = await db.execute("SELECT id FROM users WHERE id = ? LIMIT 1", [userId])
         if (!user) return res.status(401).json({ message: "Account unavailable." })
+        // Best-effort activity heartbeat. Presence must never block authentication.
+        try {
+            await db.execute("INSERT INTO moderation_presence (user_id,last_seen_at) VALUES (?,NOW()) ON DUPLICATE KEY UPDATE last_seen_at=NOW()", [userId])
+        } catch (presenceError) {
+            if (process.env.NODE_ENV !== "production") console.warn("[Grindly:Presence] Heartbeat unavailable", presenceError.message)
+        }
         const [[ban]] = await db.execute(
             "SELECT id, action, expires_at FROM moderation_sanctions WHERE target_user_id = ? AND action IN ('temp_ban','permanent_ban') AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at > NOW()) ORDER BY created_at DESC LIMIT 1",
             [userId]

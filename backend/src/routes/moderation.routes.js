@@ -4,6 +4,15 @@ const crypto = require("crypto")
 const { requireModerator, requireAdmin, configuredAdminIds } = require("../middleware/moderation")
 const router = express.Router()
 router.use(requireModerator)
+router.get("/access", async (req,res) => {
+  try {
+    const [[counts]] = await db.execute("SELECT (SELECT COUNT(*) FROM users) AS members_count,(SELECT COUNT(*) FROM moderation_sanctions WHERE action='warning' AND revoked_at IS NULL) AS active_warnings,(SELECT COUNT(*) FROM moderation_sanctions WHERE action IN ('temp_ban','permanent_ban') AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at>NOW())) AS active_bans")
+    res.json({ role: req.moderationRole, permissions: { reviewUsers: true, issueWarnings: true, temporaryBans: true, permanentBans: true, manageRoles: req.moderationRole === "admin", auditLog: req.moderationRole === "admin" }, stats: counts })
+  } catch(e) {
+    console.error("[Moderation] access",e)
+    res.status(500).json({message:"Unable to load moderation access"})
+  }
+})
 const validId = value => /^\d+$/.test(String(value || "")) && Number(value) > 0
 const reasonText = value => typeof value === "string" ? value.trim().slice(0, 500) : ""
 async function audit(actor, target, action, reason, metadata) {

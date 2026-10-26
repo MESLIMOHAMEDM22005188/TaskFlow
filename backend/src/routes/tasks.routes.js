@@ -30,7 +30,12 @@ async function ensureTaskSchedulingSchema() {
             ]
             for (const [name, definition] of additions) {
                 if (!byName.has(name)) {
-                    await db.execute(`ALTER TABLE tasks ADD COLUMN ${name} ${definition}`)
+                    try {
+                        await db.execute(`ALTER TABLE tasks ADD COLUMN ${name} ${definition}`)
+                    } catch (error) {
+                        // Another web worker may have added this column concurrently.
+                        if (error.code !== "ER_DUP_FIELDNAME") throw error
+                    }
                 }
             }
         })().catch(error => {
@@ -288,7 +293,13 @@ router.post("/", async (req, res) => {
         const selectedWeekdays = normalizeIntegerArray(recurrence_days, 1, 7, 7)
         const selectedMonthDays = normalizeIntegerArray(recurrence_month_days, 1, 31, 31)
         const selectedAnnualDates = normalizeAnnualDates(recurrence_dates)
-        const validDate = value => value == null || value === "" || (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(`${value}T12:00:00`)))
+        const validDate = value => {
+            if (value == null || value === "") return true
+            if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+            const [year, month, day] = value.split("-").map(Number)
+            const parsed = new Date(year, month - 1, day, 12)
+            return parsed.getFullYear() === year && parsed.getMonth() === month - 1 && parsed.getDate() === day
+        }
         if (!validDate(start_date) || !validDate(end_date) || !validDate(deadline)) {
             return res.status(400).json({ message: "Invalid date. Use YYYY-MM-DD." })
         }

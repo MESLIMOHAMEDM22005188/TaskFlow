@@ -190,8 +190,14 @@ router.get("/", async (req, res) => {
                         )
                         OR (
                             t.frequency = 'weekly'
-                            AND FLOOR(DATEDIFF(DATE(tc.completed_at), COALESCE(t.start_date, DATE(t.created_at))) / (7 * GREATEST(t.recurrence_interval, 1)))
-                                = FLOOR(DATEDIFF(CURDATE(), COALESCE(t.start_date, DATE(t.created_at))) / (7 * GREATEST(t.recurrence_interval, 1)))
+                            AND FLOOR(DATEDIFF(
+                                DATE(tc.completed_at),
+                                DATE_SUB(COALESCE(t.start_date, DATE(t.created_at)), INTERVAL WEEKDAY(COALESCE(t.start_date, DATE(t.created_at))) DAY)
+                            ) / (7 * GREATEST(t.recurrence_interval, 1)))
+                                = FLOOR(DATEDIFF(
+                                    CURDATE(),
+                                    DATE_SUB(COALESCE(t.start_date, DATE(t.created_at)), INTERVAL WEEKDAY(COALESCE(t.start_date, DATE(t.created_at))) DAY)
+                                ) / (7 * GREATEST(t.recurrence_interval, 1)))
                         )
                         OR (
                             t.frequency = 'monthly'

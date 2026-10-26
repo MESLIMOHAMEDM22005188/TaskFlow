@@ -27,16 +27,16 @@ function formatDate(value: string) {
 }
 function getSeasonDates(season: SeasonKey, year: number) {
     return season === "winter"
-        ? { start: \`\${year}-11-01T00:00:00\`, end: \`\${year + 1}-02-01T00:00:00\` }
-        : { start: \`\${year}-06-01T00:00:00\`, end: \`\${year}-09-01T00:00:00\` }
+        ? { start: `${year}-11-01T00:00:00`, end: `${year + 1}-02-01T00:00:00` }
+        : { start: `${year}-06-01T00:00:00`, end: `${year}-09-01T00:00:00` }
 }
 function getCountdown(dateValue: string) {
     const distance = new Date(dateValue).getTime() - Date.now()
     if (distance <= 0) return "Ouverture imminente"
     const days = Math.ceil(distance / 86400000)
-    if (days > 1) return \`Ouverture dans \${days} jours\`
+    if (days > 1) return `Ouverture dans ${days} jours`
     const hours = Math.ceil(distance / 3600000)
-    return hours > 1 ? \`Ouverture dans \${hours} heures\` : "Ouverture dans moins d’une heure"
+    return hours > 1 ? `Ouverture dans ${hours} heures` : "Ouverture dans moins d’une heure"
 }
 export default function Seasons() {
     const [season, setSeason] = useState<SeasonKey>("winter")
@@ -61,7 +61,7 @@ export default function Seasons() {
         }
         return response.json()
     }
-    const endpoint = \`/api/seasons/\${season}/\${year}\`
+    const endpoint = `${API_ROOT}/seasons/${season}/${year}`
 
     const loadSeason = useCallback(async () => {
         setLoading(true); setError(""); setNotice("")
@@ -89,7 +89,7 @@ export default function Seasons() {
         setBusy(true); setError(""); setNotice("")
         try {
             const response = await fetch(endpoint + "/join", { method: "POST", headers: { Authorization: "Bearer " + token() } })
-            const result = await response.json()
+            const result = await readApiResponse(response)
             if (!response.ok) throw new Error(result.message || "Impossible de rejoindre cet Arc.")
             setNotice(result.message || "Arc débloqué.")
             await loadSeason()
@@ -114,7 +114,7 @@ export default function Seasons() {
     async function toggleGoal(goalId: number) {
         setError("")
         try {
-            const response = await fetch(endpoint + \`/goals/\${goalId}/toggle\`, { method: "POST", headers: { Authorization: "Bearer " + token() } })
+            const response = await fetch(endpoint + `/goals/${goalId}/toggle`, { method: "POST", headers: { Authorization: "Bearer " + token() } })
             const result = await response.json()
             if (!response.ok) throw new Error(result.message || "Impossible de mettre à jour l’objectif.")
             setData(previous => previous ? { ...previous, goals: result.goals } : previous)
@@ -193,7 +193,7 @@ export default function Seasons() {
                         {(!data.goals.length || editingGoals) ? (
                             <div className="season-goal-editor">
                                 <div className="season-goal-editor-head"><div><strong>Construis ta liste</strong><small>10 objectifs, personnalisables à tout moment.</small></div><button type="button" className="season-preset-button" onClick={() => setGoalDrafts(data.presets.slice(0, 10))}>Utiliser les suggestions</button></div>
-                                <div className="season-goal-inputs">{goalDrafts.map((goal, index) => <label className="season-goal-input-row" key={index}><span>{String(index + 1).padStart(2, "0")}</span><input maxLength={120} value={goal} onChange={event => setGoalDrafts(previous => previous.map((value, i) => i === index ? event.target.value : value))} placeholder={\`Ton objectif n°\${index + 1}\`} /></label>)}</div>
+                                <div className="season-goal-inputs">{goalDrafts.map((goal, index) => <label className="season-goal-input-row" key={index}><span>{String(index + 1).padStart(2, "0")}</span><input maxLength={120} value={goal} onChange={event => setGoalDrafts(previous => previous.map((value, i) => i === index ? event.target.value : value))} placeholder={`Ton objectif n°${index + 1}`} /></label>)}</div>
                                 <div className="season-goal-editor-footer"><small>Exemples : lire, réviser, bouger, créer, prendre soin de soi…</small><button className="season-goal-save" disabled={savingGoals || goalDrafts.some(goal => !goal.trim())} onClick={() => void saveGoals()}>{savingGoals ? "Enregistrement…" : "Enregistrer mes 10 objectifs"}</button></div>
                             </div>
                         ) : (
@@ -206,7 +206,7 @@ export default function Seasons() {
                                     <span className="season-goal-check-title">{goal.title}</span>
                                     <span className="season-goal-check-state">{goal.completedToday ? "Fait" : "À faire"}</span>
                                 </label>)}
-                                <div className="season-goal-bottom-note">{goalDoneCount === 10 ? "Journée complétée. Ta constance construit l’Arc." : \`Encore \${10 - goalDoneCount} objectif(s) pour compléter ta journée.\`}<span>Nouvelle checklist chaque jour</span></div>
+                                <div className="season-goal-bottom-note">{goalDoneCount === 10 ? "Journée complétée. Ta constance construit l’Arc." : `Encore ${10 - goalDoneCount} objectif(s) pour compléter ta journée.`}<span>Nouvelle checklist chaque jour</span></div>
                             </div>
                         )}
                     </section>

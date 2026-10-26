@@ -14,30 +14,24 @@ const RESERVED_USERNAME_PREFIXES = [
     "webmaster", "api", "null", "undefined"
 ];
 
-// Normalize accents, common leetspeak and separators before checking the blacklist.
-const FORBIDDEN_USERNAME_WORDS = new Set([
-    "admin", "administrator", "moderator", "moderatrice", "moderateur",
-    "support", "helpdesk", "staff", "owner", "root", "system", "security",
-    "official", "webmaster", "grindly", "fuck", "fucker", "fucking", "shit",
-    "bullshit", "bitch", "bastard", "asshole", "dick", "dickhead", "pussy",
-    "cunt", "motherfucker", "whore", "slut", "nigger", "nigga", "faggot",
-    "retard", "rape", "rapist", "hitler", "nazi", "terrorist",
-    "connard", "connasse", "conasse", "con", "conne", "cons", "encule",
-    "enculee", "enculer", "encul", "fdp", "filsdepute", "pute", "putain",
-    "putasse", "salope", "salopard", "salaud", "batard", "bâtard", "merde",
-    "merdeux", "bordel", "nique", "niquer", "nique ta mere", "ntm", "tafiolle",
-    "tapette", "pd", "pede", "pédé", "poufiasse", "pouffiasse", "trouduc",
-    "trouducul", "cul", "couille", "couilles", "bite", "zob", "chatte",
-    "branleur", "branleuse", "branler", "branlette", "sucer", "suceur",
-    "suceuse", "gouine", "gouin", "foutre", "chier", "chiant", "chieuse",
-    "chieur", "enfoire", "enfoiree", "ordure", "crevard", "clochard",
-    "bougnoule", "youpin", "youpine", "nazi", "facho", "raciste",
-    "islamophobe", "antisemite", "pedophile", "pedo", "zoophile",
-    "inceste", "suicide", "killall", "killurself"
-]);
+// LDNOOBW French and English wordlists. Attribution is in THIRD_PARTY_NOTICES.md.
+const RAW_FORBIDDEN_USERNAME_WORDS = require("../data/forbidden-username-words.json");
 
+function normalizeBlacklistWord(value) {
+    return String(value)
+        .normalize("NFKD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "");
+}
+
+const FORBIDDEN_USERNAME_WORDS = new Set(
+    RAW_FORBIDDEN_USERNAME_WORDS.map(normalizeBlacklistWord).filter(Boolean)
+);
+
+// Normalize accents, common leetspeak and separators before checking the blacklist.
 function normalizeUsername(value) {
-    return value
+    return String(value)
         .normalize("NFKD")
         .replace(/[\u0300-\u036f]/g, "")
         .toLowerCase()
@@ -64,9 +58,11 @@ function getUsernameError(username) {
     if (RESERVED_USERNAME_PREFIXES.some(prefix => normalized.startsWith(normalizeUsername(prefix)))) {
         return "Ce pseudo est réservé et ne peut pas être utilisé.";
     }
+
+    // Exact matches catch short profanities; token and substring checks catch variants.
     if (FORBIDDEN_USERNAME_WORDS.has(normalized) ||
         words.some(word => FORBIDDEN_USERNAME_WORDS.has(word)) ||
-        [...FORBIDDEN_USERNAME_WORDS].some(word => word.length >= 5 && normalized.includes(normalizeUsername(word)))) {
+        [...FORBIDDEN_USERNAME_WORDS].some(word => word.length >= 4 && normalized.includes(word))) {
         return "Ce pseudo contient un terme interdit. Choisis un autre pseudo.";
     }
     return null;
@@ -75,7 +71,7 @@ function getUsernameError(username) {
 function isValidEmail(email) {
     if (typeof email !== "string") return false;
     const value = email.trim();
-    if (value.length > 254 || value.length === 0 || /[\s<>(),;:\[\]\\"]/.test(value)) return false;
+    if (value.length > 254 || value.length === 0 || /[\s<>(),;:\[\]\\"]/ .test(value)) return false;
     const parts = value.split("@");
     if (parts.length !== 2) return false;
     const [local, domain] = parts;
@@ -162,25 +158,15 @@ router.post("/signup", async (req, res) => {
                     (?, 'Faith', '🕌', '#0f766e')
             `,
             [
-                userId,
-                userId,
-                userId,
-                userId,
-                userId,
-                userId,
-                userId,
-                userId,
-                userId,
+                userId, userId, userId, userId, userId,
+                userId, userId, userId, userId,
             ]
         );
 
         res.json({ message: "Account created successfully" });
-
     } catch (err) {
         console.error(err);
-        res.status(500).json({
-            message: "Unable to create account",
-        });
+        res.status(500).json({ message: "Unable to create account" });
     }
 });
 
@@ -199,38 +185,28 @@ router.put("/change-password", authMiddleware, async (req, res) => {
     );
 
     if (rows.length === 0) {
-        return res.status(404).json({
-            message: "User not found",
-        });
+        return res.status(404).json({ message: "User not found" });
     }
 
     const match = await bcrypt.compare(currentPassword, rows[0].password);
-
     if (!match) {
-        return res.status(401).json({
-            message: "Incorrect current password",
-        });
+        return res.status(401).json({ message: "Incorrect current password" });
     }
 
     const hashed = await bcrypt.hash(newPassword, 10);
-
     await db.execute(
         "UPDATE users SET password = ? WHERE id = ?",
         [hashed, req.userId]
     );
 
-    res.json({
-        message: "Password updated successfully",
-    });
+    res.json({ message: "Password updated successfully" });
 });
 
 router.post("/login", async (req, res) => {
     const { email, password } = req.body;
 
     if (!isValidEmail(email) || typeof password !== "string" || password.length === 0) {
-        return res.status(400).json({
-            message: "Email and password are required",
-        });
+        return res.status(400).json({ message: "Email and password are required" });
     }
 
     const [rows] = await db.execute(
@@ -239,19 +215,13 @@ router.post("/login", async (req, res) => {
     );
 
     if (rows.length === 0) {
-        return res.status(401).json({
-            message: "Invalid credentials",
-        });
+        return res.status(401).json({ message: "Invalid credentials" });
     }
 
     const user = rows[0];
-
     const match = await bcrypt.compare(password, user.password);
-
     if (!match) {
-        return res.status(401).json({
-            message: "Invalid credentials",
-        });
+        return res.status(401).json({ message: "Invalid credentials" });
     }
 
     const token = jwt.sign(

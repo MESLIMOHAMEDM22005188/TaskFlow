@@ -18,12 +18,14 @@ async function authenticateToken(req, res, next) {
     if (!decodedToken || !Number.isSafeInteger(Number(decodedToken.userId)) || Number(decodedToken.userId) < 1) {
         return res.status(401).json({ message: "Invalid token claims." })
     }
+    let authStage = "validate-user"
+    let userId = Number(decodedToken.userId)
     try {
-        const userId = Number(decodedToken.userId)
         const [[user]] = await db.execute("SELECT id FROM users WHERE id = ? LIMIT 1", [userId])
         if (!user) return res.status(401).json({ message: "Account unavailable." })
 
         // Best-effort activity heartbeat. Presence must never block authentication.
+        authStage = "update-presence"
         try {
             await db.execute(
                 "INSERT INTO moderation_presence (user_id,last_seen_at) VALUES (?,NOW()) ON DUPLICATE KEY UPDATE last_seen_at=NOW()",
@@ -36,6 +38,7 @@ async function authenticateToken(req, res, next) {
         // Production currently has the legacy sanctions schema:
         // user_id, moderator_id, type ('warning'|'ban'), expires_at.
         // Use those existing columns so a schema mismatch cannot turn every API request into a 503.
+        authStage = "check-sanctions"
         const [[ban]] = await db.execute(
             "SELECT id, type AS action, expires_at FROM moderation_sanctions WHERE user_id = ? AND type = 'ban' AND (expires_at IS NULL OR expires_at > NOW()) ORDER BY created_at DESC LIMIT 1",
             [userId]
@@ -48,9 +51,15 @@ async function authenticateToken(req, res, next) {
             })
         }
         req.userId = userId
+        authStage = "continue-request"
         return next()
     } catch (error) {
-        console.error("[Grindly:Auth] Authentication check failed", error)
+        console.error("[Grindly:Auth] Authentication check failed", {
+            stage: authStage,
+            code: error.code || null,
+            message: error.message,
+            userId
+        })
         return res.status(503).json({ message: "Authentication service temporarily unavailable." })
     }
 }

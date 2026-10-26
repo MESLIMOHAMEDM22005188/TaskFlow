@@ -195,10 +195,12 @@ export function Dashboard() {
                                                 <span style={{ opacity: .75 }}>{frequency === "daily" ? "jour(s)" : frequency === "weekly" ? "semaine(s)" : frequency === "monthly" ? "mois" : "an(s)"}</span>
                                             </div>
                                         </label>
-                                        <label className="theme-field">
-                                            <span className="theme-label">Objectif : fois par {periodLabels[frequency] || "période"}</span>
-                                            <input className="theme-input" type="number" min={1} max={60} value={targetPerPeriod} onChange={event => setTargetPerPeriod(Math.min(60, Math.max(1, Number(event.target.value) || 1)))} />
-                                        </label>
+                                        {["weekly", "monthly", "yearly"].includes(frequency) && (
+                                            <label className="theme-field">
+                                                <span className="theme-label">Objectif : fois par {periodLabels[frequency] || "période"}</span>
+                                                <input className="theme-input" type="number" min={1} max={60} value={targetPerPeriod} onChange={event => setTargetPerPeriod(Math.min(60, Math.max(1, Number(event.target.value) || 1)))} />
+                                            </label>
+                                        )}
                                     </div>
                                 )}
 
@@ -211,7 +213,7 @@ export function Dashboard() {
                                                 return <button key={day.value} type="button" aria-pressed={selected} onClick={() => setRecurrenceDays(previous => selected ? previous.filter(value => value !== day.value) : [...previous, day.value].sort((a, b) => a - b))} style={{ border: `1px solid ${selected ? "var(--accent-color, #7c6ee6)" : "rgba(128,128,128,.35)"}`, borderRadius: 9, padding: "8px 10px", background: selected ? "rgba(124,110,230,.15)" : "transparent", color: "inherit", cursor: "pointer" }}>{day.label}</button>
                                             })}
                                         </div>
-                                        <p style={{ margin: "8px 0 0", fontSize: 11, opacity: .62 }}>Aucun jour sélectionné = tous les jours pour « chaque jour », ou le jour de départ pour « chaque semaine ».</p>
+                                        <p style={{ margin: "8px 0 0", fontSize: 11, opacity: .62 }}>Aucun jour sélectionné = tous les jours pour « chaque jour », ou n’importe quel jour de la semaine jusqu’à l’objectif.</p>
                                     </fieldset>
                                 )}
 
@@ -258,7 +260,7 @@ export function Dashboard() {
                                 </div>
 
                                 <label className="theme-field">
-                                    <span className="theme-label">Validations nécessaires le même jour (avancé)</span>
+                                    <span className="theme-label">{frequency === "daily" ? "Objectif de validations par jour" : "Validations nécessaires le même jour (avancé)"}</span>
                                     <input className="theme-input" type="number" min={1} max={30} value={completionTarget} onChange={event => setCompletionTarget(Math.min(30, Math.max(1, Number(event.target.value) || 1)))} />
                                     <span style={{ fontSize: 11, opacity: .62 }}>Pour une habitude comme boire de l’eau plusieurs fois par jour. L’objectif hebdomadaire/mensuel/annuel est réglé séparément.</span>
                                 </label>
@@ -344,6 +346,8 @@ export function Dashboard() {
                         <div style={{ display: "grid", gap: 10 }}>
                             {visibleTasks.map(task => {
                                 const isDone = dailyState.get(task.id)?.done_today ?? task.done_today ?? false
+                                const isPeriodGoalReached = ["weekly", "monthly", "yearly"].includes(task.frequency) && Number(task.period_count || 0) >= Number(task.target_per_period || 1)
+                                const canValidate = isDone || (task.is_due_today !== false && !isPeriodGoalReached)
                                 const taskThemes = task.themes?.length
                                     ? task.themes
                                     : task.theme_name
@@ -358,7 +362,7 @@ export function Dashboard() {
                                                 <span>{task.priority === "High" ? "Priorité haute" : task.priority === "Low" ? "Priorité basse" : "Priorité moyenne"}</span>
                                                 <span>·</span>
                                                 <span>{formatSchedule(task)}</span>
-                                                {task.frequency !== "once" && <span>· Objectif période : {Number(task.period_count || 0)}/{Number(task.target_per_period || 1)}</span>}
+                                                {["weekly", "monthly", "yearly"].includes(task.frequency) && <span>· Objectif période : {Number(task.period_count || 0)}/{Number(task.target_per_period || 1)}</span>}
                                                 {task.scheduled_time && <span>· À {String(task.scheduled_time).slice(0, 5)}</span>}
                                                 {task.is_due_today === false && <span style={{ color: "#d97706" }}>· Pas prévue aujourd’hui</span>}
                                                 {taskThemes.map(theme => <span key={theme.id} style={{ borderRadius: 999, padding: "3px 8px", background: `${theme.color || "#888"}22`, color: "inherit" }}>{theme.emoji || "•"} {theme.name}</span>)}
@@ -372,10 +376,11 @@ export function Dashboard() {
                                                 className={isDone ? "dashboard-task-action is-complete" : "dashboard-task-action is-primary"}
                                                 onClick={() => void toggleDone(task.id)}
                                                 aria-label={isDone ? `Annuler la validation de ${task.title}` : `Valider ${task.title} comme effectuée`}
-                                                title={isDone ? "Annuler la validation du jour" : "Valider la tâche effectuée"}
+                                                title={isDone ? "Annuler la validation du jour" : isPeriodGoalReached ? "Objectif atteint pour cette période" : task.is_due_today === false ? "Cette tâche n’est pas prévue aujourd’hui" : "Valider la tâche effectuée"}
+                                                disabled={!canValidate}
                                             >
                                                 <span aria-hidden="true">{isDone ? "✓" : "○"}</span>
-                                                {isDone ? "Terminée aujourd’hui" : "Valider"}
+                                                {isDone ? "Terminée aujourd’hui" : isPeriodGoalReached ? "Objectif atteint" : task.is_due_today === false ? "Pas prévue aujourd’hui" : "Valider"}
                                             </button>
                                             <button
                                                 type="button"
@@ -479,8 +484,8 @@ function formatSchedule(task: {
         details.push(task.recurrence_dates.map(value => new Date(`2000-${value}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })).join(", "))
     }
     const target = Math.max(1, Number(task.target_per_period || 1))
-    const targetText = task.frequency === "daily" ? `${target} fois/jour` : `${target} fois/${period}`
-    return [cadence, ...details, targetText].join(" · ")
+    const targetText = task.frequency === "daily" ? "" : `${target} fois/${period}`
+    return [cadence, ...details, targetText].filter(Boolean).join(" · ")
 }
 
 function Stat({ label, value }: { label: string; value: number }) {

@@ -214,6 +214,7 @@ export function Dashboard() {
                                             })}
                                         </div>
                                         <p style={{ margin: "8px 0 0", fontSize: 11, opacity: .62 }}>Aucun jour sélectionné = tous les jours pour « chaque jour », ou n’importe quel jour de la semaine jusqu’à l’objectif.</p>
+                                        {frequency === "weekly" && recurrenceDays.length > 0 && recurrenceDays.length < targetPerPeriod && <p role="status" style={{ margin: "7px 0 0", fontSize: 11, color: "#d97706" }}>Attention : tu as choisi moins de jours que ton objectif par semaine.</p>}
                                     </fieldset>
                                 )}
 
@@ -226,7 +227,8 @@ export function Dashboard() {
                                                 return <button key={day} type="button" aria-pressed={selected} onClick={() => setRecurrenceMonthDays(previous => selected ? previous.filter(value => value !== day) : [...previous, day].sort((a, b) => a - b))} style={{ border: `1px solid ${selected ? "var(--accent-color, #7c6ee6)" : "rgba(128,128,128,.3)"}`, borderRadius: 7, padding: "6px 0", background: selected ? "rgba(124,110,230,.15)" : "transparent", color: "inherit", cursor: "pointer" }}>{day}</button>
                                             })}
                                         </div>
-                                        <p style={{ margin: "8px 0 0", fontSize: 11, opacity: .62 }}>Plusieurs dates possibles. Si aucune n’est choisie, le jour de départ est utilisé.</p>
+                                        <p style={{ margin: "8px 0 0", fontSize: 11, opacity: .62 }}>Plusieurs dates possibles. Si aucune n’est choisie, le jour de départ est utilisé ; avec un objectif supérieur à une fois par mois, tu peux choisir n’importe quels jours du mois.</p>
+                                        {recurrenceMonthDays.length > 0 && recurrenceMonthDays.length < targetPerPeriod && <p role="status" style={{ margin: "7px 0 0", fontSize: 11, color: "#d97706" }}>Attention : tu as choisi moins de dates que ton objectif par mois.</p>}
                                     </fieldset>
                                 )}
 
@@ -240,7 +242,8 @@ export function Dashboard() {
                                         {recurrenceDates.length > 0 && <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 10 }}>
                                             {recurrenceDates.map(date => <button key={date} type="button" onClick={() => setRecurrenceDates(previous => previous.filter(value => value !== date))} title="Retirer cette date" style={{ border: "1px solid rgba(128,128,128,.3)", borderRadius: 999, padding: "6px 9px", background: "rgba(128,128,128,.08)", color: "inherit", cursor: "pointer" }}>{new Date(`2000-${date}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })} ×</button>)}
                                         </div>}
-                                        <p style={{ margin: "8px 0 0", fontSize: 11, opacity: .62 }}>Ajoute une ou plusieurs dates récurrentes, par exemple un anniversaire ou un contrôle annuel.</p>
+                                        <p style={{ margin: "8px 0 0", fontSize: 11, opacity: .62 }}>Ajoute une ou plusieurs dates récurrentes, par exemple un anniversaire ou un contrôle annuel. Sans date précise, un objectif supérieur à une fois par an est possible n’importe quel jour de l’année.</p>
+                                        {recurrenceDates.length > 0 && recurrenceDates.length < targetPerPeriod && <p role="status" style={{ margin: "7px 0 0", fontSize: 11, color: "#d97706" }}>Attention : tu as choisi moins de dates que ton objectif par an.</p>}
                                     </fieldset>
                                 )}
 

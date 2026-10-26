@@ -572,7 +572,6 @@ router.put("/:id", async (req, res) => {
             recurrence_dates: parseJsonArray(task.recurrence_dates),
             recurrence_interval: Number(task.recurrence_interval || 1),
             target_per_period: Number(task.target_per_period || 1),
-            period_count: undefined,
             is_due_today: isTaskDueToday(task),
             themes,
         })

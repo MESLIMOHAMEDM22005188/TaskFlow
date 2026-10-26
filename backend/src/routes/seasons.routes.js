@@ -13,7 +13,7 @@ const PRESET_GOALS = [
 ]
 
 async function ensureTables() {
-    await db.execute(\`
+    await db.execute(`
         CREATE TABLE IF NOT EXISTS season_participation (
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
             user_id BIGINT NOT NULL,
@@ -25,8 +25,8 @@ async function ensureTables() {
             UNIQUE KEY uniq_season_participation (user_id, season_key, season_year),
             KEY idx_season_period (season_key, season_year)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    \`)
-    await db.execute(\`
+    `)
+    await db.execute(`
         CREATE TABLE IF NOT EXISTS season_goals (
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
             user_id BIGINT NOT NULL,
@@ -38,8 +38,8 @@ async function ensureTables() {
             UNIQUE KEY uniq_season_goal_position (user_id, season_key, season_year, position_num),
             KEY idx_season_goals_user (user_id, season_key, season_year)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    \`)
-    await db.execute(\`
+    `)
+    await db.execute(`
         CREATE TABLE IF NOT EXISTS season_goal_logs (
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
             goal_id BIGINT UNSIGNED NOT NULL,
@@ -49,7 +49,7 @@ async function ensureTables() {
             UNIQUE KEY uniq_goal_daily (goal_id, completed_date),
             KEY idx_goal_logs_user_date (user_id, completed_date)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    \`)
+    `)
 }
 
 function getSeasonRange(season, year) {
@@ -61,10 +61,10 @@ function getSeasonRange(season, year) {
         throw error
     }
     if (normalized === "winter") {
-        return { key: normalized, label: "Winter Arc", start: \`\${startYear}-11-01 00:00:00\`, end: \`\${startYear + 1}-02-01 00:00:00\`, opensAt: \`\${startYear}-11-01T00:00:00\`, closesAt: \`\${startYear + 1}-02-01T00:00:00\` }
+        return { key: normalized, label: "Winter Arc", start: `${startYear}-11-01 00:00:00`, end: `${startYear + 1}-02-01 00:00:00`, opensAt: `${startYear}-11-01T00:00:00`, closesAt: `${startYear + 1}-02-01T00:00:00` }
     }
     if (normalized === "summer") {
-        return { key: normalized, label: "Summer Arc", start: \`\${startYear}-06-01 00:00:00\`, end: \`\${startYear}-09-01 00:00:00\`, opensAt: \`\${startYear}-06-01T00:00:00\`, closesAt: \`\${startYear}-09-01T00:00:00\` }
+        return { key: normalized, label: "Summer Arc", start: `${startYear}-06-01 00:00:00`, end: `${startYear}-09-01 00:00:00`, opensAt: `${startYear}-06-01T00:00:00`, closesAt: `${startYear}-09-01T00:00:00` }
     }
     const error = new Error("Saison inconnue.")
     error.status = 400
@@ -90,12 +90,12 @@ function rankForXp(value) {
 
 function todaySqlDate() {
     const now = new Date()
-    return \`\${now.getFullYear()}-\${String(now.getMonth() + 1).padStart(2, "0")}-\${String(now.getDate()).padStart(2, "0")}\`
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
 }
 
 async function getGoals(userId, season, year) {
     const today = todaySqlDate()
-    const [rows] = await db.execute(\`
+    const [rows] = await db.execute(`
         SELECT g.id, g.title, g.position_num AS position,
                IF(l.id IS NULL, 0, 1) AS completedToday
         FROM season_goals g
@@ -103,7 +103,7 @@ async function getGoals(userId, season, year) {
           ON l.goal_id = g.id AND l.user_id = g.user_id AND l.completed_date = ?
         WHERE g.user_id = ? AND g.season_key = ? AND g.season_year = ?
         ORDER BY g.position_num ASC
-    \`, [today, userId, season, year])
+    `, [today, userId, season, year])
     return rows.map(row => ({ id: Number(row.id), title: row.title, position: Number(row.position), completedToday: Boolean(row.completedToday) }))
 }
 
@@ -150,7 +150,7 @@ router.get("/:season/:year", async (req, res) => {
         }
 
         const goals = participation ? await getGoals(req.userId, range.key, year) : []
-        const [rows] = await db.execute(\`
+        const [rows] = await db.execute(`
             SELECT u.id AS user_id, u.username, u.avatar_url,
                 COALESCE(SUM(activity.xp), 0) AS season_xp,
                 COUNT(activity.activity_date) AS actions_count,
@@ -176,7 +176,7 @@ router.get("/:season/:year", async (req, res) => {
             HAVING season_xp > 0 OR u.id = ?
             ORDER BY season_xp DESC, active_days DESC, u.username ASC
             LIMIT 100
-        \`, [range.start, range.end, range.start, range.end, range.start, range.end, range.key, year, req.userId])
+        `, [range.start, range.end, range.start, range.end, range.start, range.end, range.key, year, req.userId])
 
         const leaderboard = rows.map((row, index) => ({
             rank: index + 1, userId: Number(row.user_id), username: row.username, avatarUrl: row.avatar_url || null,

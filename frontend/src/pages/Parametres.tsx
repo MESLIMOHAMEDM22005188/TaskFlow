@@ -190,6 +190,16 @@ export default function Parametres() {
     const [deleteConfirmText, setDeleteConfirmText] = useState("")
     const [showDangerZone, setShowDangerZone] = useState(false)
     const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle")
+    const [moderationAccess, setModerationAccess] = useState<{role:string;stats:{members_count:number;active_warnings:number;active_bans:number};permissions:{manageRoles:boolean;auditLog:boolean}} | null>(null)
+
+    useEffect(() => {
+        const token = localStorage.getItem("token")
+        if (!token) return
+        fetch(`${API_ROOT}/moderation/access`, { headers: { Authorization: `Bearer ${token}` } })
+            .then(async response => response.ok ? response.json() : null)
+            .then(data => { if (data?.role) setModerationAccess(data) })
+            .catch(() => setModerationAccess(null))
+    }, [])
 
     // Debounce ref
     const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -404,6 +414,30 @@ export default function Parametres() {
                         {saveStatus === "saved" && <span className="save-status saved"> · ✓ Sauvegardé</span>}
                     </p>
                 </div>
+
+                {moderationAccess && (
+                    <Section title="🛡️ Espace de modération">
+                        <div className="moderation-settings-card">
+                            <div className="moderation-settings-copy">
+                                <span className="moderation-settings-role">{moderationAccess.role === "admin" ? "Administrateur" : "Modérateur"}</span>
+                                <h3>Centre de confiance et sécurité</h3>
+                                <p>Consulte les comptes, vérifie l’activité de la communauté, enregistre des avertissements et applique des suspensions justifiées.</p>
+                            </div>
+                            <div className="moderation-settings-stats">
+                                <span><strong>{Number(moderationAccess.stats.members_count || 0)}</strong><small>Membres</small></span>
+                                <span><strong>{Number(moderationAccess.stats.active_warnings || 0)}</strong><small>Avertissements actifs</small></span>
+                                <span><strong>{Number(moderationAccess.stats.active_bans || 0)}</strong><small>Bannissements actifs</small></span>
+                            </div>
+                            <ul className="moderation-settings-permissions">
+                                <li>Consulter les profils et l’activité publique</li>
+                                <li>Documenter un motif avant toute sanction</li>
+                                <li>Respecter la confidentialité et agir de façon proportionnée</li>
+                                {moderationAccess.permissions.manageRoles && <li>Gérer les rôles et consulter le journal d’audit</li>}
+                            </ul>
+                            <button type="button" className="settings-btn-primary" onClick={() => navigate("/moderation")}>Ouvrir le centre de modération →</button>
+                        </div>
+                    </Section>
+                )}
 
                 {/* ── APPARENCE ── */}
                 <Section title={`🎨 ${t(language, "settings.appearance")}`}>

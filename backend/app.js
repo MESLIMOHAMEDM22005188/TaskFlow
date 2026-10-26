@@ -18,6 +18,7 @@ const statsRoutes = require("./src/routes/stats.routes")
 const habitsRoutes = require("./src/routes/habits.routes")
 const preferenceRoutes = require("./src/routes/preference.routes")
 const accountRoutes = require("./src/routes/account.routes")
+const seasonsRoutes = require("./src/routes/seasons.routes")
 const authMiddleware = require("./src/middleware/auth")
 
 const app = express()
@@ -131,6 +132,7 @@ app.use("/api/stats", authMiddleware, statsRoutes)
 app.use("/api/habits", authMiddleware, habitsRoutes)
 app.use("/api/preferences", authMiddleware, preferenceRoutes)
 app.use("/api/account", authMiddleware, accountRoutes)
+app.use("/api/seasons", authMiddleware, seasonsRoutes)
 
 if (fs.existsSync(frontendPath)) {
     console.info(LOG_PREFIX, "Serving frontend from", frontendPath)

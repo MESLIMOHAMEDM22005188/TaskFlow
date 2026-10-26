@@ -111,23 +111,33 @@ function isTaskDueToday(task) {
         const todayMonday = new Date(today)
         todayMonday.setDate(todayMonday.getDate() - ((todayMonday.getDay() + 6) % 7))
         const weekDistance = Math.floor(dayDifference(todayMonday, anchorMonday) / 7)
-        if (weekDistance < 0 || weekDistance % interval !== 0) return false
+        if (weekDistance < 0) return false
         const isoWeekday = today.getDay() === 0 ? 7 : today.getDay()
+        const anchorWeekday = anchor.getDay() === 0 ? 7 : anchor.getDay()
+        // The interval defines a cycle of N calendar weeks, not a single active week.
+        // With a single-occurrence goal and no selected days, use the anchor weekday.
+        if (Number(task.target_per_period || 1) <= 1 && days.length === 0) {
+            return weekDistance % interval === 0 && isoWeekday === anchorWeekday
+        }
         return days.length ? days.includes(isoWeekday) : true
     }
 
     if (frequency === "monthly") {
         const monthDistance = (today.getFullYear() - anchor.getFullYear()) * 12 + today.getMonth() - anchor.getMonth()
-        if (monthDistance < 0 || monthDistance % interval !== 0) return false
+        if (monthDistance < 0) return false
+        const monthInCycle = monthDistance % interval
         const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()
         if (!monthDays.length && Number(task.target_per_period || 1) > 1) return true
+        if (!monthDays.length && monthInCycle !== 0) return false
         const selectedDays = monthDays.length ? monthDays : [anchor.getDate()]
         return selectedDays.some(day => today.getDate() === Math.min(day, lastDay))
     }
 
     const yearDistance = today.getFullYear() - anchor.getFullYear()
-    if (yearDistance < 0 || yearDistance % interval !== 0) return false
+    if (yearDistance < 0) return false
+    const yearInCycle = yearDistance % interval
     if (!annualDates.length && Number(task.target_per_period || 1) > 1) return true
+    if (!annualDates.length && yearInCycle !== 0) return false
     const fallbackDate = `${String(anchor.getMonth() + 1).padStart(2, "0")}-${String(anchor.getDate()).padStart(2, "0")}`
     const dateChoices = annualDates.length ? annualDates : [fallbackDate]
     const todayMonthDay = `${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`

@@ -58,7 +58,7 @@ function dateOnly(value) {
         return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`
     }
     const text = String(value)
-    return /^\\d{4}-\\d{2}-\\d{2}/.test(text) ? text.slice(0, 10) : null
+    return /^\d{4}-\d{2}-\d{2}/.test(text) ? text.slice(0, 10) : null
 }
 
 function parseDateOnly(value) {
@@ -78,7 +78,6 @@ function dayDifference(a, b) {
 function isTaskDueToday(task) {
     const today = new Date()
     today.setHours(12, 0, 0, 0)
-    const todayKey = dateOnly(today)
     const start = parseDateOnly(task.start_date)
     const end = parseDateOnly(task.end_date)
     if (start && today < start) return false
@@ -92,7 +91,7 @@ function isTaskDueToday(task) {
     const interval = Math.max(1, Number(task.recurrence_interval || 1))
     const days = parseJsonArray(task.recurrence_days).map(Number).filter(day => day >= 1 && day <= 7)
     const monthDays = parseJsonArray(task.recurrence_month_days).map(Number).filter(day => day >= 1 && day <= 31)
-    const annualDates = parseJsonArray(task.recurrence_dates).filter(value => /^\\d{2}-\\d{2}$/.test(String(value)))
+    const annualDates = parseJsonArray(task.recurrence_dates).filter(value => /^\d{2}-\d{2}$/.test(String(value)))
 
     if (frequency === "daily") {
         const distance = dayDifference(today, anchor)
@@ -140,7 +139,7 @@ function normalizeIntegerArray(value, min, max, limit) {
 function normalizeAnnualDates(value) {
     if (!Array.isArray(value)) return []
     const valid = value.map(String).filter(value => {
-        if (!/^\\d{2}-\\d{2}$/.test(value)) return false
+        if (!/^\d{2}-\d{2}$/.test(value)) return false
         const [month, day] = value.split("-").map(Number)
         const date = new Date(2000, month - 1, day, 12)
         return date.getMonth() === month - 1 && date.getDate() === day
@@ -288,7 +287,7 @@ router.post("/", async (req, res) => {
         const selectedWeekdays = normalizeIntegerArray(recurrence_days, 1, 7, 7)
         const selectedMonthDays = normalizeIntegerArray(recurrence_month_days, 1, 31, 31)
         const selectedAnnualDates = normalizeAnnualDates(recurrence_dates)
-        const validDate = value => value == null || value === "" || (typeof value === "string" && /^\\d{4}-\\d{2}-\\d{2}$/.test(value) && !Number.isNaN(Date.parse(`${value}T12:00:00`)))
+        const validDate = value => value == null || value === "" || (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(`${value}T12:00:00`)))
         if (!validDate(start_date) || !validDate(end_date) || !validDate(deadline)) {
             return res.status(400).json({ message: "Invalid date. Use YYYY-MM-DD." })
         }
@@ -296,7 +295,7 @@ router.post("/", async (req, res) => {
             return res.status(400).json({ message: "The end date must be on or after the start date." })
         }
         const normalizedTime = scheduled_time == null || scheduled_time === "" ? null : String(scheduled_time)
-        if (normalizedTime && !/^([01]\\d|2[0-3]):[0-5]\\d$/.test(normalizedTime)) {
+        if (normalizedTime && !/^([01]\d|2[0-3]):[0-5]\d$/.test(normalizedTime)) {
             return res.status(400).json({ message: "Invalid scheduled time. Use HH:MM." })
         }
 

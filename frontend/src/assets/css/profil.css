@@ -460,3 +460,79 @@
         padding: 18px 12px;
     }
 }
+
+
+/* Éditeur de bio : lisible, guidé et adapté au mobile */
+.profil-bio-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 8px;
+}
+.profil-bio-heading label {
+    margin: 0;
+    color: var(--text, #f8fafc);
+    font-size: 14px;
+    font-weight: 650;
+    opacity: 1;
+}
+.profil-bio-counter {
+    color: var(--text-muted, #94a3b8);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+.profil-bio-editor {
+    position: relative;
+    padding: 14px 16px 12px;
+    border: 1px solid var(--border, rgba(148,163,184,.24));
+    border-radius: 16px;
+    background: var(--bg-secondary, rgba(148,163,184,.06));
+    transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+}
+.profil-bio-editor:focus-within {
+    border-color: var(--accent-color, #818cf8);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-color, #818cf8) 18%, transparent);
+    background: var(--bg-card, rgba(148,163,184,.08));
+}
+.profil-bio-icon {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    margin-bottom: 8px;
+    border-radius: 9px;
+    color: var(--accent-color, #a5b4fc);
+    background: color-mix(in srgb, var(--accent-color, #818cf8) 14%, transparent);
+    font-size: 17px;
+}
+.profil-form .profil-bio-editor textarea {
+    display: block;
+    width: 100%;
+    min-height: 96px;
+    padding: 2px 0;
+    resize: vertical;
+    border: 0;
+    outline: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--text, #f8fafc);
+    font: inherit;
+    font-size: 14px;
+    line-height: 1.65;
+    box-shadow: none;
+}
+.profil-bio-editor textarea::placeholder {
+    color: var(--text-muted, #94a3b8);
+    opacity: .85;
+}
+.profil-bio-hint {
+    margin: 8px 0 0;
+    color: var(--text-muted, #94a3b8);
+    font-size: 12px;
+    line-height: 1.5;
+}
+@media (max-width: 600px) {
+    .profil-bio-editor { padding: 12px; }
+    .profil-form .profil-bio-editor textarea { min-height: 88px; }
+}

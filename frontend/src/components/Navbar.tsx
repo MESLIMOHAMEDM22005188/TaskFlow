@@ -16,10 +16,11 @@ const NAV_ITEMS = [
     { path: "/communaute", label: "Communauté", keywords: "groupes publications discussions" },
     { path: "/seasons", label: "Season Arc", keywords: "winter summer saison rang classement xp" },
     { path: "/historique", label: "Historique", keywords: "archives terminées passées" },
+    { path: "/moderation", label: "Modération", keywords: "administration modérateur utilisateurs sanctions" },
     { path: "/parametres", label: "Paramètres", keywords: "préférences apparence thème sombre clair" },
 ];
 
-const NAV_TRANSLATION_KEYS = { "/dashboard":"nav.dashboard", "/objectifs":"nav.objectifs", "/flow":"nav.flow", "/stats":"nav.stats", "/habitudes":"nav.habitudes", "/profil":"nav.profil", "/communaute":"nav.communaute", "/historique":"nav.historique", "/parametres":"nav.parametres" } as const;
+const NAV_TRANSLATION_KEYS = { "/dashboard":"nav.dashboard", "/objectifs":"nav.objectifs", "/flow":"nav.flow", "/stats":"nav.stats", "/habitudes":"nav.habitudes", "/profil":"nav.profil", "/communaute":"nav.communaute", "/historique":"nav.historique", "/parametres":"nav.parametres", "/moderation":"nav.moderation" } as const;
 
 type NavbarProps = {
     rightExtra?: ReactNode;

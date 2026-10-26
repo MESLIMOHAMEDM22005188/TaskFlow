@@ -39,7 +39,7 @@ const FORBIDDEN_USERNAME_WORDS = new Set([
 function normalizeUsername(value) {
     return value
         .normalize("NFKD")
-        .replace(/[\\u0300-\\u036f]/g, "")
+        .replace(/[\u0300-\u036f]/g, "")
         .toLowerCase()
         .replace(/0/g, "o")
         .replace(/[1!|]/g, "i")
@@ -75,12 +75,12 @@ function getUsernameError(username) {
 function isValidEmail(email) {
     if (typeof email !== "string") return false;
     const value = email.trim();
-    if (value.length > 254 || value.length === 0 || /[\\s<>(),;:\\[\\]\\\\"]/.test(value)) return false;
+    if (value.length > 254 || value.length === 0 || /[\s<>(),;:\[\]\\"]/.test(value)) return false;
     const parts = value.split("@");
     if (parts.length !== 2) return false;
     const [local, domain] = parts;
     if (!local || local.length > 64 || local.startsWith(".") || local.endsWith(".") || local.includes("..")) return false;
-    if (!/^[A-Za-z0-9.!#$%&'*+\\/=?^_`{|}~-]+$/.test(local)) return false;
+    if (!/^[A-Za-z0-9.!#$%&'*+\/=?^_`{|}~-]+$/.test(local)) return false;
     if (!domain || domain.length > 253 || !domain.includes(".")) return false;
     const labels = domain.split(".");
     if (labels.some(label => !label || label.length > 63 || !/^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?$/.test(label))) return false;

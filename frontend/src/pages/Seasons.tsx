@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import Navbar from "../components/Navbar"
+import { API_ROOT } from "../services/api"
 import "../assets/css/seasons.css"
 
 type SeasonKey = "winter" | "summer"
@@ -49,13 +50,24 @@ export default function Seasons() {
     const [savingGoals, setSavingGoals] = useState(false)
     const [editingGoals, setEditingGoals] = useState(false)
     const token = () => localStorage.getItem("token") || ""
+    async function readApiResponse(response: Response) {
+        const contentType = response.headers.get("content-type") || ""
+        if (!contentType.includes("application/json")) {
+            const body = await response.text()
+            if (body.trimStart().startsWith("<!DOCTYPE") || body.trimStart().startsWith("<html")) {
+                throw new Error("L’API des saisons a renvoyé une page HTML au lieu du JSON. Vérifie le déploiement du backend et l’URL VITE_API_URL.")
+            }
+            throw new Error("Réponse inattendue du serveur des saisons.")
+        }
+        return response.json()
+    }
     const endpoint = \`/api/seasons/\${season}/\${year}\`
 
     const loadSeason = useCallback(async () => {
         setLoading(true); setError(""); setNotice("")
         try {
             const response = await fetch(endpoint, { headers: { Authorization: "Bearer " + token() } })
-            const result = await response.json()
+            const result = await readApiResponse(response)
             if (!response.ok) throw new Error(result.message || "Impossible de charger cette saison.")
             const seasonData = result as SeasonResponse
             setData(seasonData)

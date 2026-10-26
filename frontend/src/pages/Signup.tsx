@@ -21,7 +21,7 @@ const RESERVED_NAMES = [
 
 function normalizeUsername(value: string): string {
     return value.normalize("NFKD")
-        .replace(/[\\u0300-\\u036f]/g, "")
+        .replace(/[\u0300-\u036f]/g, "")
         .toLowerCase()
         .replace(/0/g, "o")
         .replace(/[1!|]/g, "i")
@@ -42,7 +42,7 @@ function validateUsername(value: string): string {
     if (["admin", "administrator", "moderator", "support", "helpdesk", "staff", "owner", "root", "system", "security", "official", "webmaster", "grindly"].some(name => normalized.startsWith(name))) {
         return "Ce pseudo est réservé.";
     }
-    if (RESERVED_NAMES.some(word => normalized === normalizeUsername(word) || words.includes(normalizeUsername(word)) || (word.length >= 5 && normalized.includes(normalizeUsername(word)))) {
+    if (RESERVED_NAMES.some(word => normalized === normalizeUsername(word) || words.includes(normalizeUsername(word)) || (word.length >= 5 && normalized.includes(normalizeUsername(word))))) {
         return "Ce pseudo contient un terme interdit. Choisis-en un autre.";
     }
     return "";
@@ -50,12 +50,12 @@ function validateUsername(value: string): string {
 
 function validateEmail(value: string): string {
     const email = value.trim();
-    if (email.length > 254 || email.length === 0 || /[\\s<>(),;:\\[\\]\\\\"]/.test(email)) return "Saisis une adresse e-mail valide.";
+    if (email.length > 254 || email.length === 0 || /[\s<>(),;:\[\]\\"]/.test(email)) return "Saisis une adresse e-mail valide.";
     const parts = email.split("@");
     if (parts.length !== 2) return "Saisis une adresse e-mail valide.";
     const [local, domain] = parts;
     if (!local || local.length > 64 || local.startsWith(".") || local.endsWith(".") || local.includes("..")) return "La partie avant @ est invalide.";
-    if (!/^[A-Za-z0-9.!#$%&'*+\\/=?^`{|}~-]+$/.test(local)) return "La partie avant @ contient un caractère interdit.";
+    if (!/^[A-Za-z0-9.!#$%&'*+\/=?^`{|}~-]+$/.test(local)) return "La partie avant @ contient un caractère interdit.";
     const labels = domain.split(".");
     if (!domain.includes(".") || labels.some(label => !label || label.length > 63 || !/^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?$/.test(label)) || !/^[A-Za-z]{2,63}$/.test(labels[labels.length - 1] || "")) {
         return "Vérifie le nom de domaine de ton adresse e-mail.";
@@ -88,7 +88,7 @@ export default function Signup() {
             setError(emailError);
             return;
         }
-        if (password.length < 8 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/\\d/.test(password)) {
+        if (password.length < 8 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/\d/.test(password)) {
             setError("Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule et un chiffre.");
             return;
         }

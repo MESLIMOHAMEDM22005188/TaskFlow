@@ -4,6 +4,150 @@ const { updateAchievements } = require("../services/achievement.service")
 
 const router = express.Router()
 
+let taskSchedulingSchemaPromise = null
+
+// Expand the legacy task schema safely on first use. Existing task rows keep
+// their current frequency and completion data.
+async function ensureTaskSchedulingSchema() {
+    if (!taskSchedulingSchemaPromise) {
+        taskSchedulingSchemaPromise = (async () => {
+            const [columns] = await db.execute("SHOW COLUMNS FROM tasks")
+            const byName = new Map(columns.map(column => [column.Field, String(column.Type || "").toLowerCase()]))
+
+            if (byName.has("frequency") && byName.get("frequency").startsWith("enum(")) {
+                await db.execute("ALTER TABLE tasks MODIFY COLUMN frequency VARCHAR(20) NOT NULL DEFAULT 'daily'")
+            }
+
+            const additions = [
+                ["recurrence_interval", "INT UNSIGNED NOT NULL DEFAULT 1"],
+                ["recurrence_days", "TEXT NULL"],
+                ["recurrence_month_days", "TEXT NULL"],
+                ["recurrence_dates", "TEXT NULL"],
+                ["target_per_period", "INT UNSIGNED NOT NULL DEFAULT 1"],
+                ["scheduled_time", "TIME NULL"],
+                ["start_date", "DATE NULL"],
+                ["end_date", "DATE NULL"],
+            ]
+            for (const [name, definition] of additions) {
+                if (!byName.has(name)) {
+                    await db.execute(`ALTER TABLE tasks ADD COLUMN ${name} ${definition}`)
+                }
+            }
+        })().catch(error => {
+            taskSchedulingSchemaPromise = null
+            throw error
+        })
+    }
+    await taskSchedulingSchemaPromise
+}
+
+function parseJsonArray(value) {
+    if (Array.isArray(value)) return value
+    if (typeof value !== "string" || !value.trim()) return []
+    try {
+        const parsed = JSON.parse(value)
+        return Array.isArray(parsed) ? parsed : []
+    } catch {
+        return []
+    }
+}
+
+function dateOnly(value) {
+    if (!value) return null
+    if (value instanceof Date) {
+        return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`
+    }
+    const text = String(value)
+    return /^\\d{4}-\\d{2}-\\d{2}/.test(text) ? text.slice(0, 10) : null
+}
+
+function parseDateOnly(value) {
+    const text = dateOnly(value)
+    if (!text) return null
+    const [year, month, day] = text.split("-").map(Number)
+    const date = new Date(year, month - 1, day, 12)
+    return Number.isNaN(date.getTime()) ? null : date
+}
+
+function dayDifference(a, b) {
+    const utcA = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate())
+    const utcB = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate())
+    return Math.floor((utcA - utcB) / 86400000)
+}
+
+function isTaskDueToday(task) {
+    const today = new Date()
+    today.setHours(12, 0, 0, 0)
+    const todayKey = dateOnly(today)
+    const start = parseDateOnly(task.start_date)
+    const end = parseDateOnly(task.end_date)
+    if (start && today < start) return false
+    if (end && today > end) return false
+
+    const frequency = ["once", "daily", "weekly", "monthly", "yearly"].includes(task.frequency)
+        ? task.frequency : "daily"
+    if (frequency === "once") return true
+
+    const anchor = parseDateOnly(task.start_date) || parseDateOnly(task.created_at) || today
+    const interval = Math.max(1, Number(task.recurrence_interval || 1))
+    const days = parseJsonArray(task.recurrence_days).map(Number).filter(day => day >= 1 && day <= 7)
+    const monthDays = parseJsonArray(task.recurrence_month_days).map(Number).filter(day => day >= 1 && day <= 31)
+    const annualDates = parseJsonArray(task.recurrence_dates).filter(value => /^\\d{2}-\\d{2}$/.test(String(value)))
+
+    if (frequency === "daily") {
+        const distance = dayDifference(today, anchor)
+        if (distance < 0 || distance % interval !== 0) return false
+        const isoWeekday = today.getDay() === 0 ? 7 : today.getDay()
+        return days.length === 0 || days.includes(isoWeekday)
+    }
+
+    if (frequency === "weekly") {
+        const anchorMonday = new Date(anchor)
+        anchorMonday.setDate(anchorMonday.getDate() - ((anchorMonday.getDay() + 6) % 7))
+        const todayMonday = new Date(today)
+        todayMonday.setDate(todayMonday.getDate() - ((todayMonday.getDay() + 6) % 7))
+        const weekDistance = Math.floor(dayDifference(todayMonday, anchorMonday) / 7)
+        if (weekDistance < 0 || weekDistance % interval !== 0) return false
+        const isoWeekday = today.getDay() === 0 ? 7 : today.getDay()
+        const anchorWeekday = anchor.getDay() === 0 ? 7 : anchor.getDay()
+        return days.length ? days.includes(isoWeekday) : isoWeekday === anchorWeekday
+    }
+
+    if (frequency === "monthly") {
+        const monthDistance = (today.getFullYear() - anchor.getFullYear()) * 12 + today.getMonth() - anchor.getMonth()
+        if (monthDistance < 0 || monthDistance % interval !== 0) return false
+        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()
+        const selectedDays = monthDays.length ? monthDays : [anchor.getDate()]
+        return selectedDays.some(day => today.getDate() === Math.min(day, lastDay))
+    }
+
+    const yearDistance = today.getFullYear() - anchor.getFullYear()
+    if (yearDistance < 0 || yearDistance % interval !== 0) return false
+    const fallbackDate = `${String(anchor.getMonth() + 1).padStart(2, "0")}-${String(anchor.getDate()).padStart(2, "0")}`
+    const dateChoices = annualDates.length ? annualDates : [fallbackDate]
+    const todayMonthDay = `${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`
+    if (todayMonthDay === "02-28" && !annualDates.length && fallbackDate === "02-29") return true
+    return dateChoices.includes(todayMonthDay)
+}
+
+function normalizeIntegerArray(value, min, max, limit) {
+    if (!Array.isArray(value)) return []
+    return [...new Set(value.map(Number).filter(number => Number.isInteger(number) && number >= min && number <= max))]
+        .sort((a, b) => a - b)
+        .slice(0, limit)
+}
+
+function normalizeAnnualDates(value) {
+    if (!Array.isArray(value)) return []
+    const valid = value.map(String).filter(value => {
+        if (!/^\\d{2}-\\d{2}$/.test(value)) return false
+        const [month, day] = value.split("-").map(Number)
+        const date = new Date(2000, month - 1, day, 12)
+        return date.getMonth() === month - 1 && date.getDate() === day
+    })
+    return [...new Set(valid)].sort().slice(0, 30)
+}
+
 // Create the multi-theme relation table lazily so older production databases
 // can still serve tasks and accept new ones after deployment.
 async function ensureTaskThemesTable() {
@@ -20,12 +164,42 @@ async function ensureTaskThemesTable() {
 router.get("/", async (req, res) => {
     try {
         await ensureTaskThemesTable()
+        await ensureTaskSchedulingSchema()
         const today = new Date().toISOString().split("T")[0]
 
         const [tasks] = await db.execute(`
             SELECT
                 t.*,
                 COALESCE(ds.count, 0) as today_count,
+                COALESCE((
+                    SELECT COUNT(*)
+                    FROM task_completions tc
+                    WHERE tc.task_id = t.id
+                      AND tc.user_id = t.user_id
+                      AND (
+                        t.frequency = 'once'
+                        OR (
+                            t.frequency = 'daily'
+                            AND FLOOR(DATEDIFF(DATE(tc.completed_at), COALESCE(t.start_date, DATE(t.created_at))) / GREATEST(t.recurrence_interval, 1))
+                                = FLOOR(DATEDIFF(CURDATE(), COALESCE(t.start_date, DATE(t.created_at))) / GREATEST(t.recurrence_interval, 1))
+                        )
+                        OR (
+                            t.frequency = 'weekly'
+                            AND FLOOR(DATEDIFF(DATE(tc.completed_at), COALESCE(t.start_date, DATE(t.created_at))) / (7 * GREATEST(t.recurrence_interval, 1)))
+                                = FLOOR(DATEDIFF(CURDATE(), COALESCE(t.start_date, DATE(t.created_at))) / (7 * GREATEST(t.recurrence_interval, 1)))
+                        )
+                        OR (
+                            t.frequency = 'monthly'
+                            AND FLOOR(PERIOD_DIFF(DATE_FORMAT(DATE(tc.completed_at), '%Y%m'), DATE_FORMAT(COALESCE(t.start_date, DATE(t.created_at)), '%Y%m')) / GREATEST(t.recurrence_interval, 1))
+                                = FLOOR(PERIOD_DIFF(DATE_FORMAT(CURDATE(), '%Y%m'), DATE_FORMAT(COALESCE(t.start_date, DATE(t.created_at)), '%Y%m')) / GREATEST(t.recurrence_interval, 1))
+                        )
+                        OR (
+                            t.frequency = 'yearly'
+                            AND FLOOR((YEAR(DATE(tc.completed_at)) - YEAR(COALESCE(t.start_date, DATE(t.created_at)))) / GREATEST(t.recurrence_interval, 1))
+                                = FLOOR((YEAR(CURDATE()) - YEAR(COALESCE(t.start_date, DATE(t.created_at)))) / GREATEST(t.recurrence_interval, 1))
+                        )
+                      )
+                ), 0) AS period_count,
                 COALESCE(ds.done, FALSE) as done_today,
                 th.name as theme_name,
                 th.emoji as theme_emoji,
@@ -64,6 +238,12 @@ router.get("/", async (req, res) => {
         // Ajouter themes[] à chaque tâche
         const result = tasks.map(t => ({
             ...t,
+            recurrence_days: parseJsonArray(t.recurrence_days),
+            recurrence_month_days: parseJsonArray(t.recurrence_month_days),
+            recurrence_dates: parseJsonArray(t.recurrence_dates),
+            period_count: Number(t.period_count || 0),
+            period_done: Number(t.period_count || 0) >= Math.max(1, Number(t.target_per_period || 1)),
+            is_due_today: isTaskDueToday(t),
             // Anciennes tâches créées avec le statut "todo" : les exposer comme actives
             // pour rester compatibles avec les filtres et types du frontend.
             status: t.status === "todo" ? "active" : t.status,
@@ -87,7 +267,38 @@ router.get("/", async (req, res) => {
 router.post("/", async (req, res) => {
     try {
         await ensureTaskThemesTable()
-        const { title, priority, theme_id, theme_ids, frequency, deadline, note, completion_target } = req.body
+        await ensureTaskSchedulingSchema()
+        const {
+            title, priority, theme_id, theme_ids, frequency, deadline, note, completion_target,
+            recurrence_interval, recurrence_days, recurrence_month_days, recurrence_dates,
+            target_per_period, scheduled_time, start_date, end_date,
+        } = req.body
+
+        if (typeof title !== "string" || !title.trim()) {
+            return res.status(400).json({ message: "Task title is required." })
+        }
+        const allowedFrequencies = ["once", "daily", "weekly", "monthly", "yearly"]
+        if (frequency !== undefined && !allowedFrequencies.includes(frequency)) {
+            return res.status(400).json({ message: "Invalid task frequency." })
+        }
+        const taskFrequency = frequency || "daily"
+        const interval = Math.min(365, Math.max(1, Number.parseInt(recurrence_interval, 10) || 1))
+        const periodTarget = Math.min(60, Math.max(1, Number.parseInt(target_per_period, 10) || 1))
+        const dailyTarget = Math.min(30, Math.max(1, Number.parseInt(completion_target, 10) || 1))
+        const selectedWeekdays = normalizeIntegerArray(recurrence_days, 1, 7, 7)
+        const selectedMonthDays = normalizeIntegerArray(recurrence_month_days, 1, 31, 31)
+        const selectedAnnualDates = normalizeAnnualDates(recurrence_dates)
+        const validDate = value => value == null || value === "" || (typeof value === "string" && /^\\d{4}-\\d{2}-\\d{2}$/.test(value) && !Number.isNaN(Date.parse(`${value}T12:00:00`)))
+        if (!validDate(start_date) || !validDate(end_date) || !validDate(deadline)) {
+            return res.status(400).json({ message: "Invalid date. Use YYYY-MM-DD." })
+        }
+        if (start_date && end_date && end_date < start_date) {
+            return res.status(400).json({ message: "The end date must be on or after the start date." })
+        }
+        const normalizedTime = scheduled_time == null || scheduled_time === "" ? null : String(scheduled_time)
+        if (normalizedTime && !/^([01]\\d|2[0-3]):[0-5]\\d$/.test(normalizedTime)) {
+            return res.status(400).json({ message: "Invalid scheduled time. Use HH:MM." })
+        }
 
         // Construire la liste des ids — priorité à theme_ids, fallback sur theme_id
         const ids = Array.isArray(theme_ids) && theme_ids.length > 0
@@ -101,9 +312,23 @@ router.post("/", async (req, res) => {
         // La route GET ne retourne que les tâches active/done : ne pas dépendre
         // du statut par défaut défini dans le schéma SQL.
         const [result] = await db.execute(
-            `INSERT INTO tasks (user_id, theme_id, title, priority, frequency, deadline, note, completion_target, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active')`,
-            [req.userId, mainThemeId, title, priority || "Medium", frequency || "daily", deadline || null, note || null, completion_target || 1]
+            `INSERT INTO tasks (
+                user_id, theme_id, title, priority, frequency, deadline, note, completion_target, status,
+                recurrence_interval, recurrence_days, recurrence_month_days, recurrence_dates,
+                target_per_period, scheduled_time, start_date, end_date
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                req.userId, mainThemeId, title.trim(), priority || "Medium", taskFrequency,
+                deadline || null, note || null, dailyTarget,
+                interval,
+                selectedWeekdays.length ? JSON.stringify(selectedWeekdays) : null,
+                selectedMonthDays.length ? JSON.stringify(selectedMonthDays) : null,
+                selectedAnnualDates.length ? JSON.stringify(selectedAnnualDates) : null,
+                periodTarget,
+                normalizedTime,
+                start_date || null,
+                end_date || null,
+            ]
         )
 
         const taskId = result.insertId
@@ -127,10 +352,21 @@ router.post("/", async (req, res) => {
             )
             : [[], []]
 
-        res.json({ ...task, themes })
+        res.json({
+            ...task,
+            recurrence_days: parseJsonArray(task.recurrence_days),
+            recurrence_month_days: parseJsonArray(task.recurrence_month_days),
+            recurrence_dates: parseJsonArray(task.recurrence_dates),
+            target_per_period: Number(task.target_per_period || 1),
+            recurrence_interval: Number(task.recurrence_interval || 1),
+            period_count: 0,
+            period_done: false,
+            is_due_today: isTaskDueToday(task),
+            themes,
+        })
 
     } catch (err) {
-        console.error(err)
+        console.error("[Grindly:Tasks] Error creating task:", err)
         res.status(500).json({ message: "Error creating task" })
     }
 })

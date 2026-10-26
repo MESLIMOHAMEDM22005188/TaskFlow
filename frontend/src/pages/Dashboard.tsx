@@ -50,9 +50,13 @@ export function Dashboard() {
         setThemeColor,
         showTaskForm,
         showThemeForm,
+        editingTaskId,
         handleToggleTaskForm,
+        handleCancelTaskForm,
         handleToggleThemeForm,
         handleCreateTask,
+        handleEditTask,
+        handleUpdateTask,
         handleCreateTheme,
         handleDeleteTheme,
         toggleDone,
@@ -123,8 +127,8 @@ export function Dashboard() {
                         <p style={{ margin: "10px 0 0", opacity: 0.75 }}>Une liste claire, une étape à la fois.</p>
                     </div>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-                        <button type="button" className="main-button" onClick={handleToggleTaskForm}>
-                            {showTaskForm ? "Fermer le formulaire" : "+ Nouvelle tâche"}
+                        <button type="button" className="main-button" onClick={editingTaskId !== null ? handleCancelTaskForm : handleToggleTaskForm}>
+                            {editingTaskId !== null ? "Annuler la modification" : showTaskForm ? "Fermer le formulaire" : "+ Nouvelle tâche"}
                         </button>
                         <button type="button" className="main-button secondary" onClick={() => navigate("/flow")}>
                             Lancer une session Flow
@@ -154,7 +158,7 @@ export function Dashboard() {
                 {showTaskForm && (
                     <section className="theme-create-wrapper" aria-label="Créer une tâche" style={{ marginBottom: 24 }}>
                         <div className="theme-create" style={{ display: "grid", gap: 14 }}>
-                            <h2 style={{ margin: 0 }}>Nouvelle tâche</h2>
+                            <h2 style={{ margin: 0 }}>{editingTaskId !== null ? "Modifier la tâche" : "Nouvelle tâche"}</h2>
                             <label className="theme-field">
                                 <span className="theme-label">Nom de la tâche *</span>
                                 <input className="theme-input" value={newTask} onChange={event => setNewTask(event.target.value)} placeholder="Ex. Réviser 20 minutes" maxLength={200} />
@@ -313,10 +317,10 @@ export function Dashboard() {
                             )}
 
                             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                                <button type="button" className="main-button" onClick={() => void handleCreateTask()} disabled={!newTask.trim()}>
-                                    Créer la tâche
+                                <button type="button" className="main-button" onClick={() => void (editingTaskId !== null ? handleUpdateTask() : handleCreateTask())} disabled={!newTask.trim()}>
+                                    {editingTaskId !== null ? "Enregistrer les modifications" : "Créer la tâche"}
                                 </button>
-                                <button type="button" className="main-button secondary" onClick={handleToggleTaskForm}>Annuler</button>
+                                <button type="button" className="main-button secondary" onClick={handleCancelTaskForm}>Annuler</button>
                             </div>
                         </div>
                     </section>
@@ -376,6 +380,15 @@ export function Dashboard() {
                                             {task.note && <p style={{ margin: "8px 0 0", opacity: 0.7, fontSize: 13 }}>{task.note}</p>}
                                         </div>
                                         <div className="dashboard-task-actions">
+                                            <button
+                                                type="button"
+                                                className="dashboard-task-action"
+                                                onClick={() => handleEditTask(task)}
+                                                aria-label={`Modifier ${task.title}`}
+                                                title="Modifier les détails et la planification"
+                                            >
+                                                Modifier
+                                            </button>
                                             <button
                                                 type="button"
                                                 className={isDone ? "dashboard-task-action is-complete" : "dashboard-task-action is-primary"}

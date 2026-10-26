@@ -15,6 +15,7 @@ router.get("/", async (req, res) => {
                     is_default
                 FROM themes
                 WHERE is_default = 1
+                   OR user_id IS NULL
                    OR user_id = ?
                 ORDER BY is_default DESC, created_at DESC
             `,

@@ -23,6 +23,7 @@ const translations = {
     "nav.profil": "Profil",
     "nav.communaute": "Communauté",
     "nav.historique": "Historique",
+    "nav.moderation": "Modération",
     "nav.parametres": "Paramètres",
     "theme.dark": "Mode sombre",
     "theme.light": "Mode clair",

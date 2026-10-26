@@ -15,6 +15,7 @@ import Communaute from "./pages/Communaute"
 import Parametres from "./pages/Parametres"
 import Stats from "./pages/Stats"
 import Historique from "./pages/Historique"
+import Seasons from "./pages/Seasons"
 
 const BG_PRESETS: Record<string, { bg: string; card: string; surface: string }> = {
     obsidian: { bg: "#0a0a0f", card: "rgba(255,255,255,0.035)", surface: "rgba(255,255,255,0.06)" },
@@ -176,6 +177,7 @@ function App() {
             <Route path="/flow"       element={<RequireAuth><Flow /></RequireAuth>} />
             <Route path="/profil"     element={<RequireAuth><Profil /></RequireAuth>} />
             <Route path="/communaute" element={<RequireAuth><Communaute /></RequireAuth>} />
+            <Route path="/seasons"    element={<RequireAuth><Seasons /></RequireAuth>} />
             <Route path="/parametres" element={<RequireAuth><Parametres /></RequireAuth>} />
             <Route path="/stats"      element={<RequireAuth><Stats /></RequireAuth>} />
             <Route path="/habitudes"  element={<RequireAuth><Habitudes /></RequireAuth>} />

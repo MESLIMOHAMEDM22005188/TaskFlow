@@ -569,7 +569,7 @@ function PostList({
                         </div>
                         <div className="post-meta">
                             <span className="post-date">{formatDate(post.created_at)}</span>
-                            <button className="post-delete" onClick={() => onDelete(post.id)}>🗑</button>
+                            {Boolean(post.is_mine) && <button className="post-delete" onClick={() => onDelete(post.id)} aria-label="Supprimer mon post" title="Supprimer mon post">🗑</button>}
                         </div>
                     </div>
 

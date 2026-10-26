@@ -413,6 +413,7 @@ export type Post = {
     group_id: number | null
     is_anonymous: boolean
     anon_name: string | null
+    is_mine?: boolean | number
 }
 
 export type Comment = {

@@ -19,6 +19,7 @@ const habitsRoutes = require("./src/routes/habits.routes")
 const preferenceRoutes = require("./src/routes/preference.routes")
 const accountRoutes = require("./src/routes/account.routes")
 const seasonsRoutes = require("./src/routes/seasons.routes")
+const moderationRoutes = require("./src/routes/moderation.routes")
 const authMiddleware = require("./src/middleware/auth")
 
 const app = express()
@@ -133,6 +134,12 @@ app.use("/api/habits", authMiddleware, habitsRoutes)
 app.use("/api/preferences", authMiddleware, preferenceRoutes)
 app.use("/api/account", authMiddleware, accountRoutes)
 app.use("/api/seasons", authMiddleware, seasonsRoutes)
+app.use("/api/moderation", authMiddleware, moderationRoutes)
+
+// API endpoints must never fall through to the frontend SPA (HTML) response.
+app.use("/api", (req, res) => {
+    res.status(404).json({ message: "API endpoint not found", path: req.originalUrl })
+})
 
 if (fs.existsSync(frontendPath)) {
     console.info(LOG_PREFIX, "Serving frontend from", frontendPath)

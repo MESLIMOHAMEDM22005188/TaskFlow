@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import Navbar from "../components/Navbar"
+import { API_ROOT } from "../services/api"
 import "../assets/css/seasons.css"
 
 type SeasonKey = "winter" | "summer"
@@ -26,16 +27,16 @@ function formatDate(value: string) {
 }
 function getSeasonDates(season: SeasonKey, year: number) {
     return season === "winter"
-        ? { start: \`\${year}-11-01T00:00:00\`, end: \`\${year + 1}-02-01T00:00:00\` }
-        : { start: \`\${year}-06-01T00:00:00\`, end: \`\${year}-09-01T00:00:00\` }
+        ? { start: `${year}-11-01T00:00:00`, end: `${year + 1}-02-01T00:00:00` }
+        : { start: `${year}-06-01T00:00:00`, end: `${year}-09-01T00:00:00` }
 }
 function getCountdown(dateValue: string) {
     const distance = new Date(dateValue).getTime() - Date.now()
     if (distance <= 0) return "Ouverture imminente"
     const days = Math.ceil(distance / 86400000)
-    if (days > 1) return \`Ouverture dans \${days} jours\`
+    if (days > 1) return `Ouverture dans ${days} jours`
     const hours = Math.ceil(distance / 3600000)
-    return hours > 1 ? \`Ouverture dans \${hours} heures\` : "Ouverture dans moins d’une heure"
+    return hours > 1 ? `Ouverture dans ${hours} heures` : "Ouverture dans moins d’une heure"
 }
 export default function Seasons() {
     const [season, setSeason] = useState<SeasonKey>("winter")
@@ -49,19 +50,30 @@ export default function Seasons() {
     const [savingGoals, setSavingGoals] = useState(false)
     const [editingGoals, setEditingGoals] = useState(false)
     const token = () => localStorage.getItem("token") || ""
-    const endpoint = \`/api/seasons/\${season}/\${year}\`
+    async function readApiResponse(response: Response) {
+        const contentType = response.headers.get("content-type") || ""
+        if (!contentType.includes("application/json")) {
+            const body = await response.text()
+            if (body.trimStart().startsWith("<!DOCTYPE") || body.trimStart().startsWith("<html")) {
+                throw new Error("L’API des saisons a renvoyé une page HTML au lieu du JSON. Vérifie le déploiement du backend et l’URL VITE_API_URL.")
+            }
+            throw new Error("Réponse inattendue du serveur des saisons.")
+        }
+        return response.json()
+    }
+    const endpoint = `${API_ROOT}/seasons/${season}/${year}`
 
     const loadSeason = useCallback(async () => {
         setLoading(true); setError(""); setNotice("")
         try {
             const response = await fetch(endpoint, { headers: { Authorization: "Bearer " + token() } })
-            const result = await response.json()
+            const result = await readApiResponse(response)
             if (!response.ok) throw new Error(result.message || "Impossible de charger cette saison.")
             const seasonData = result as SeasonResponse
             setData(seasonData)
             setGoalDrafts(Array.from({ length: 10 }, (_, index) => seasonData.goals[index]?.title || seasonData.presets?.[index] || ""))
             setEditingGoals(seasonData.joined && seasonData.goals.length !== 10)
-        } catch (err) { setError(err instanceof Error ? err.message : "Une erreur est survenue.") }
+        } catch (err) { setData(null); setError(err instanceof Error ? err.message : "Une erreur est survenue.") }
         finally { setLoading(false) }
     }, [endpoint])
     useEffect(() => { void loadSeason() }, [loadSeason])
@@ -77,7 +89,7 @@ export default function Seasons() {
         setBusy(true); setError(""); setNotice("")
         try {
             const response = await fetch(endpoint + "/join", { method: "POST", headers: { Authorization: "Bearer " + token() } })
-            const result = await response.json()
+            const result = await readApiResponse(response)
             if (!response.ok) throw new Error(result.message || "Impossible de rejoindre cet Arc.")
             setNotice(result.message || "Arc débloqué.")
             await loadSeason()
@@ -92,7 +104,7 @@ export default function Seasons() {
                 headers: { Authorization: "Bearer " + token(), "Content-Type": "application/json" },
                 body: JSON.stringify({ goals: goalDrafts }),
             })
-            const result = await response.json()
+            const result = await readApiResponse(response)
             if (!response.ok) throw new Error(result.message || "Impossible d’enregistrer les objectifs.")
             setData(previous => previous ? { ...previous, goals: result.goals } : previous)
             setEditingGoals(false); setNotice("Tes 10 objectifs sont enregistrés. Tu peux les cocher chaque jour.")
@@ -102,8 +114,8 @@ export default function Seasons() {
     async function toggleGoal(goalId: number) {
         setError("")
         try {
-            const response = await fetch(endpoint + \`/goals/\${goalId}/toggle\`, { method: "POST", headers: { Authorization: "Bearer " + token() } })
-            const result = await response.json()
+            const response = await fetch(endpoint + `/goals/${goalId}/toggle`, { method: "POST", headers: { Authorization: "Bearer " + token() } })
+            const result = await readApiResponse(response)
             if (!response.ok) throw new Error(result.message || "Impossible de mettre à jour l’objectif.")
             setData(previous => previous ? { ...previous, goals: result.goals } : previous)
         } catch (err) { setError(err instanceof Error ? err.message : "Une erreur est survenue.") }
@@ -181,7 +193,7 @@ export default function Seasons() {
                         {(!data.goals.length || editingGoals) ? (
                             <div className="season-goal-editor">
                                 <div className="season-goal-editor-head"><div><strong>Construis ta liste</strong><small>10 objectifs, personnalisables à tout moment.</small></div><button type="button" className="season-preset-button" onClick={() => setGoalDrafts(data.presets.slice(0, 10))}>Utiliser les suggestions</button></div>
-                                <div className="season-goal-inputs">{goalDrafts.map((goal, index) => <label className="season-goal-input-row" key={index}><span>{String(index + 1).padStart(2, "0")}</span><input maxLength={120} value={goal} onChange={event => setGoalDrafts(previous => previous.map((value, i) => i === index ? event.target.value : value))} placeholder={\`Ton objectif n°\${index + 1}\`} /></label>)}</div>
+                                <div className="season-goal-inputs">{goalDrafts.map((goal, index) => <label className="season-goal-input-row" key={index}><span>{String(index + 1).padStart(2, "0")}</span><input maxLength={120} value={goal} onChange={event => setGoalDrafts(previous => previous.map((value, i) => i === index ? event.target.value : value))} placeholder={`Ton objectif n°${index + 1}`} /></label>)}</div>
                                 <div className="season-goal-editor-footer"><small>Exemples : lire, réviser, bouger, créer, prendre soin de soi…</small><button className="season-goal-save" disabled={savingGoals || goalDrafts.some(goal => !goal.trim())} onClick={() => void saveGoals()}>{savingGoals ? "Enregistrement…" : "Enregistrer mes 10 objectifs"}</button></div>
                             </div>
                         ) : (
@@ -194,7 +206,7 @@ export default function Seasons() {
                                     <span className="season-goal-check-title">{goal.title}</span>
                                     <span className="season-goal-check-state">{goal.completedToday ? "Fait" : "À faire"}</span>
                                 </label>)}
-                                <div className="season-goal-bottom-note">{goalDoneCount === 10 ? "Journée complétée. Ta constance construit l’Arc." : \`Encore \${10 - goalDoneCount} objectif(s) pour compléter ta journée.\`}<span>Nouvelle checklist chaque jour</span></div>
+                                <div className="season-goal-bottom-note">{goalDoneCount === 10 ? "Journée complétée. Ta constance construit l’Arc." : `Encore ${10 - goalDoneCount} objectif(s) pour compléter ta journée.`}<span>Nouvelle checklist chaque jour</span></div>
                             </div>
                         )}
                     </section>

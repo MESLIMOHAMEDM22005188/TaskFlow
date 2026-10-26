@@ -26,6 +26,22 @@ export function Dashboard() {
         setNote,
         completionTarget,
         setCompletionTarget,
+        recurrenceInterval,
+        setRecurrenceInterval,
+        recurrenceDays,
+        setRecurrenceDays,
+        recurrenceMonthDays,
+        setRecurrenceMonthDays,
+        recurrenceDates,
+        setRecurrenceDates,
+        targetPerPeriod,
+        setTargetPerPeriod,
+        scheduledTime,
+        setScheduledTime,
+        startDate,
+        setStartDate,
+        endDate,
+        setEndDate,
         themeName,
         setThemeName,
         themeEmoji,
@@ -48,6 +64,23 @@ export function Dashboard() {
     const [filter, setFilter] = useState<TaskFilter>("all")
     const [search, setSearch] = useState("")
     const [showThemes, setShowThemes] = useState(false)
+    const [annualDateInput, setAnnualDateInput] = useState("")
+
+    const periodLabels: Record<string, string> = {
+        daily: "jour",
+        weekly: "semaine",
+        monthly: "mois",
+        yearly: "an",
+    }
+    const weekdayOptions = [
+        { value: 1, label: "Lun" },
+        { value: 2, label: "Mar" },
+        { value: 3, label: "Mer" },
+        { value: 4, label: "Jeu" },
+        { value: 5, label: "Ven" },
+        { value: 6, label: "Sam" },
+        { value: 7, label: "Dim" },
+    ]
 
     const visibleTasks = useMemo(() => {
         const query = search.trim().toLocaleLowerCase("fr-FR")
@@ -136,22 +169,100 @@ export function Dashboard() {
                                 </select>
                             </label>
 
-                            <label className="theme-field">
-                                <span className="theme-label">Fréquence</span>
-                                <select className="theme-select" value={frequency} onChange={event => setFrequency(event.target.value)}>
-                                    <option value="daily">Chaque jour</option>
-                                    <option value="weekly">Chaque semaine</option>
-                                    <option value="monthly">Chaque mois</option>
-                                    <option value="once">Une seule fois</option>
-                                </select>
-                            </label>
+                            <section aria-label="Planification de la tâche" style={{ display: "grid", gap: 13, border: "1px solid rgba(128,128,128,.24)", borderRadius: 14, padding: 14 }}>
+                                <div>
+                                    <h3 style={{ margin: "0 0 4px", fontSize: 16 }}>Quand faire cette tâche ?</h3>
+                                    <p style={{ margin: 0, fontSize: 12, opacity: .68 }}>Choisis une cadence, des jours précis et un objectif de réalisations. Ces réglages sont enregistrés avec la tâche.</p>
+                                </div>
 
-                            {frequency !== "once" && (
                                 <label className="theme-field">
-                                    <span className="theme-label">Répétitions nécessaires par jour</span>
-                                    <input className="theme-input" type="number" min={1} max={30} value={completionTarget} onChange={event => setCompletionTarget(Math.min(30, Math.max(1, Number(event.target.value) || 1)))} />
+                                    <span className="theme-label">Répétition</span>
+                                    <select className="theme-select" value={frequency} onChange={event => setFrequency(event.target.value)}>
+                                        <option value="once">Une seule fois</option>
+                                        <option value="daily">Chaque jour</option>
+                                        <option value="weekly">Chaque semaine</option>
+                                        <option value="monthly">Chaque mois</option>
+                                        <option value="yearly">Chaque année</option>
+                                    </select>
                                 </label>
-                            )}
+
+                                {frequency !== "once" && (
+                                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+                                        <label className="theme-field">
+                                            <span className="theme-label">Répéter tous les…</span>
+                                            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                                                <input className="theme-input" style={{ maxWidth: 100 }} type="number" min={1} max={365} value={recurrenceInterval} onChange={event => setRecurrenceInterval(Math.min(365, Math.max(1, Number(event.target.value) || 1)))} />
+                                                <span style={{ opacity: .75 }}>{frequency === "daily" ? "jour(s)" : frequency === "weekly" ? "semaine(s)" : frequency === "monthly" ? "mois" : "an(s)"}</span>
+                                            </div>
+                                        </label>
+                                        <label className="theme-field">
+                                            <span className="theme-label">Objectif : fois par {periodLabels[frequency] || "période"}</span>
+                                            <input className="theme-input" type="number" min={1} max={60} value={targetPerPeriod} onChange={event => setTargetPerPeriod(Math.min(60, Math.max(1, Number(event.target.value) || 1)))} />
+                                        </label>
+                                    </div>
+                                )}
+
+                                {(frequency === "daily" || frequency === "weekly") && (
+                                    <fieldset style={{ margin: 0, border: "1px solid rgba(128,128,128,.24)", borderRadius: 10, padding: 11 }}>
+                                        <legend className="theme-label">{frequency === "daily" ? "Jours autorisés (facultatif)" : "Jours de la semaine (facultatif)"}</legend>
+                                        <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+                                            {weekdayOptions.map(day => {
+                                                const selected = recurrenceDays.includes(day.value)
+                                                return <button key={day.value} type="button" aria-pressed={selected} onClick={() => setRecurrenceDays(previous => selected ? previous.filter(value => value !== day.value) : [...previous, day.value].sort((a, b) => a - b))} style={{ border: `1px solid ${selected ? "var(--accent-color, #7c6ee6)" : "rgba(128,128,128,.35)"}`, borderRadius: 9, padding: "8px 10px", background: selected ? "rgba(124,110,230,.15)" : "transparent", color: "inherit", cursor: "pointer" }}>{day.label}</button>
+                                            })}
+                                        </div>
+                                        <p style={{ margin: "8px 0 0", fontSize: 11, opacity: .62 }}>Aucun jour sélectionné = tous les jours pour « chaque jour », ou le jour de départ pour « chaque semaine ».</p>
+                                    </fieldset>
+                                )}
+
+                                {frequency === "monthly" && (
+                                    <fieldset style={{ margin: 0, border: "1px solid rgba(128,128,128,.24)", borderRadius: 10, padding: 11 }}>
+                                        <legend className="theme-label">Jours du mois (facultatif)</legend>
+                                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(34px, 1fr))", gap: 5 }}>
+                                            {Array.from({ length: 31 }, (_, index) => index + 1).map(day => {
+                                                const selected = recurrenceMonthDays.includes(day)
+                                                return <button key={day} type="button" aria-pressed={selected} onClick={() => setRecurrenceMonthDays(previous => selected ? previous.filter(value => value !== day) : [...previous, day].sort((a, b) => a - b))} style={{ border: `1px solid ${selected ? "var(--accent-color, #7c6ee6)" : "rgba(128,128,128,.3)"}`, borderRadius: 7, padding: "6px 0", background: selected ? "rgba(124,110,230,.15)" : "transparent", color: "inherit", cursor: "pointer" }}>{day}</button>
+                                            })}
+                                        </div>
+                                        <p style={{ margin: "8px 0 0", fontSize: 11, opacity: .62 }}>Plusieurs dates possibles. Si aucune n’est choisie, le jour de départ est utilisé.</p>
+                                    </fieldset>
+                                )}
+
+                                {frequency === "yearly" && (
+                                    <fieldset style={{ margin: 0, border: "1px solid rgba(128,128,128,.24)", borderRadius: 10, padding: 11 }}>
+                                        <legend className="theme-label">Dates de l’année (facultatif)</legend>
+                                        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+                                            <input className="theme-input" style={{ maxWidth: 190 }} type="date" value={annualDateInput} onChange={event => setAnnualDateInput(event.target.value)} />
+                                            <button type="button" className="main-button secondary" disabled={!annualDateInput} onClick={() => { const monthDay = annualDateInput.slice(5, 10); if (monthDay && !recurrenceDates.includes(monthDay)) setRecurrenceDates(previous => [...previous, monthDay].sort()); setAnnualDateInput(""); }}>Ajouter la date</button>
+                                        </div>
+                                        {recurrenceDates.length > 0 && <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 10 }}>
+                                            {recurrenceDates.map(date => <button key={date} type="button" onClick={() => setRecurrenceDates(previous => previous.filter(value => value !== date))} title="Retirer cette date" style={{ border: "1px solid rgba(128,128,128,.3)", borderRadius: 999, padding: "6px 9px", background: "rgba(128,128,128,.08)", color: "inherit", cursor: "pointer" }}>{new Date(`2000-${date}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })} ×</button>)}
+                                        </div>}
+                                        <p style={{ margin: "8px 0 0", fontSize: 11, opacity: .62 }}>Ajoute une ou plusieurs dates récurrentes, par exemple un anniversaire ou un contrôle annuel.</p>
+                                    </fieldset>
+                                )}
+
+                                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+                                    <label className="theme-field">
+                                        <span className="theme-label">Heure prévue (facultatif)</span>
+                                        <input className="theme-input" type="time" value={scheduledTime} onChange={event => setScheduledTime(event.target.value)} />
+                                    </label>
+                                    <label className="theme-field">
+                                        <span className="theme-label">Commencer à partir du</span>
+                                        <input className="theme-input" type="date" value={startDate} onChange={event => setStartDate(event.target.value)} />
+                                    </label>
+                                    <label className="theme-field">
+                                        <span className="theme-label">Arrêter la répétition le</span>
+                                        <input className="theme-input" type="date" min={startDate || undefined} value={endDate} onChange={event => setEndDate(event.target.value)} />
+                                    </label>
+                                </div>
+
+                                <label className="theme-field">
+                                    <span className="theme-label">Validations nécessaires le même jour (avancé)</span>
+                                    <input className="theme-input" type="number" min={1} max={30} value={completionTarget} onChange={event => setCompletionTarget(Math.min(30, Math.max(1, Number(event.target.value) || 1)))} />
+                                    <span style={{ fontSize: 11, opacity: .62 }}>Pour une habitude comme boire de l’eau plusieurs fois par jour. L’objectif hebdomadaire/mensuel/annuel est réglé séparément.</span>
+                                </label>
+                            </section>
 
                             <label className="theme-field">
                                 <span className="theme-label">Date limite (facultative)</span>
@@ -246,7 +357,10 @@ export function Dashboard() {
                                             <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, fontSize: 12, opacity: 0.75 }}>
                                                 <span>{task.priority === "High" ? "Priorité haute" : task.priority === "Low" ? "Priorité basse" : "Priorité moyenne"}</span>
                                                 <span>·</span>
-                                                <span>{task.frequency === "once" ? "Une seule fois" : task.frequency === "weekly" ? "Chaque semaine" : task.frequency === "monthly" ? "Chaque mois" : "Chaque jour"}</span>
+                                                <span>{formatSchedule(task)}</span>
+                                                {task.frequency !== "once" && <span>· Objectif période : {Number(task.period_count || 0)}/{Number(task.target_per_period || 1)}</span>}
+                                                {task.scheduled_time && <span>· À {String(task.scheduled_time).slice(0, 5)}</span>}
+                                                {task.is_due_today === false && <span style={{ color: "#d97706" }}>· Pas prévue aujourd’hui</span>}
                                                 {taskThemes.map(theme => <span key={theme.id} style={{ borderRadius: 999, padding: "3px 8px", background: `${theme.color || "#888"}22`, color: "inherit" }}>{theme.emoji || "•"} {theme.name}</span>)}
                                                 {task.deadline && <span>Échéance : {new Date(task.deadline).toLocaleDateString("fr-FR")}</span>}
                                             </div>
@@ -337,6 +451,36 @@ export function Dashboard() {
             </main>
         </div>
     )
+}
+
+function formatSchedule(task: {
+    frequency: string
+    recurrence_interval?: number
+    recurrence_days?: number[]
+    recurrence_month_days?: number[]
+    recurrence_dates?: string[]
+    target_per_period?: number
+}) {
+    if (task.frequency === "once") return "Une seule fois"
+    const interval = Math.max(1, Number(task.recurrence_interval || 1))
+    const period = task.frequency === "daily" ? "jour" : task.frequency === "weekly" ? "semaine" : task.frequency === "monthly" ? "mois" : "an"
+    const cadence = interval === 1
+        ? ({ daily: "Chaque jour", weekly: "Chaque semaine", monthly: "Chaque mois", yearly: "Chaque année" } as Record<string, string>)[task.frequency] || "Récurrente"
+        : `Tous les ${interval} ${period}`
+    const weekdays = ["", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."]
+    const details: string[] = []
+    if ((task.frequency === "daily" || task.frequency === "weekly") && task.recurrence_days?.length) {
+        details.push(task.recurrence_days.map(day => weekdays[day]).filter(Boolean).join(", "))
+    }
+    if (task.frequency === "monthly" && task.recurrence_month_days?.length) {
+        details.push(`le ${task.recurrence_month_days.join(", ")}`)
+    }
+    if (task.frequency === "yearly" && task.recurrence_dates?.length) {
+        details.push(task.recurrence_dates.map(value => new Date(`2000-${value}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })).join(", "))
+    }
+    const target = Math.max(1, Number(task.target_per_period || 1))
+    const targetText = task.frequency === "daily" ? `${target} fois/jour` : `${target} fois/${period}`
+    return [cadence, ...details, targetText].join(" · ")
 }
 
 function Stat({ label, value }: { label: string; value: number }) {

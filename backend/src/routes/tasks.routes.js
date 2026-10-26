@@ -449,6 +449,146 @@ router.post("/", async (req, res) => {
         res.status(500).json({ message: "Error creating task" })
     }
 })
+
+/**
+ * Update a task's editable fields and schedule without touching completion history.
+ * The ownership check is applied to every read/write.
+ */
+router.put("/:id", async (req, res) => {
+    let connection
+    let transactionStarted = false
+    try {
+        await ensureTaskThemesTable()
+        await ensureTaskSchedulingSchema()
+
+        const {
+            title, priority, theme_id, theme_ids, frequency, deadline, note, completion_target,
+            recurrence_interval, recurrence_days, recurrence_month_days, recurrence_dates,
+            target_per_period, scheduled_time, start_date, end_date,
+        } = req.body
+
+        if (typeof title !== "string" || !title.trim()) {
+            return res.status(400).json({ message: "Task title is required." })
+        }
+        const allowedPriorities = ["Low", "Medium", "High"]
+        const allowedFrequencies = ["once", "daily", "weekly", "monthly", "yearly"]
+        if (priority !== undefined && !allowedPriorities.includes(priority)) {
+            return res.status(400).json({ message: "Invalid task priority." })
+        }
+        if (frequency !== undefined && !allowedFrequencies.includes(frequency)) {
+            return res.status(400).json({ message: "Invalid task frequency." })
+        }
+        const taskFrequency = frequency || "daily"
+        const interval = Math.min(365, Math.max(1, Number.parseInt(recurrence_interval, 10) || 1))
+        const periodTarget = Math.min(60, Math.max(1, Number.parseInt(target_per_period, 10) || 1))
+        const dailyTarget = Math.min(30, Math.max(1, Number.parseInt(completion_target, 10) || 1))
+        const selectedWeekdays = normalizeIntegerArray(recurrence_days, 1, 7, 7)
+        const selectedMonthDays = normalizeIntegerArray(recurrence_month_days, 1, 31, 31)
+        const selectedAnnualDates = normalizeAnnualDates(recurrence_dates)
+
+        const validDate = value => {
+            if (value == null || value === "") return true
+            if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+            const [year, month, day] = value.split("-").map(Number)
+            const parsed = new Date(year, month - 1, day, 12)
+            return parsed.getFullYear() === year && parsed.getMonth() === month - 1 && parsed.getDate() === day
+        }
+        if (!validDate(start_date) || !validDate(end_date) || !validDate(deadline)) {
+            return res.status(400).json({ message: "Invalid date. Use YYYY-MM-DD." })
+        }
+        if (start_date && end_date && end_date < start_date) {
+            return res.status(400).json({ message: "The end date must be on or after the start date." })
+        }
+
+        const normalizedTime = scheduled_time == null || scheduled_time === "" ? null : String(scheduled_time)
+        if (normalizedTime && !/^([01]\d|2[0-3]):[0-5]\d$/.test(normalizedTime)) {
+            return res.status(400).json({ message: "Invalid scheduled time. Use HH:MM." })
+        }
+
+        const ids = Array.isArray(theme_ids) && theme_ids.length > 0
+            ? normalizeIntegerArray(theme_ids, 1, Number.MAX_SAFE_INTEGER, 3)
+            : (theme_id ? [Number(theme_id)] : [])
+        const mainThemeId = ids[0] ?? null
+
+        connection = await db.getConnection()
+        await connection.beginTransaction()
+        transactionStarted = true
+
+        const [[existing]] = await connection.execute(
+            "SELECT id FROM tasks WHERE id = ? AND user_id = ? AND COALESCE(status, 'active') <> 'archived' FOR UPDATE",
+            [req.params.id, req.userId]
+        )
+        if (!existing) {
+            await connection.rollback()
+            transactionStarted = false
+            return res.status(404).json({ message: "Task not found." })
+        }
+
+        await connection.execute(
+            `UPDATE tasks SET
+                title = ?, priority = ?, theme_id = ?, frequency = ?, deadline = ?, note = ?,
+                completion_target = ?, recurrence_interval = ?, recurrence_days = ?,
+                recurrence_month_days = ?, recurrence_dates = ?, target_per_period = ?,
+                scheduled_time = ?, start_date = ?, end_date = ?
+             WHERE id = ? AND user_id = ?`,
+            [
+                title.trim(), priority || "Medium", mainThemeId, taskFrequency, deadline || null,
+                note || null, dailyTarget, interval,
+                selectedWeekdays.length ? JSON.stringify(selectedWeekdays) : null,
+                selectedMonthDays.length ? JSON.stringify(selectedMonthDays) : null,
+                selectedAnnualDates.length ? JSON.stringify(selectedAnnualDates) : null,
+                periodTarget, normalizedTime, start_date || null, end_date || null,
+                req.params.id, req.userId,
+            ]
+        )
+
+        await connection.execute("DELETE FROM task_themes WHERE task_id = ?", [req.params.id])
+        if (ids.length > 0) {
+            const placeholders = ids.map(() => "(?, ?)").join(", ")
+            await connection.execute(
+                `INSERT IGNORE INTO task_themes (task_id, theme_id) VALUES ${placeholders}`,
+                ids.flatMap(themeId => [req.params.id, themeId])
+            )
+        }
+
+        await connection.commit()
+        transactionStarted = false
+
+        const [[task]] = await db.execute(
+            "SELECT * FROM tasks WHERE id = ? AND user_id = ?",
+            [req.params.id, req.userId]
+        )
+        const [themes] = ids.length > 0
+            ? await db.execute(
+                `SELECT id, name, emoji, color FROM themes WHERE id IN (${ids.map(() => "?").join(",")})`,
+                ids
+            )
+            : [[]]
+
+        res.json({
+            ...task,
+            recurrence_days: parseJsonArray(task.recurrence_days),
+            recurrence_month_days: parseJsonArray(task.recurrence_month_days),
+            recurrence_dates: parseJsonArray(task.recurrence_dates),
+            recurrence_interval: Number(task.recurrence_interval || 1),
+            target_per_period: Number(task.target_per_period || 1),
+            period_count: undefined,
+            is_due_today: isTaskDueToday(task),
+            themes,
+        })
+    } catch (err) {
+        if (connection && transactionStarted) {
+            try { await connection.rollback() } catch (rollbackError) {
+                console.error("[Grindly:Tasks] Rollback failed:", rollbackError)
+            }
+        }
+        console.error("[Grindly:Tasks] Error updating task:", err)
+        res.status(500).json({ message: "Error updating task" })
+    } finally {
+        if (connection) connection.release()
+    }
+})
+
 // DELETE task
 router.delete("/:id", async (req, res) => {
     try {

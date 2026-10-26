@@ -73,7 +73,7 @@ export default function Seasons() {
             setData(seasonData)
             setGoalDrafts(Array.from({ length: 10 }, (_, index) => seasonData.goals[index]?.title || seasonData.presets?.[index] || ""))
             setEditingGoals(seasonData.joined && seasonData.goals.length !== 10)
-        } catch (err) { setError(err instanceof Error ? err.message : "Une erreur est survenue.") }
+        } catch (err) { setData(null); setError(err instanceof Error ? err.message : "Une erreur est survenue.") }
         finally { setLoading(false) }
     }, [endpoint])
     useEffect(() => { void loadSeason() }, [loadSeason])

@@ -104,7 +104,7 @@ export default function Seasons() {
                 headers: { Authorization: "Bearer " + token(), "Content-Type": "application/json" },
                 body: JSON.stringify({ goals: goalDrafts }),
             })
-            const result = await response.json()
+            const result = await readApiResponse(response)
             if (!response.ok) throw new Error(result.message || "Impossible d’enregistrer les objectifs.")
             setData(previous => previous ? { ...previous, goals: result.goals } : previous)
             setEditingGoals(false); setNotice("Tes 10 objectifs sont enregistrés. Tu peux les cocher chaque jour.")
@@ -115,7 +115,7 @@ export default function Seasons() {
         setError("")
         try {
             const response = await fetch(endpoint + `/goals/${goalId}/toggle`, { method: "POST", headers: { Authorization: "Bearer " + token() } })
-            const result = await response.json()
+            const result = await readApiResponse(response)
             if (!response.ok) throw new Error(result.message || "Impossible de mettre à jour l’objectif.")
             setData(previous => previous ? { ...previous, goals: result.goals } : previous)
         } catch (err) { setError(err instanceof Error ? err.message : "Une erreur est survenue.") }

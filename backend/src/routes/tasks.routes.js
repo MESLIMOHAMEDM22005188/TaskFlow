@@ -108,20 +108,21 @@ function isTaskDueToday(task) {
         const weekDistance = Math.floor(dayDifference(todayMonday, anchorMonday) / 7)
         if (weekDistance < 0 || weekDistance % interval !== 0) return false
         const isoWeekday = today.getDay() === 0 ? 7 : today.getDay()
-        const anchorWeekday = anchor.getDay() === 0 ? 7 : anchor.getDay()
-        return days.length ? days.includes(isoWeekday) : isoWeekday === anchorWeekday
+        return days.length ? days.includes(isoWeekday) : true
     }
 
     if (frequency === "monthly") {
         const monthDistance = (today.getFullYear() - anchor.getFullYear()) * 12 + today.getMonth() - anchor.getMonth()
         if (monthDistance < 0 || monthDistance % interval !== 0) return false
         const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()
+        if (!monthDays.length && Number(task.target_per_period || 1) > 1) return true
         const selectedDays = monthDays.length ? monthDays : [anchor.getDate()]
         return selectedDays.some(day => today.getDate() === Math.min(day, lastDay))
     }
 
     const yearDistance = today.getFullYear() - anchor.getFullYear()
     if (yearDistance < 0 || yearDistance % interval !== 0) return false
+    if (!annualDates.length && Number(task.target_per_period || 1) > 1) return true
     const fallbackDate = `${String(anchor.getMonth() + 1).padStart(2, "0")}-${String(anchor.getDate()).padStart(2, "0")}`
     const dateChoices = annualDates.length ? annualDates : [fallbackDate]
     const todayMonthDay = `${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`

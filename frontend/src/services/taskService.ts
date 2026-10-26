@@ -71,6 +71,32 @@ export async function createTask(data: {
 }
 
 
+export async function updateTask(id: number, data: {
+    title: string
+    priority: string
+    theme_id?: number | null
+    theme_ids?: number[]
+    frequency?: string
+    recurrence_interval?: number
+    recurrence_days?: number[]
+    recurrence_month_days?: number[]
+    recurrence_dates?: string[]
+    target_per_period?: number
+    scheduled_time?: string | null
+    start_date?: string | null
+    end_date?: string | null
+    deadline?: string | null
+    note?: string | null
+    completion_target?: number
+}) {
+    const res = await fetch(`${API_ROOT}/tasks/${id}`, {
+        method: "PUT",
+        headers: getHeaders(),
+        body: JSON.stringify(data),
+    })
+    return handleResponse(res)
+}
+
 export async function deleteTask(id: number): Promise<{ message: string }> {
     const res = await fetch(`${API_ROOT}/tasks/${id}`, {
         method: "DELETE",

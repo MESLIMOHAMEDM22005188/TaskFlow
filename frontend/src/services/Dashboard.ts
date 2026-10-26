@@ -45,6 +45,14 @@ export function useDashboard() {
     const [priority, setPriority] = useState("Medium")
     const [themeIds, setThemeIds] = useState<number[]>([])
     const [frequency, setFrequency] = useState("daily")
+    const [recurrenceInterval, setRecurrenceInterval] = useState(1)
+    const [recurrenceDays, setRecurrenceDays] = useState<number[]>([])
+    const [recurrenceMonthDays, setRecurrenceMonthDays] = useState<number[]>([])
+    const [recurrenceDates, setRecurrenceDates] = useState<string[]>([])
+    const [targetPerPeriod, setTargetPerPeriod] = useState(1)
+    const [scheduledTime, setScheduledTime] = useState("")
+    const [startDate, setStartDate] = useState("")
+    const [endDate, setEndDate] = useState("")
     const [deadline, setDeadline] = useState("")
     const [note, setNote] = useState("")
     const [completionTarget, setCompletionTarget] = useState(1)
@@ -144,6 +152,14 @@ export function useDashboard() {
                 theme_ids: themeIds,
                 theme_id: themeIds[0] ?? null,  // compat
                 frequency,
+                recurrence_interval: recurrenceInterval,
+                recurrence_days: recurrenceDays,
+                recurrence_month_days: recurrenceMonthDays,
+                recurrence_dates: recurrenceDates,
+                target_per_period: targetPerPeriod,
+                scheduled_time: scheduledTime || null,
+                start_date: startDate || null,
+                end_date: endDate || null,
                 deadline: deadline || null,
                 note: note || null,
                 completion_target: completionTarget
@@ -153,6 +169,14 @@ export function useDashboard() {
             setPriority("Medium")
             setThemeIds([])
             setFrequency("daily")
+            setRecurrenceInterval(1)
+            setRecurrenceDays([])
+            setRecurrenceMonthDays([])
+            setRecurrenceDates([])
+            setTargetPerPeriod(1)
+            setScheduledTime("")
+            setStartDate("")
+            setEndDate("")
             setDeadline("")
             setNote("")
             setCompletionTarget(1)
@@ -195,7 +219,10 @@ export function useDashboard() {
         try {
             if (isDone) {
                 const { task } = await uncompleteTask(taskId)
-                setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...task, done_today: false } : t))
+                setTasks(prev => prev.map(t => {
+                    if (t.id !== taskId) return t
+                    return { ...t, ...task, done_today: false, period_count: Math.max(0, Number(t.period_count || 0) - 1) }
+                }))
                 setDailyState(prev => {
                     const next = new Map(prev)
                     const current = next.get(taskId) ?? { task_id: taskId, today_count: 1, done_today: true }
@@ -205,7 +232,10 @@ export function useDashboard() {
                 })
             } else {
                 const { task } = await completeTask(taskId)
-                setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...task } : t))
+                setTasks(prev => prev.map(t => {
+                    if (t.id !== taskId) return t
+                    return { ...t, ...task, period_count: Number(t.period_count || 0) + 1 }
+                }))
                 setDailyState(prev => {
                     const next = new Map(prev)
                     const current = next.get(taskId) ?? { task_id: taskId, today_count: 0, done_today: false }
@@ -267,6 +297,14 @@ export function useDashboard() {
         priority, setPriority,
         themeIds, toggleThemeSelection,
         frequency, setFrequency,
+        recurrenceInterval, setRecurrenceInterval,
+        recurrenceDays, setRecurrenceDays,
+        recurrenceMonthDays, setRecurrenceMonthDays,
+        recurrenceDates, setRecurrenceDates,
+        targetPerPeriod, setTargetPerPeriod,
+        scheduledTime, setScheduledTime,
+        startDate, setStartDate,
+        endDate, setEndDate,
         deadline, setDeadline,
         note, setNote,
         completionTarget, setCompletionTarget,

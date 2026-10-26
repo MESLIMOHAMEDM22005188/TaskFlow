@@ -96,11 +96,23 @@ export default function Profil() {
                             value={email}
                             disabled
                         />
-                        <label>Bio</label>
-                        <textarea
-                            value={bio}
-                            onChange={(e) => setBio(e.target.value)}
-                        />
+                        <div className="profil-bio-heading">
+                            <label htmlFor="profil-bio">Bio</label>
+                            <span className="profil-bio-counter">{bio.length}/180</span>
+                        </div>
+                        <div className="profil-bio-editor">
+                            <div className="profil-bio-icon" aria-hidden="true">✎</div>
+                            <textarea
+                                id="profil-bio"
+                                value={bio}
+                                maxLength={180}
+                                rows={4}
+                                placeholder="Quelques mots sur toi, tes objectifs ou ce qui te motive…"
+                                onChange={(e) => setBio(e.target.value)}
+                                aria-describedby="profil-bio-hint"
+                            />
+                            <p id="profil-bio-hint" className="profil-bio-hint">Présente-toi en quelques phrases. Ta bio aide la communauté à mieux te connaître.</p>
+                        </div>
                         <button className="profil-save" onClick={handleSave}>
                             {saved ? "✓ Saved!" : "Save profile"}
                         </button>

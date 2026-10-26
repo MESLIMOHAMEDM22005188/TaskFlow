@@ -41,7 +41,7 @@ function validateUsername(value: string): string {
     if (FALLBACK_FORBIDDEN_NAMES.some(word =>
         normalized === normalizeUsername(word) ||
         words.includes(normalizeUsername(word)) ||
-        (word.length >= 4 && normalized.includes(normalizeUsername(word)))
+        (word.length >= 4 && normalized.startsWith(normalizeUsername(word)))
     )) {
         return "Ce pseudo contient un terme interdit. Choisis-en un autre.";
     }

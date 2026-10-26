@@ -4,6 +4,65 @@ import api from "../services/api";
 import AuthThemeToggle from "../components/AuthThemeToggle";
 import "../assets/css/auth.css";
 
+const USERNAME_REGEX = /^[A-Za-z0-9_-]{3,20}$/;
+const RESERVED_NAMES = [
+    "admin", "administrator", "moderator", "moderatrice", "moderateur",
+    "support", "helpdesk", "staff", "owner", "root", "system", "security",
+    "official", "webmaster", "grindly", "connard", "connasse", "conasse",
+    "encule", "enculee", "fdp", "filsdepute", "pute", "putain", "salope",
+    "salopard", "salaud", "batard", "merde", "ntm", "tafiolle", "tapette",
+    "pede", "poufiasse", "trouduc", "trouducul", "bite", "branleur",
+    "branleuse", "enfoire", "enfoiree", "bougnoule", "youpin", "facho",
+    "raciste", "pedophile", "pedo", "zoophile", "hitler", "nazi",
+    "fuck", "fucker", "fucking", "shit", "bitch", "bastard", "asshole",
+    "dickhead", "pussy", "whore", "slut", "nigger", "nigga", "faggot",
+    "retard", "rapist"
+];
+
+function normalizeUsername(value: string): string {
+    return value.normalize("NFKD")
+        .replace(/[\\u0300-\\u036f]/g, "")
+        .toLowerCase()
+        .replace(/0/g, "o")
+        .replace(/[1!|]/g, "i")
+        .replace(/3/g, "e")
+        .replace(/4/g, "a")
+        .replace(/5/g, "s")
+        .replace(/7/g, "t")
+        .replace(/[^a-z0-9]/g, "");
+}
+
+function validateUsername(value: string): string {
+    const username = value.trim();
+    if (username.length < 3) return "Le pseudo doit contenir au moins 3 caractères.";
+    if (username.length > 20) return "Le pseudo ne peut pas dépasser 20 caractères.";
+    if (!USERNAME_REGEX.test(username)) return "Utilise uniquement des lettres sans accent, des chiffres, _ ou -, sans espaces.";
+    const normalized = normalizeUsername(username);
+    const words = username.toLowerCase().split(/[_-]+/).filter(Boolean).map(normalizeUsername);
+    if (["admin", "administrator", "moderator", "support", "helpdesk", "staff", "owner", "root", "system", "security", "official", "webmaster", "grindly"].some(name => normalized.startsWith(name))) {
+        return "Ce pseudo est réservé.";
+    }
+    if (RESERVED_NAMES.some(word => normalized === normalizeUsername(word) || words.includes(normalizeUsername(word)) || (word.length >= 5 && normalized.includes(normalizeUsername(word)))) {
+        return "Ce pseudo contient un terme interdit. Choisis-en un autre.";
+    }
+    return "";
+}
+
+function validateEmail(value: string): string {
+    const email = value.trim();
+    if (email.length > 254 || email.length === 0 || /[\\s<>(),;:\\[\\]\\\\"]/.test(email)) return "Saisis une adresse e-mail valide.";
+    const parts = email.split("@");
+    if (parts.length !== 2) return "Saisis une adresse e-mail valide.";
+    const [local, domain] = parts;
+    if (!local || local.length > 64 || local.startsWith(".") || local.endsWith(".") || local.includes("..")) return "La partie avant @ est invalide.";
+    if (!/^[A-Za-z0-9.!#$%&'*+\\/=?^`{|}~-]+$/.test(local)) return "La partie avant @ contient un caractère interdit.";
+    const labels = domain.split(".");
+    if (!domain.includes(".") || labels.some(label => !label || label.length > 63 || !/^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?$/.test(label)) || !/^[A-Za-z]{2,63}$/.test(labels[labels.length - 1] || "")) {
+        return "Vérifie le nom de domaine de ton adresse e-mail.";
+    }
+    return "";
+}
+
 export default function Signup() {
     const navigate = useNavigate();
     const [username, setUsername] = useState("");
@@ -19,8 +78,18 @@ export default function Signup() {
         e.preventDefault();
         setError("");
         setSuccess("");
-        if (password.length < 8) {
-            setError("Choisis un mot de passe d’au moins 8 caractères.");
+        const usernameError = validateUsername(username);
+        if (usernameError) {
+            setError(usernameError);
+            return;
+        }
+        const emailError = validateEmail(email);
+        if (emailError) {
+            setError(emailError);
+            return;
+        }
+        if (password.length < 8 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/\\d/.test(password)) {
+            setError("Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule et un chiffre.");
             return;
         }
         if (password !== confirmPassword) {
@@ -82,10 +151,13 @@ export default function Signup() {
                         placeholder="Comment doit-on t’appeler ?"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
-                        minLength={2}
-                        maxLength={40}
+                        minLength={3}
+                        maxLength={20}
+                        pattern="[A-Za-z0-9_-]{3,20}"
+                        title="3 à 20 caractères : lettres sans accent, chiffres, _ et -."
                         required
                     />
+                    <small className="auth-legal">3 à 20 caractères. Lettres sans accent, chiffres, _ et -. Pas d’espaces ni de termes interdits.</small>
 
                     <label className="auth-label" htmlFor="signup-email">Adresse e-mail</label>
                     <input
@@ -97,8 +169,12 @@ export default function Signup() {
                         placeholder="toi@exemple.fr"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
+                        maxLength={254}
+                        autoCapitalize="none"
+                        spellCheck={false}
                         required
                     />
+                    <small className="auth-legal">Utilise une adresse au format nom@domaine.fr, sans espaces.</small>
 
                     <label className="auth-label" htmlFor="signup-password">Mot de passe</label>
                     <input
@@ -107,7 +183,7 @@ export default function Signup() {
                         type={showPassword ? "text" : "password"}
                         name="new-password"
                         autoComplete="new-password"
-                        placeholder="8 caractères minimum"
+                        placeholder="8 caractères, majuscule, minuscule et chiffre"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         minLength={8}

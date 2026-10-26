@@ -16,6 +16,7 @@ import Parametres from "./pages/Parametres"
 import Stats from "./pages/Stats"
 import Historique from "./pages/Historique"
 import Seasons from "./pages/Seasons"
+import Moderation from "./pages/Moderation"
 
 const BG_PRESETS: Record<string, { bg: string; card: string; surface: string }> = {
     obsidian: { bg: "#0a0a0f", card: "rgba(255,255,255,0.035)", surface: "rgba(255,255,255,0.06)" },
@@ -182,6 +183,7 @@ function App() {
             <Route path="/stats"      element={<RequireAuth><Stats /></RequireAuth>} />
             <Route path="/habitudes"  element={<RequireAuth><Habitudes /></RequireAuth>} />
             <Route path="/historique" element={<RequireAuth><Historique /></RequireAuth>} />
+            <Route path="/moderation" element={<RequireAuth><Moderation /></RequireAuth>} />
         </Routes>
     )
 }

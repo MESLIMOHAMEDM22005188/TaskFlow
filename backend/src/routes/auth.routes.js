@@ -71,7 +71,7 @@ function getUsernameError(username) {
 function isValidEmail(email) {
     if (typeof email !== "string") return false;
     const value = email.trim();
-    if (value.length > 254 || value.length === 0 || /[\s<>(),;:\[\]\\"]/ .test(value)) return false;
+    if (value.length > 254 || value.length === 0 || /[\s<>(),;:\[\]\\"]/.test(value)) return false;
     const parts = value.split("@");
     if (parts.length !== 2) return false;
     const [local, domain] = parts;

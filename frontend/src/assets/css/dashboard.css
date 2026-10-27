@@ -1158,3 +1158,182 @@
         grid-template-columns: 1fr;
     }
 }
+
+
+/* Custom off-schedule confirmation dialog */
+.task-confirm-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: rgba(7, 10, 22, .68);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    animation: task-confirm-fade-in .18s ease-out both;
+}
+
+.task-confirm-modal {
+    position: relative;
+    width: min(100%, 440px);
+    overflow: hidden;
+    padding: 34px;
+    border: 1px solid rgba(167, 139, 250, .28);
+    border-radius: 26px;
+    background:
+        radial-gradient(ellipse at 50% -15%, rgba(139, 92, 246, .2), transparent 58%),
+        var(--bg-card, #151827);
+    color: inherit;
+    box-shadow: 0 28px 100px rgba(0, 0, 0, .38), 0 0 0 1px rgba(255,255,255,.025) inset;
+    animation: task-confirm-pop-in .24s cubic-bezier(.2,.8,.2,1) both;
+}
+
+.dashboard.light .task-confirm-modal {
+    background:
+        radial-gradient(ellipse at 50% -15%, rgba(139, 92, 246, .13), transparent 58%),
+        #fff;
+    color: #202036;
+    border-color: rgba(124, 58, 237, .16);
+    box-shadow: 0 28px 90px rgba(35, 27, 65, .22);
+}
+
+.task-confirm-close {
+    position: absolute;
+    top: 14px;
+    right: 15px;
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid rgba(148, 163, 184, .2);
+    border-radius: 50%;
+    background: rgba(148, 163, 184, .09);
+    color: inherit;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    transition: transform .18s ease, background .18s ease;
+}
+.task-confirm-close:hover { transform: rotate(90deg); background: rgba(148, 163, 184, .18); }
+
+.task-confirm-icon {
+    display: grid;
+    place-items: center;
+    width: 58px;
+    height: 58px;
+    margin: 0 auto 18px;
+    border: 1px solid rgba(167, 139, 250, .34);
+    border-radius: 19px;
+    background: linear-gradient(145deg, rgba(139, 92, 246, .24), rgba(99, 102, 241, .1));
+    color: #c4b5fd;
+    font-size: 30px;
+    box-shadow: 0 8px 30px rgba(124, 58, 237, .16);
+}
+.task-confirm-eyebrow {
+    margin: 0 0 9px;
+    color: #a78bfa;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .19em;
+}
+.task-confirm-modal h2 {
+    max-width: 330px;
+    margin: 0 auto 12px;
+    font-size: clamp(22px, 5vw, 28px);
+    line-height: 1.18;
+    letter-spacing: -.04em;
+    text-align: center;
+}
+.task-confirm-description {
+    margin: 0 auto 22px;
+    max-width: 340px;
+    color: inherit;
+    opacity: .72;
+    font-size: 14px;
+    line-height: 1.65;
+    text-align: center;
+    overflow-wrap: anywhere;
+}
+.task-confirm-description strong { opacity: 1; }
+
+.task-confirm-reward {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    position: relative;
+    margin-bottom: 22px;
+    padding: 16px;
+    border: 1px solid rgba(167, 139, 250, .27);
+    border-radius: 18px;
+    background: linear-gradient(110deg, rgba(124, 58, 237, .16), rgba(99, 102, 241, .07));
+}
+.task-confirm-reward-icon {
+    flex: 0 0 44px;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: rgba(167, 139, 250, .16);
+    color: #c4b5fd;
+    font-size: 22px;
+}
+.task-confirm-reward-copy { display: grid; gap: 2px; }
+.task-confirm-reward-copy span { opacity: .72; font-size: 11px; }
+.task-confirm-reward-copy strong { color: #a78bfa; font-size: 25px; line-height: 1.1; letter-spacing: -.04em; }
+.task-confirm-reward-copy small { opacity: .65; font-size: 11px; }
+.task-confirm-sparkle { margin-left: auto; align-self: flex-start; color: #c4b5fd; font-size: 18px; }
+
+.task-confirm-actions { display: grid; grid-template-columns: 1fr 1.15fr; gap: 10px; }
+.task-confirm-actions button {
+    min-height: 46px;
+    padding: 12px 14px;
+    border-radius: 13px;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform .16s ease, box-shadow .16s ease, background .16s ease;
+}
+.task-confirm-actions button:hover { transform: translateY(-2px); }
+.task-confirm-actions button:focus-visible,
+.task-confirm-close:focus-visible { outline: 3px solid #a78bfa; outline-offset: 3px; }
+.task-confirm-cancel {
+    border: 1px solid rgba(148, 163, 184, .28);
+    background: rgba(148, 163, 184, .08);
+    color: inherit;
+}
+.task-confirm-cancel:hover { background: rgba(148, 163, 184, .15); }
+.task-confirm-accept {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    border: 1px solid rgba(167, 139, 250, .5);
+    background: linear-gradient(120deg, #7c3aed, #6366f1);
+    color: #fff;
+    box-shadow: 0 8px 22px rgba(99, 102, 241, .25);
+}
+.task-confirm-accept:hover { box-shadow: 0 12px 28px rgba(99, 102, 241, .38); }
+.task-confirm-footnote {
+    margin: 15px 0 0;
+    color: inherit;
+    opacity: .45;
+    font-size: 11px;
+    text-align: center;
+}
+
+@keyframes task-confirm-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes task-confirm-pop-in { from { opacity: 0; transform: translateY(10px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+@media (max-width: 480px) {
+    .task-confirm-modal { padding: 28px 20px 22px; border-radius: 22px; }
+    .task-confirm-actions { grid-template-columns: 1fr; }
+    .task-confirm-accept { order: -1; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .task-confirm-backdrop, .task-confirm-modal { animation: none; }
+    .task-confirm-close, .task-confirm-actions button { transition: none; }
+}

@@ -55,18 +55,28 @@ const BADGE_CATALOG = [
     ["fifty_focus", "Flow state", "Termine 50 sessions de concentration.", "focus_sessions", 50, 3],
 ]
 
+let badgeCatalogPromise = null
+
 async function ensureBadgeCatalog() {
-    // Legacy databases may not yet have a slug column. Use the existing
-    // uniqueness convention (name + goal) so deployment stays non-destructive.
-    for (const [slug, name, description, type, goal, level] of BADGE_CATALOG) {
-        await db.execute(`
-            INSERT INTO achievements (name, description, type, goal, level)
-            SELECT ?, ?, ?, ?, ?
-            WHERE NOT EXISTS (
-                SELECT 1 FROM achievements WHERE name = ? AND type = ? AND goal = ?
-            )
-        `, [name, description, type, goal, level, name, type, goal])
+    // Avoid running 50 INSERT checks on every profile request. The Promise is
+    // shared between concurrent requests in the current server process.
+    if (!badgeCatalogPromise) {
+        badgeCatalogPromise = (async () => {
+            for (const [slug, name, description, type, goal, level] of BADGE_CATALOG) {
+                await db.execute(`
+                    INSERT INTO achievements (name, description, type, goal, level)
+                    SELECT ?, ?, ?, ?, ?
+                    WHERE NOT EXISTS (
+                        SELECT 1 FROM achievements WHERE name = ? AND type = ? AND goal = ?
+                    )
+                `, [name, description, type, goal, level, name, type, goal])
+            }
+        })().catch(error => {
+            badgeCatalogPromise = null
+            throw error
+        })
     }
+    await badgeCatalogPromise
 }
 
 async function calculateStats(userId) {

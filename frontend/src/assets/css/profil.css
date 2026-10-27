@@ -536,3 +536,39 @@
     .profil-bio-editor { padding: 12px; }
     .profil-form .profil-bio-editor textarea { min-height: 88px; }
 }
+
+/* Badge catalogue: clear locked/unlocked states and responsive layout. */
+.profil-achievements-intro {
+    color: var(--text-muted, #94a3b8);
+    margin: 8px 0 18px;
+    line-height: 1.6;
+}
+.profil-achievements-summary {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin: 0 0 18px;
+    padding: 14px 16px;
+    border: 1px solid var(--border-color, rgba(128,128,128,.25));
+    border-radius: 12px;
+}
+.profil-achievements-summary strong { font-size: 1.4rem; }
+.profil-achievements-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 245px), 1fr));
+    gap: 12px;
+}
+.profil-achievements-grid .achievement-card {
+    min-width: 0;
+    margin: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 12px;
+}
+.profil-achievements-grid .achievement-card.locked { opacity: .82; }
+.profil-achievements-grid .achievement-level { display: block; font-size: 10px; letter-spacing: .08em; }
+.profil-achievements-grid .achievement-name { display: block; margin-top: 6px; overflow-wrap: anywhere; }
+.profil-achievements-grid .achievement-desc { overflow-wrap: anywhere; }
+.profil-achievements-grid .achievement-progress-bar { flex: 0 0 auto; }

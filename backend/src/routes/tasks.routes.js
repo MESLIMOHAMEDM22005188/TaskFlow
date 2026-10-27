@@ -726,8 +726,8 @@ router.post("/:id/complete", async (req, res) => {
             `, [taskId, req.userId, today, task.completion_target, task.completion_target])
 
             await connection.execute(
-                "INSERT INTO task_completions (task_id, user_id, completed_at) VALUES (?, ?, NOW())",
-                [taskId, req.userId]
+                "INSERT INTO task_completions (task_id, user_id, completed_at, off_schedule) VALUES (?, ?, NOW(), ?)",
+                [taskId, req.userId, !dueToday]
             )
 
             await connection.execute(`

@@ -279,7 +279,9 @@ export function useDashboard() {
         }
     }
 
-    async function toggleDone(taskId: number) {
+    const [pendingOffScheduleTask, setPendingOffScheduleTask] = useState<Task | null>(null)
+
+    async function toggleDone(taskId: number, confirmedOffSchedule = false) {
         const taskBefore = tasks.find(task => task.id === taskId)
         if (!taskBefore) return
 
@@ -302,16 +304,13 @@ export function useDashboard() {
                 return
             }
 
-            // A task outside its schedule can still be completed. Ask explicitly,
-            // then let the API award the one-time-per-completion bonus.
-            let allowOffSchedule = false
-            if (taskBefore.is_due_today === false) {
-                allowOffSchedule = window.confirm(
-                    `« ${taskBefore.title} » n'est pas prévue aujourd'hui. La faire maintenant rapporte 10 XP + 5 XP bonus. La valider quand même ?`
-                )
-                if (!allowOffSchedule) return
+            // Show the app's own modal before allowing an off-schedule completion.
+            if (taskBefore.is_due_today === false && !confirmedOffSchedule) {
+                setPendingOffScheduleTask(taskBefore)
+                return
             }
 
+            const allowOffSchedule = taskBefore.is_due_today === false && confirmedOffSchedule
             const result = await completeTask(taskId, allowOffSchedule)
             const { task, xp, bonusXp = 0 } = result
             setTasks(prev => prev.map(t => {
@@ -399,6 +398,13 @@ export function useDashboard() {
         handleToggleTaskForm, handleCancelTaskForm, handleToggleThemeForm,
         handleCreateTask, handleEditTask, handleUpdateTask, handleCreateTheme,
         toggleDone,
+        pendingOffScheduleTask,
+        confirmOffScheduleCompletion: async () => {
+            const task = pendingOffScheduleTask
+            setPendingOffScheduleTask(null)
+            if (task) await toggleDone(task.id, true)
+        },
+        cancelOffScheduleConfirmation: () => setPendingOffScheduleTask(null),
         deleteTask: handleDeleteTask,
         archiveTask: handleArchiveTask,
         permanentlyDeleteTask: handlePermanentlyDeleteTask,

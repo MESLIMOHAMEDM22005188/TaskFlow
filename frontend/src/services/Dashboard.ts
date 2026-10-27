@@ -283,8 +283,6 @@ export function useDashboard() {
         const taskBefore = tasks.find(task => task.id === taskId)
         if (!taskBefore) return
 
-        // Le serveur fournit aussi done_today : l'utiliser en secours si le
-        // chargement séparé de /tasks/completions/today a échoué.
         const state = dailyState.get(taskId)
         const isDone = state?.done_today ?? Boolean(taskBefore.done_today)
         try {
@@ -301,20 +299,35 @@ export function useDashboard() {
                     next.set(taskId, { ...current, today_count: todayCount, done_today: todayCount >= (task.completion_target || 1) })
                     return next
                 })
-            } else {
-                const { task } = await completeTask(taskId)
-                setTasks(prev => prev.map(t => {
-                    if (t.id !== taskId) return t
-                    return { ...t, ...task, period_count: Number(t.period_count || 0) + 1 }
-                }))
-                setDailyState(prev => {
-                    const next = new Map(prev)
-                    const current = next.get(taskId) ?? { task_id: taskId, today_count: 0, done_today: false }
-                    const newCount = Number(current.today_count || 0) + 1
-                    const doneToday = newCount >= (task.completion_target || 1)
-                    next.set(taskId, { ...current, today_count: newCount, done_today: doneToday })
-                    return next
-                })
+                return
+            }
+
+            // A task outside its schedule can still be completed. Ask explicitly,
+            // then let the API award the one-time-per-completion bonus.
+            let allowOffSchedule = false
+            if (taskBefore.is_due_today === false) {
+                allowOffSchedule = window.confirm(
+                    `« ${taskBefore.title} » n'est pas prévue aujourd'hui. La faire maintenant rapporte 10 XP + 5 XP bonus. La valider quand même ?`
+                )
+                if (!allowOffSchedule) return
+            }
+
+            const result = await completeTask(taskId, allowOffSchedule)
+            const { task, xp, bonusXp = 0 } = result
+            setTasks(prev => prev.map(t => {
+                if (t.id !== taskId) return t
+                return { ...t, ...task, period_count: Number(t.period_count || 0) + 1 }
+            }))
+            setDailyState(prev => {
+                const next = new Map(prev)
+                const current = next.get(taskId) ?? { task_id: taskId, today_count: 0, done_today: false }
+                const newCount = Number(current.today_count || 0) + 1
+                const doneToday = newCount >= (task.completion_target || 1)
+                next.set(taskId, { ...current, today_count: newCount, done_today: doneToday })
+                return next
+            })
+            if (bonusXp > 0) {
+                alert(`Tâche accomplie ! +${xp} XP dont +${bonusXp} XP bonus pour l'avoir faite hors planning.`)
             }
         } catch (err) {
             console.error("Échec de la validation/annulation de la tâche :", err)

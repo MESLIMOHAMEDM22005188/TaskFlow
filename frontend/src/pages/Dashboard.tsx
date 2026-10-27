@@ -176,7 +176,25 @@ export function Dashboard() {
                             <section aria-label="Planification de la tâche" style={{ display: "grid", gap: 13, border: "1px solid rgba(128,128,128,.24)", borderRadius: 14, padding: 14 }}>
                                 <div>
                                     <h3 style={{ margin: "0 0 4px", fontSize: 16 }}>Quand faire cette tâche ?</h3>
-                                    <p style={{ margin: 0, fontSize: 12, opacity: .68 }}>Choisis une cadence, des jours précis et un objectif de réalisations. Ces réglages sont enregistrés avec la tâche.</p>
+                                    <p style={{ margin: 0, fontSize: 12, opacity: .68 }}>Commence par un choix simple. Les réglages avancés restent disponibles si tu en as besoin.</p>
+                                </div>
+                                <div className="task-schedule-presets" role="group" aria-label="Raccourcis de planification" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                                    {[
+                                        { value: "once", label: "Une fois" },
+                                        { value: "daily", label: "Tous les jours" },
+                                        { value: "weekly", label: "Chaque semaine" },
+                                        { value: "monthly", label: "Chaque mois" },
+                                    ].map(option => (
+                                        <button
+                                            key={option.value}
+                                            type="button"
+                                            aria-pressed={frequency === option.value}
+                                            onClick={() => setFrequency(option.value)}
+                                            style={{ border: `1px solid ${frequency === option.value ? "var(--accent-color, #7c6ee6)" : "rgba(128,128,128,.3)"}`, borderRadius: 999, padding: "8px 12px", color: "inherit", background: frequency === option.value ? "rgba(124,110,230,.15)" : "transparent", cursor: "pointer" }}
+                                        >
+                                            {option.label}
+                                        </button>
+                                    ))}
                                 </div>
 
                                 <label className="theme-field">
@@ -394,8 +412,8 @@ export function Dashboard() {
                                                 className={isDone ? "dashboard-task-action is-complete" : "dashboard-task-action is-primary"}
                                                 onClick={() => void toggleDone(task.id)}
                                                 aria-label={isDone ? `Annuler la validation de ${task.title}` : `Valider ${task.title} comme effectuée`}
-                                                title={isDone ? "Annuler la validation du jour" : isPeriodGoalReached ? "Objectif atteint pour cette période" : task.is_due_today === false ? "Cette tâche n’est pas prévue aujourd’hui" : "Valider la tâche effectuée"}
-                                                disabled={!canValidate}
+                                                title={isDone ? "Annuler la validation du jour" : isPeriodGoalReached ? "Objectif atteint pour cette période" : task.is_due_today === false ? "Pas prévue aujourd’hui : tu peux la faire avec +5 XP bonus" : "Valider la tâche effectuée"}
+                                                disabled={!canValidate && task.is_due_today !== false}
                                             >
                                                 <span aria-hidden="true">{isDone ? "✓" : "○"}</span>
                                                 {isDone ? "Terminée aujourd’hui" : isPeriodGoalReached ? "Objectif atteint" : task.is_due_today === false ? "Pas prévue aujourd’hui" : "Valider"}

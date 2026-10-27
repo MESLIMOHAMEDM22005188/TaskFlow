@@ -1,11 +1,14 @@
 const express = require("express")
 const db = require("../config/db")
+const { updateAchievements, ensureBadgeCatalog } = require("../services/achievement.service")
 
 const router = express.Router()
 
 router.get("/", async (req, res) => {
     try {
         const userId = req.userId
+        await ensureBadgeCatalog()
+        await updateAchievements(userId)
 
         // USER
         const [users] = await db.execute(

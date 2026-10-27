@@ -53,7 +53,6 @@ const BADGE_CATALOG = [
     ["first_focus", "Dans sa bulle", "Termine une session de concentration.", "focus_sessions", 1, 1],
     ["ten_focus", "Concentration solide", "Termine 10 sessions de concentration.", "focus_sessions", 10, 2],
     ["fifty_focus", "Flow state", "Termine 50 sessions de concentration.", "focus_sessions", 50, 3],
-    ["hundred_focus", "Focus légendaire", "Termine 100 sessions de concentration.", "focus_sessions", 100, 5],
 ]
 
 async function ensureBadgeCatalog() {

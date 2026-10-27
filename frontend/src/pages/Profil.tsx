@@ -166,25 +166,31 @@ export default function Profil() {
                 </section>
 
                 <section className="profil-achievements">
-                    <h2 className="profil-section-title">Succès</h2>
-                    {achievements.map(a => (
-                        <div key={a.id} className={`achievement-card ${a.completed ? "completed" : ""}`}>
-                            <div className="achievement-top">
-                                <span className="achievement-level">★ NIVEAU {a.level}</span>
-                                <span className="achievement-name">{a.name}</span>
-                            </div>
-                            <div className="achievement-progress-bar">
-                                <div
-                                    className="achievement-progress-fill"
-                                    style={{ width: `${Math.min((a.progress / a.goal) * 100, 100)}%` }}
-                                />
-                            </div>
-                            <div className="achievement-bottom">
-                                <span className="achievement-desc">{a.description}</span>
-                                <span className="achievement-count">{a.progress}/{a.goal}</span>
-                            </div>
-                        </div>
-                    ))}
+                    <h2 className="profil-section-title">Badges et succès</h2>
+                    <p className="profil-achievements-intro">
+                        Débloque 50 badges en progressant à ton rythme. Les badges verrouillés affichent les critères et ta progression.
+                    </p>
+                    <div className="profil-achievements-summary">
+                        <strong>{achievements.filter(a => a.completed).length} / {achievements.length}</strong>
+                        <span>badges débloqués</span>
+                    </div>
+                    <div className="profil-achievements-grid">
+                        {achievements.map(a => (
+                            <article key={a.id} className={`achievement-card ${a.completed ? "completed" : "locked"}`}>
+                                <div className="achievement-top">
+                                    <span className="achievement-level">{a.completed ? "✓ DÉBLOQUÉ" : "🔒 À débloquer"} · NIVEAU {a.level}</span>
+                                    <span className="achievement-name">{a.name}</span>
+                                </div>
+                                <div className="achievement-progress-bar" role="progressbar" aria-label={`Progression pour ${a.name}`} aria-valuemin={0} aria-valuemax={a.goal} aria-valuenow={Math.min(a.progress, a.goal)}>
+                                    <div className="achievement-progress-fill" style={{ width: `${Math.min((a.progress / Math.max(a.goal, 1)) * 100, 100)}%` }} />
+                                </div>
+                                <div className="achievement-bottom">
+                                    <span className="achievement-desc">{a.description}</span>
+                                    <span className="achievement-count">{Math.min(a.progress, a.goal)}/{a.goal}</span>
+                                </div>
+                            </article>
+                        ))}
+                    </div>
                 </section>
 
             </main>

@@ -671,6 +671,7 @@ router.post("/:id/complete", async (req, res) => {
         if (!task) return res.status(404).json({ message: "Task not found" })
 
         const dueToday = isTaskDueToday(task)
+        const bonusXp = dueToday ? 0 : 5
         const allowOffSchedule = req.body?.allow_off_schedule === true
         if (!dueToday && !allowOffSchedule) {
             return res.status(400).json({
@@ -698,7 +699,6 @@ router.post("/:id/complete", async (req, res) => {
             }
         }
 
-        const bonusXp = dueToday ? 0 : 5
         const baseXp = 10
         const totalXp = baseXp + bonusXp
 

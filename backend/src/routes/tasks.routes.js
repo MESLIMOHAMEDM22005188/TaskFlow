@@ -27,8 +27,6 @@ async function ensureTaskSchedulingSchema() {
                 ["scheduled_time", "TIME NULL"],
                 ["start_date", "DATE NULL"],
                 ["end_date", "DATE NULL"],
-                ["off_schedule", "BOOLEAN NOT NULL DEFAULT FALSE"],
-                ["badge_catalog_seeded", "BOOLEAN NOT NULL DEFAULT FALSE"],
             ]
             for (const [name, definition] of additions) {
                 if (!byName.has(name)) {
@@ -38,6 +36,19 @@ async function ensureTaskSchedulingSchema() {
                         // Another web worker may have added this column concurrently.
                         if (error.code !== "ER_DUP_FIELDNAME") throw error
                     }
+                }
+            }
+
+            // Off-schedule completions belong to task_completions, not tasks.
+            // Add the metadata safely for existing production databases.
+            const [completionColumns] = await db.execute("SHOW COLUMNS FROM task_completions")
+            const completionColumnNames = new Set(completionColumns.map(column => column.Field))
+            if (!completionColumnNames.has("off_schedule")) {
+                try {
+                    await db.execute("ALTER TABLE task_completions ADD COLUMN off_schedule BOOLEAN NOT NULL DEFAULT FALSE")
+                } catch (error) {
+                    // Another worker may have added it at the same time.
+                    if (error.code !== "ER_DUP_FIELDNAME") throw error
                 }
             }
         })().catch(error => {

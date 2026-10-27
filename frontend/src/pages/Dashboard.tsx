@@ -60,6 +60,9 @@ export function Dashboard() {
         handleCreateTheme,
         handleDeleteTheme,
         toggleDone,
+        pendingOffScheduleTask,
+        confirmOffScheduleCompletion,
+        cancelOffScheduleConfirmation,
         archiveTask,
         permanentlyDeleteTask,
         navigate,
@@ -490,6 +493,53 @@ export function Dashboard() {
                     )}
                 </section>
             </main>
+            {pendingOffScheduleTask && (
+                <div className="task-confirm-backdrop">
+                    <section
+                        className="task-confirm-modal"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="task-confirm-title"
+                        aria-describedby="task-confirm-description"
+                    >
+                        <button
+                            type="button"
+                            className="task-confirm-close"
+                            onClick={cancelOffScheduleConfirmation}
+                            aria-label="Fermer la fenêtre"
+                        >
+                            ×
+                        </button>
+                        <div className="task-confirm-icon" aria-hidden="true">
+                            <span>✦</span>
+                        </div>
+                        <p className="task-confirm-eyebrow">PETIT BONUS EN VUE</p>
+                        <h2 id="task-confirm-title">Envie de prendre de l’avance ?</h2>
+                        <p id="task-confirm-description" className="task-confirm-description">
+                            « <strong>{pendingOffScheduleTask.title}</strong> » n’est pas prévue aujourd’hui.
+                            Tu peux quand même la faire et faire grimper ton score.
+                        </p>
+                        <div className="task-confirm-reward">
+                            <div className="task-confirm-reward-icon" aria-hidden="true">⚡</div>
+                            <div className="task-confirm-reward-copy">
+                                <span>Récompense totale</span>
+                                <strong>+15 XP</strong>
+                                <small>10 XP pour la tâche · 5 XP bonus</small>
+                            </div>
+                            <span className="task-confirm-sparkle" aria-hidden="true">✦</span>
+                        </div>
+                        <div className="task-confirm-actions">
+                            <button type="button" className="task-confirm-cancel" onClick={cancelOffScheduleConfirmation}>
+                                Pas maintenant
+                            </button>
+                            <button type="button" className="task-confirm-accept" onClick={() => void confirmOffScheduleCompletion()}>
+                                <span>Je la fais</span><span aria-hidden="true">→</span>
+                            </button>
+                        </div>
+                        <p className="task-confirm-footnote">À ton rythme. Chaque petit pas compte.</p>
+                    </section>
+                </div>
+            )}
         </div>
     )
 }

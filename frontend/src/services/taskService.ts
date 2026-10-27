@@ -121,10 +121,11 @@ export async function getTaskHistory(): Promise<TaskHistory[]> {
     return handleResponse(res)
 }
 
-export async function completeTask(id: number): Promise<{ task: Task, xp: number }> {
+export async function completeTask(id: number, allowOffSchedule = false): Promise<{ task: Task, xp: number, baseXp?: number, bonusXp?: number, completedOffSchedule?: boolean }> {
     const res = await fetch(`${API_ROOT}/tasks/${id}/complete`, {
         method: "POST",
-        headers: getHeaders()
+        headers: getHeaders(),
+        body: JSON.stringify({ allow_off_schedule: allowOffSchedule })
     })
     return handleResponse(res)
 }

@@ -394,8 +394,8 @@ export function Dashboard() {
                                                 className={isDone ? "dashboard-task-action is-complete" : "dashboard-task-action is-primary"}
                                                 onClick={() => void toggleDone(task.id)}
                                                 aria-label={isDone ? `Annuler la validation de ${task.title}` : `Valider ${task.title} comme effectuée`}
-                                                title={isDone ? "Annuler la validation du jour" : isPeriodGoalReached ? "Objectif atteint pour cette période" : task.is_due_today === false ? "Cette tâche n’est pas prévue aujourd’hui" : "Valider la tâche effectuée"}
-                                                disabled={!canValidate}
+                                                title={isDone ? "Annuler la validation du jour" : isPeriodGoalReached ? "Objectif atteint pour cette période" : task.is_due_today === false ? "Pas prévue aujourd’hui : tu peux la faire avec +5 XP bonus" : "Valider la tâche effectuée"}
+                                                disabled={!canValidate && task.is_due_today !== false}
                                             >
                                                 <span aria-hidden="true">{isDone ? "✓" : "○"}</span>
                                                 {isDone ? "Terminée aujourd’hui" : isPeriodGoalReached ? "Objectif atteint" : task.is_due_today === false ? "Pas prévue aujourd’hui" : "Valider"}

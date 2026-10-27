@@ -28,6 +28,7 @@ async function ensureTaskSchedulingSchema() {
                 ["start_date", "DATE NULL"],
                 ["end_date", "DATE NULL"],
                 ["off_schedule", "BOOLEAN NOT NULL DEFAULT FALSE"],
+                ["badge_catalog_seeded", "BOOLEAN NOT NULL DEFAULT FALSE"],
             ]
             for (const [name, definition] of additions) {
                 if (!byName.has(name)) {

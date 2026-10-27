@@ -661,16 +661,23 @@ router.post("/:id/complete", async (req, res) => {
     try {
         await ensureTaskSchedulingSchema()
         const taskId = req.params.id
-        const today = new Date().toISOString().split("T")[0]
+        const today = formatSqlDate(new Date())
 
         const [[task]] = await db.execute(
-            "SELECT * FROM tasks WHERE id = ? AND user_id = ?",
+            "SELECT * FROM tasks WHERE id = ? AND user_id = ? AND COALESCE(status, 'active') <> 'archived'",
             [taskId, req.userId]
         )
         if (!task) return res.status(404).json({ message: "Task not found" })
 
-        if (!isTaskDueToday(task)) {
-            return res.status(400).json({ message: "This task is not scheduled for today." })
+        const dueToday = isTaskDueToday(task)
+        const allowOffSchedule = req.body?.allow_off_schedule === true
+        if (!dueToday && !allowOffSchedule) {
+            return res.status(400).json({
+                message: "Cette tâche n'est pas prévue aujourd'hui. Tu peux tout de même la valider pour gagner le bonus.",
+                code: "TASK_OFF_SCHEDULE",
+                canCompleteAnyway: true,
+                bonusXp: 5,
+            })
         }
 
         if (["weekly", "monthly", "yearly"].includes(task.frequency)) {
@@ -685,60 +692,96 @@ router.post("/:id/complete", async (req, res) => {
                     [taskId, req.userId, bounds.start, bounds.end]
                 )
                 if (Number(periodState?.count || 0) >= target) {
-                    return res.status(400).json({ message: "The completion target for this period has already been reached." })
+                    return res.status(400).json({ message: "L'objectif de cette période est déjà atteint." })
                 }
             }
         }
 
-        // Upsert daily state
-        await db.execute(`
-            INSERT INTO task_daily_state (task_id, user_id, date, count, done)
-            VALUES (?, ?, ?, 1, (1 >= ?))
-            ON DUPLICATE KEY UPDATE
-                count = count + 1,
-                done  = (count + 1) >= ?
-        `, [taskId, req.userId, today, task.completion_target, task.completion_target])
+        const bonusXp = dueToday ? 0 : 5
+        const baseXp = 10
+        const totalXp = baseXp + bonusXp
 
-        // Log dans l'historique
-        await db.execute(
-            "INSERT INTO task_completions (task_id, user_id, completed_at) VALUES (?, ?, NOW())",
+        // Use a transaction so the completion log and XP grant cannot diverge.
+        const connection = await db.getConnection()
+        try {
+            await connection.beginTransaction()
+
+            // Lock the task row to avoid two simultaneous clicks claiming XP twice.
+            const [[lockedTask]] = await connection.execute(
+                "SELECT id FROM tasks WHERE id = ? AND user_id = ? AND COALESCE(status, 'active') <> 'archived' FOR UPDATE",
+                [taskId, req.userId]
+            )
+            if (!lockedTask) {
+                await connection.rollback()
+                return res.status(404).json({ message: "Task not found" })
+            }
+
+            await connection.execute(`
+                INSERT INTO task_daily_state (task_id, user_id, date, count, done)
+                VALUES (?, ?, ?, 1, (1 >= ?))
+                ON DUPLICATE KEY UPDATE
+                    count = count + 1,
+                    done = (count + 1) >= ?
+            `, [taskId, req.userId, today, task.completion_target, task.completion_target])
+
+            await connection.execute(
+                "INSERT INTO task_completions (task_id, user_id, completed_at) VALUES (?, ?, NOW())",
+                [taskId, req.userId]
+            )
+
+            await connection.execute(`
+                UPDATE tasks
+                SET
+                    completions_count = completions_count + 1,
+                    status = CASE
+                        WHEN frequency = 'once'
+                             AND (completions_count + 1) >= completion_target THEN 'done'
+                        ELSE 'active'
+                    END,
+                    completed_at = CASE
+                        WHEN frequency = 'once'
+                             AND (completions_count + 1) >= completion_target THEN NOW()
+                        ELSE NULL
+                    END
+                WHERE id = ? AND user_id = ?
+            `, [taskId, req.userId])
+
+            await connection.execute(
+                "UPDATE users SET xp = xp + ? WHERE id = ?",
+                [totalXp, req.userId]
+            )
+
+            await connection.commit()
+        } catch (error) {
+            try { await connection.rollback() } catch (rollbackError) {
+                console.error("[Grindly:Tasks] Completion rollback failed:", rollbackError)
+            }
+            throw error
+        } finally {
+            connection.release()
+        }
+
+        try {
+            await updateAchievements(req.userId)
+        } catch (achievementError) {
+            // Task completion should succeed even if an achievement refresh fails.
+            console.error("[Grindly:Tasks] Achievement refresh failed:", achievementError)
+        }
+
+        const [[updated]] = await db.execute(
+            "SELECT * FROM tasks WHERE id = ? AND user_id = ?",
             [taskId, req.userId]
         )
 
-        // Incrémente compteur global + transition de statut si seuil atteint
-        await db.execute(`
-            UPDATE tasks
-            SET
-                completions_count = completions_count + 1,
-                status = CASE
-                    WHEN frequency = 'once'
-                         AND (completions_count + 1) >= completion_target THEN 'done'
-                    ELSE 'active'
-                END,
-                completed_at = CASE
-                    WHEN frequency = 'once'
-                         AND (completions_count + 1) >= completion_target THEN NOW()
-                    ELSE NULL
-                END
-            WHERE id = ?
-        `, [taskId])
-
-        // XP
-        await db.execute(
-            "UPDATE users SET xp = xp + 10 WHERE id = ?",
-            [req.userId]
-        )
-
-        // Relit la tâche à jour
-        const [[updated]] = await db.execute(
-            "SELECT * FROM tasks WHERE id = ?",
-            [taskId]
-        )
-
-        res.json({ task: updated, xp: 10 })
-
+        res.json({
+            task: updated,
+            xp: totalXp,
+            baseXp,
+            bonusXp,
+            completedOffSchedule: !dueToday,
+        })
     } catch (err) {
-        console.error(err)
+        console.error("[Grindly:Tasks] Error completing task:", err)
         res.status(500).json({ message: "Error completing task" })
     }
 })

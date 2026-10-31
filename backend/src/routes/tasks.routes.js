@@ -694,22 +694,8 @@ router.post("/:id/complete", async (req, res) => {
             })
         }
 
-        if (["weekly", "monthly", "yearly"].includes(task.frequency)) {
-            const bounds = getTaskPeriodBounds(task)
-            const target = Math.max(1, Number(task.target_per_period || 1))
-            if (bounds) {
-                const [[periodState]] = await db.execute(
-                    `SELECT COUNT(*) AS count
-                     FROM task_completions
-                     WHERE task_id = ? AND user_id = ?
-                       AND completed_at >= ? AND completed_at < ?`,
-                    [taskId, req.userId, bounds.start, bounds.end]
-                )
-                if (Number(periodState?.count || 0) >= target) {
-                    return res.status(400).json({ message: "L'objectif de cette période est déjà atteint." })
-                }
-            }
-        }
+        // target_per_period is a progress target, not a hard completion limit.
+        // Users may complete the task more often than planned and keep earning XP.
 
         const baseXp = 10
         const totalXp = baseXp + bonusXp

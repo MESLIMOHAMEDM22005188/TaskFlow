@@ -496,6 +496,7 @@ export default function Habitudes() {
 
     // State pour les suggestions d'addictions
     const [showSuggestions, setShowSuggestions] = useState(false)
+    const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(null)
     // State pour le baseline qty par addiction
     const [baselineQty, setBaselineQty] = useState(5)
     const [baselineUnit, setBaselineUnit] = useState("fois/jour")
@@ -521,12 +522,22 @@ export default function Habitudes() {
 
 
     function applySuggestion(s: typeof ADDICTION_SUGGESTIONS[0]) {
+        if (selectedSuggestion === s.name) {
+            setSelectedSuggestion(null)
+            if (name === s.name) setName("")
+            if (emoji === s.emoji) setEmoji("🎯")
+            setDangerLevel("medium")
+            setBaselineQty(5)
+            setBaselineUnit("fois/jour")
+            return
+        }
+
+        setSelectedSuggestion(s.name)
         setName(s.name)
         setEmoji(s.emoji)
         setDangerLevel(s.danger)
         setBaselineQty(s.defaultQty)
         setBaselineUnit(s.unit)
-        setShowSuggestions(false)
         setType("quit")
     }
 
@@ -618,7 +629,13 @@ export default function Habitudes() {
                                     {showSuggestions && (
                                         <div className="suggestions-grid">
                                             {ADDICTION_SUGGESTIONS.map((s, i) => (
-                                                <button key={i} className="suggestion-pill" onClick={() => applySuggestion(s)}>
+                                                <button
+                                                    key={i}
+                                                    type="button"
+                                                    className={`suggestion-pill ${selectedSuggestion === s.name ? "selected" : ""}`}
+                                                    aria-pressed={selectedSuggestion === s.name}
+                                                    onClick={() => applySuggestion(s)}
+                                                >
                                                     <span className="suggestion-emoji">{s.emoji}</span>
                                                     <span className="suggestion-name">{s.name}</span>
                                                     <span className={`suggestion-danger ${s.danger}`}>

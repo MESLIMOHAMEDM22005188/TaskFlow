@@ -61,6 +61,8 @@ export function Dashboard() {
         handleDeleteTheme,
         toggleDone,
         pendingOffScheduleTask,
+        actionError,
+        dismissActionError,
         confirmOffScheduleCompletion,
         cancelOffScheduleConfirmation,
         archiveTask,
@@ -376,8 +378,7 @@ export function Dashboard() {
                         <div style={{ display: "grid", gap: 10 }}>
                             {visibleTasks.map(task => {
                                 const isDone = dailyState.get(task.id)?.done_today ?? task.done_today ?? false
-                                const isPeriodGoalReached = ["weekly", "monthly", "yearly"].includes(task.frequency) && Number(task.period_count || 0) >= Number(task.target_per_period || 1)
-                                const canValidate = isDone || (task.is_due_today !== false && !isPeriodGoalReached)
+                                const canValidate = true
                                 const taskThemes = task.themes?.length
                                     ? task.themes
                                     : task.theme_name
@@ -415,11 +416,11 @@ export function Dashboard() {
                                                 className={isDone ? "dashboard-task-action is-complete" : "dashboard-task-action is-primary"}
                                                 onClick={() => void toggleDone(task.id)}
                                                 aria-label={isDone ? `Annuler la validation de ${task.title}` : `Valider ${task.title} comme effectuée`}
-                                                title={isDone ? "Annuler la validation du jour" : isPeriodGoalReached ? "Objectif atteint pour cette période" : task.is_due_today === false ? "Pas prévue aujourd’hui : tu peux la faire avec +5 XP bonus" : "Valider la tâche effectuée"}
+                                                title={isDone ? "Annuler la validation du jour" : task.is_due_today === false ? "Pas prévue aujourd’hui : tu peux la faire avec +5 XP bonus" : "Valider la tâche effectuée"}
                                                 disabled={!canValidate && task.is_due_today !== false}
                                             >
                                                 <span aria-hidden="true">{isDone ? "✓" : "○"}</span>
-                                                {isDone ? "Terminée aujourd’hui" : isPeriodGoalReached ? "Objectif atteint" : task.is_due_today === false ? "Pas prévue aujourd’hui" : "Valider"}
+                                                {isDone ? "Terminée aujourd’hui" : task.is_due_today === false ? "Pas prévue aujourd’hui" : "Valider"}
                                             </button>
                                             <button
                                                 type="button"
@@ -493,6 +494,21 @@ export function Dashboard() {
                     )}
                 </section>
             </main>
+            {actionError && (
+                <div className="task-confirm-backdrop" onClick={dismissActionError}>
+                    <section className="task-confirm-modal" role="alertdialog" aria-modal="true" aria-labelledby="task-error-title" onClick={event => event.stopPropagation()}>
+                        <button type="button" className="task-confirm-close" onClick={dismissActionError} aria-label="Fermer la fenêtre">×</button>
+                        <div className="task-confirm-icon" aria-hidden="true"><span>!</span></div>
+                        <p className="task-confirm-eyebrow">ACTION NON ENREGISTRÉE</p>
+                        <h2 id="task-error-title">Impossible de valider la tâche</h2>
+                        <p className="task-confirm-description">{actionError}</p>
+                        <div className="task-confirm-actions">
+                            <button type="button" className="main-button" onClick={dismissActionError}>Compris</button>
+                        </div>
+                    </section>
+                </div>
+            )}
+
             {pendingOffScheduleTask && (
                 <div className="task-confirm-backdrop">
                     <section

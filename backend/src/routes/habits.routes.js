@@ -135,14 +135,18 @@ router.delete("/:id", async (req, res) => {
 
 // POST log success: only updates the selected habit and authenticated user.
 router.post("/:id/success", async (req, res) => {
-    const connection = await db.getConnection();
+    let connection;
+    let transactionStarted = false;
     try {
+        // Acquire the connection inside try so connection errors are logged here too.
+        connection = await db.getConnection();
         const habitId = Number(req.params.id);
         if (!Number.isInteger(habitId) || habitId <= 0) {
             return res.status(400).json({ message: "Invalid habit id" });
         }
 
         await connection.beginTransaction();
+        transactionStarted = true;
 
         const [habits] = await connection.execute(
             "SELECT id, difficulty, times_per_day FROM habits WHERE id = ? AND user_id = ? AND is_active = 1 FOR UPDATE",
@@ -150,6 +154,7 @@ router.post("/:id/success", async (req, res) => {
         );
         if (habits.length === 0) {
             await connection.rollback();
+            transactionStarted = false;
             return res.status(404).json({ message: "Habit not found" });
         }
 
@@ -164,6 +169,7 @@ router.post("/:id/success", async (req, res) => {
 
         if (Number(currentCount) >= timesPerDay) {
             await connection.rollback();
+            transactionStarted = false;
             return res.status(400).json({
                 message: "Already completed today",
                 todayCount: Number(currentCount),
@@ -197,13 +203,28 @@ router.post("/:id/success", async (req, res) => {
         }
 
         await connection.commit();
+        transactionStarted = false;
         return res.json({ message: "Success logged", xpGained, isSpark, todayCount, isFullDay });
     } catch (err) {
-        await connection.rollback();
-        console.error("Error logging habit success:", err);
-        return res.status(500).json({ message: "Unable to log success" });
+        if (connection && transactionStarted) {
+            try { await connection.rollback(); } catch (rollbackError) {
+                console.error("Rollback failed while logging habit success:", rollbackError);
+            }
+        }
+        console.error("Error logging habit success:", {
+            message: err.message,
+            code: err.code,
+            errno: err.errno,
+            sqlState: err.sqlState,
+            sqlMessage: err.sqlMessage,
+            stack: err.stack
+        });
+        return res.status(500).json({
+            message: "Unable to log success",
+            code: err.code || "HABIT_SUCCESS_ERROR"
+        });
     } finally {
-        connection.release();
+        if (connection) connection.release();
     }
 });
 

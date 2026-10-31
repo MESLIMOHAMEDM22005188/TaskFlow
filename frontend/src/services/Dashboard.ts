@@ -280,6 +280,7 @@ export function useDashboard() {
     }
 
     const [pendingOffScheduleTask, setPendingOffScheduleTask] = useState<Task | null>(null)
+    const [actionError, setActionError] = useState<string | null>(null)
 
     async function toggleDone(taskId: number, confirmedOffSchedule = false) {
         const taskBefore = tasks.find(task => task.id === taskId)
@@ -330,7 +331,7 @@ export function useDashboard() {
             }
         } catch (err) {
             console.error("Échec de la validation/annulation de la tâche :", err)
-            alert(err instanceof Error ? err.message : "Action impossible. Vérifie ta connexion puis réessaie.")
+            setActionError(err instanceof Error ? err.message : "Action impossible. Vérifie ta connexion puis réessaie.")
         }
     }
 
@@ -399,6 +400,8 @@ export function useDashboard() {
         handleCreateTask, handleEditTask, handleUpdateTask, handleCreateTheme,
         toggleDone,
         pendingOffScheduleTask,
+        actionError,
+        dismissActionError: () => setActionError(null),
         confirmOffScheduleCompletion: async () => {
             const task = pendingOffScheduleTask
             setPendingOffScheduleTask(null)

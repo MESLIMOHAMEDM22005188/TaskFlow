@@ -185,8 +185,8 @@ router.post("/:id/success", async (req, res) => {
         );
 
         await connection.execute(
-            "UPDATE habits SET total_completions = total_completions + 1, current_streak = current_streak + 1 WHERE id = ? AND user_id = ?",
-            [habitId, req.userId]
+            "UPDATE habits SET total_completions = total_completions + 1, current_streak = current_streak + IF(?, 1, 0), best_streak = GREATEST(best_streak, current_streak + IF(?, 1, 0)) WHERE id = ? AND user_id = ?",
+            [isFullDay, isFullDay, habitId, req.userId]
         );
 
         if (xpGained > 0) {

@@ -15,7 +15,17 @@ function getHeaders() {
 
 async function handleResponse(res: Response) {
     if (!res.ok) {
-        const text = await res.text()
+        const responseText = await res.text()
+        let message = responseText
+
+        try {
+            const payload = JSON.parse(responseText)
+            if (typeof payload?.message === "string" && payload.message.trim()) {
+                message = payload.message
+            }
+        } catch {
+            // Keep the raw response when the server does not return JSON.
+        }
 
         if (res.status === 401) {
             localStorage.removeItem("token")
@@ -26,7 +36,7 @@ async function handleResponse(res: Response) {
             }
         }
 
-        throw new Error(`HTTP ${res.status}: ${text}`)
+        throw new Error(message || "Une erreur est survenue. Réessaie.")
     }
 
     return res.json()

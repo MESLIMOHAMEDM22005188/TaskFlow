@@ -4,38 +4,6 @@ const db = require("../config/db")
 const router = express.Router()
 
 
-// GET available themes (keep this route separate from the habits list).
-
-router.get("/", async (req, res) => {
-    try {
-        console.log("userId =", req.userId)
-
-        const [rows] = await db.execute(
-            `
-            SELECT
-                id,
-                name,
-                emoji,
-                color,
-                is_default
-            FROM themes
-            WHERE is_default = 1
-               OR user_id = ?
-            ORDER BY is_default DESC, created_at DESC
-            `,
-            [req.userId]
-        )
-
-        console.log(rows)
-
-        res.json(rows)
-
-    } catch (err) {
-        console.error(err)
-        res.status(500).json({ message: "Error fetching themes" })
-    }
-})
-
 // CREATE habit.
 
 router.post("/", async (req, res) => {
@@ -113,7 +81,7 @@ router.get("/", async (req, res) => {
                 doneToday: todayCount >= timesPerDay,
                 streak: 0,
                 bestStreak: 0,
-                sparkCount: Number(h.spark_count) || 0,
+                sparkCount: 0,
                 hadSparkYesterday: false
             };
         }));
@@ -167,37 +135,41 @@ router.delete("/:id", async (req, res) => {
 
 // POST log success: only updates the selected habit and authenticated user.
 router.post("/:id/success", async (req, res) => {
+    const connection = await db.getConnection();
     try {
         const habitId = Number(req.params.id);
         if (!Number.isInteger(habitId) || habitId <= 0) {
             return res.status(400).json({ message: "Invalid habit id" });
         }
 
-        const [habits] = await db.execute(
-            "SELECT id, difficulty, times_per_day FROM habits WHERE id = ? AND user_id = ? AND is_active = TRUE",
+        await connection.beginTransaction();
+
+        const [habits] = await connection.execute(
+            "SELECT id, difficulty, times_per_day FROM habits WHERE id = ? AND user_id = ? AND is_active = 1 FOR UPDATE",
             [habitId, req.userId]
         );
-        if (habits.length === 0) return res.status(404).json({ message: "Habit not found" });
+        if (habits.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({ message: "Habit not found" });
+        }
 
         const habit = habits[0];
         const timesPerDay = Number(habit.times_per_day) || 1;
-        const [[{ todayCount: currentCount }]] = await db.execute(
+        const [[{ todayCount: currentCount }]] = await connection.execute(
             `SELECT COUNT(*) AS todayCount FROM habit_logs
-             WHERE habit_id = ? AND user_id = ? AND type = 'success' AND DATE(logged_at) = CURDATE()`,
+             WHERE habit_id = ? AND user_id = ? AND type = 'success'
+             AND DATE(logged_at) = CURDATE()`,
             [habitId, req.userId]
         );
+
         if (Number(currentCount) >= timesPerDay) {
+            await connection.rollback();
             return res.status(400).json({
                 message: "Already completed today",
                 todayCount: Number(currentCount),
                 isFullDay: true
             });
         }
-
-        await db.execute(
-            "INSERT INTO habit_logs (habit_id, user_id, type, note) VALUES (?, ?, 'success', ?)",
-            [habitId, req.userId, req.body.note || null]
-        );
 
         const todayCount = Number(currentCount) + 1;
         const isFullDay = todayCount >= timesPerDay;
@@ -206,140 +178,34 @@ router.post("/:id/success", async (req, res) => {
         const isSpark = !isFullDay && todayCount === 1;
         const xpGained = isFullDay ? fullXp : (isSpark ? Math.round(fullXp * 0.2) : 0);
 
-        if (isFullDay) {
-            await db.execute("UPDATE habits SET spark_count = 0 WHERE id = ? AND user_id = ?", [habitId, req.userId]);
-        }
+        // habit_logs has no "note" column; xp_gained is part of its actual schema.
+        await connection.execute(
+            "INSERT INTO habit_logs (habit_id, user_id, type, xp_gained) VALUES (?, ?, 'success', ?)",
+            [habitId, req.userId, xpGained]
+        );
+
+        await connection.execute(
+            "UPDATE habits SET total_completions = total_completions + 1, current_streak = current_streak + 1 WHERE id = ? AND user_id = ?",
+            [habitId, req.userId]
+        );
+
         if (xpGained > 0) {
-            await db.execute("UPDATE users SET xp = xp + ? WHERE id = ?", [xpGained, req.userId]);
-        }
-
-        if (isFullDay) {
-            const [[{ count }]] = await db.execute(
-                `SELECT COUNT(DISTINCT DATE(logged_at)) AS count FROM habit_logs
-                 WHERE habit_id = ? AND user_id = ? AND type = 'success'`,
-                [habitId, req.userId]
+            await connection.execute(
+                "UPDATE users SET xp = xp + ? WHERE id = ?",
+                [xpGained, req.userId]
             );
-            for (const days of [7, 30, 90, 180, 365]) {
-                if (Number(count) === days) {
-                    const [existing] = await db.execute(
-                        "SELECT id FROM habit_milestones WHERE habit_id = ? AND user_id = ? AND days = ?",
-                        [habitId, req.userId, days]
-                    );
-                    if (existing.length === 0) {
-                        await db.execute(
-                            "INSERT INTO habit_milestones (habit_id, user_id, days) VALUES (?, ?, ?)",
-                            [habitId, req.userId, days]
-                        );
-                    }
-                }
-            }
         }
 
-        res.json({ message: "Success logged", xpGained, isSpark, todayCount, isFullDay });
+        await connection.commit();
+        return res.json({ message: "Success logged", xpGained, isSpark, todayCount, isFullDay });
     } catch (err) {
+        await connection.rollback();
         console.error("Error logging habit success:", err);
-        res.status(500).json({ message: "Unable to log success" });
+        return res.status(500).json({ message: "Unable to log success" });
+    } finally {
+        connection.release();
     }
 });
-
-// POST log success
-router.post("/:id/success", async (req, res) => {
-    const { note } = req.body
-
-    const [habits] = await db.execute("SELECT * FROM habits WHERE id = ?", [req.params.id])
-    if (habits.length === 0) return res.status(404).json({ message: "Habit not found" })
-
-    const habit = habits[0]
-    const timesPerDay = habit.times_per_day ?? 1
-
-    // ✅ Vérification AVANT d'insérer — bloque si déjà complet aujourd'hui
-    const [[{ todayCount: currentCount }]] = await db.execute(
-        `SELECT COUNT(*) as todayCount
-         FROM habit_logs
-         WHERE habit_id = ?
-           AND user_id = ?
-           AND type = 'success'
-           AND DATE(logged_at) = CURDATE()`,
-        [req.params.id, req.userId]
-    )
-
-    if (currentCount >= timesPerDay) {
-        return res.status(400).json({
-            message: "Already completed today",
-            todayCount: currentCount,
-            isFullDay: true
-        })
-    }
-
-    // Insert le log
-    await db.execute(
-        "INSERT INTO habit_logs (habit_id, user_id, type, note) VALUES (?, ?, 'success', ?)",
-        [req.params.id, req.userId, note || null]
-    )
-
-    // Recompte après insert
-    const [[{ todayCount }]] = await db.execute(
-        `SELECT COUNT(*) as todayCount
-         FROM habit_logs
-         WHERE habit_id = ?
-           AND user_id = ?
-           AND type = 'success'
-           AND DATE(logged_at) = CURDATE()`,
-        [req.params.id, req.userId]
-    )
-
-    const isFullDay = todayCount >= timesPerDay
-    const xpMap = { easy: 5, medium: 15, hard: 30, extreme: 50 }
-    const fullXp = xpMap[habit.difficulty] ?? 15
-
-    let xpGained = 0
-    let isSpark = false
-
-    if (isFullDay) {
-        xpGained = fullXp
-        await db.execute(
-            "UPDATE habits SET spark_count = 0 WHERE id = ?",
-            [req.params.id]
-        )
-    } else if (todayCount === 1) {
-        xpGained = Math.round(fullXp * 0.2)
-        isSpark = true
-    }
-
-    if (xpGained > 0) {
-        await db.execute(
-            "UPDATE users SET xp = xp + ? WHERE id = ?",
-            [xpGained, req.userId]
-        )
-    }
-
-    if (isFullDay) {
-        const [[{ count }]] = await db.execute(
-            `SELECT COUNT(DISTINCT DATE(logged_at)) as count
-             FROM habit_logs
-             WHERE habit_id = ? AND type = 'success'`,
-            [req.params.id]
-        )
-        const milestones = [7, 30, 90, 180, 365]
-        for (const days of milestones) {
-            if (count === days) {
-                const [existing] = await db.execute(
-                    "SELECT * FROM habit_milestones WHERE habit_id = ? AND days = ?",
-                    [req.params.id, days]
-                )
-                if (existing.length === 0) {
-                    await db.execute(
-                        "INSERT INTO habit_milestones (habit_id, user_id, days) VALUES (?, ?, ?)",
-                        [req.params.id, req.userId, days]
-                    )
-                }
-            }
-        }
-    }
-
-    res.json({ message: "Success logged", xpGained, isSpark, todayCount, isFullDay })
-})
-
 
 // DELETE undo today's last success
 router.delete("/:id/success", async (req, res) => {

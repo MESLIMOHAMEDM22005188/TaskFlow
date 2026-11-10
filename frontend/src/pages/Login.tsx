@@ -10,6 +10,50 @@ export default function Login() {
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [showRecovery, setShowRecovery] = useState(false);
+    const [recoveryEmail, setRecoveryEmail] = useState("");
+    const [recoveryChallenge, setRecoveryChallenge] = useState("");
+    const [challengeId, setChallengeId] = useState("");
+    const [recoveryAnswer, setRecoveryAnswer] = useState("");
+    const [recoveryPassword, setRecoveryPassword] = useState("");
+    const [recoveryMessage, setRecoveryMessage] = useState("");
+    const [recoveryLoading, setRecoveryLoading] = useState(false);
+
+
+    const startRecovery = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        setRecoveryMessage("");
+        setRecoveryLoading(true);
+        try {
+            const response = await api.post("/auth/forgot-password/challenge", { email: recoveryEmail.trim() });
+            setRecoveryChallenge(response.data.challenge || "");
+            setChallengeId(response.data.challengeId || "");
+            setRecoveryMessage(response.data.message || "La récupération par e-mail n'est pas disponible.");
+        } catch (err: any) {
+            setRecoveryMessage(err?.response?.data?.message || "Impossible de préparer la récupération.");
+        } finally {
+            setRecoveryLoading(false);
+        }
+    };
+
+    const submitRecovery = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        setRecoveryMessage("");
+        setRecoveryLoading(true);
+        try {
+            const response = await api.post("/auth/forgot-password/reset", {
+                email: recoveryEmail.trim(),
+                challengeId,
+                answer: recoveryAnswer,
+                newPassword: recoveryPassword
+            });
+            setRecoveryMessage(response.data.message || "Demande traitée.");
+        } catch (err: any) {
+            setRecoveryMessage(err?.response?.data?.message || "La réinitialisation n'a pas pu être effectuée.");
+        } finally {
+            setRecoveryLoading(false);
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -76,6 +120,8 @@ export default function Login() {
                         required
                     />
 
+                    <div className="auth-recovery-row"><button type="button" className="auth-link-button" onClick={() => { setShowRecovery(value => !value); setRecoveryEmail(email); setRecoveryMessage(""); }}>Mot de passe oublié ?</button></div>
+
                     <label className="auth-label" htmlFor="login-password">Mot de passe</label>
                     <input
                         id="login-password"
@@ -96,6 +142,33 @@ export default function Login() {
                     <p className="auth-switch">Tu n’as pas encore de compte ? <Link to="/signup">Créer un compte</Link></p>
                     <p className="auth-legal">En continuant, tu accèdes à ton espace personnel Grindly.</p>
                 </form>
+
+                {showRecovery && (
+                    <section className="auth-card auth-recovery-card" aria-label="Récupération du mot de passe">
+                        <div className="auth-card-heading">
+                            <span className="auth-card-kicker">RÉCUPÉRER TON COMPTE</span>
+                            <h2>Mot de passe oublié ?</h2>
+                            <p>Saisis l’adresse e-mail associée à ton compte.</p>
+                        </div>
+                        <form onSubmit={startRecovery} className="auth-recovery-form">
+                            <label className="auth-label" htmlFor="recovery-email">Adresse e-mail</label>
+                            <input id="recovery-email" className="auth-input" type="email" autoComplete="email" required value={recoveryEmail} onChange={event => setRecoveryEmail(event.target.value)} />
+                            <button className="auth-button" type="submit" disabled={recoveryLoading}>{recoveryLoading ? "Préparation…" : "Continuer"}</button>
+                        </form>
+                        {recoveryChallenge && (
+                            <form onSubmit={submitRecovery} className="auth-recovery-form">
+                                <div className="auth-recovery-challenge"><span>Vérification de sécurité</span><strong>{recoveryChallenge} = ?</strong></div>
+                                <label className="auth-label" htmlFor="recovery-answer">Résultat du calcul</label>
+                                <input id="recovery-answer" className="auth-input" inputMode="numeric" pattern="[0-9]*" required value={recoveryAnswer} onChange={event => setRecoveryAnswer(event.target.value)} />
+                                <label className="auth-label" htmlFor="recovery-new-password">Nouveau mot de passe</label>
+                                <input id="recovery-new-password" className="auth-input" type="password" autoComplete="new-password" minLength={8} required value={recoveryPassword} onChange={event => setRecoveryPassword(event.target.value)} />
+                                <p className="auth-legal">8 caractères minimum, avec une majuscule, une minuscule et un chiffre.</p>
+                                <button className="auth-button" type="submit" disabled={recoveryLoading}>{recoveryLoading ? "Vérification…" : "Valider"}</button>
+                            </form>
+                        )}
+                        {recoveryMessage && <div className="auth-alert" role="status">{recoveryMessage}</div>}
+                    </section>
+                )}
             </section>
             <footer className="auth-footer">GRINDLY <span>·</span> TES OBJECTIFS, UN JOUR À LA FOIS</footer>
         </main>

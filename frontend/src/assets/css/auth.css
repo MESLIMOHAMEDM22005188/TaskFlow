@@ -413,3 +413,15 @@
     .auth-choice-actions { width: 100%; flex-direction: column; align-items: stretch; }
     .auth-choice-primary, .auth-choice-secondary { width: 100%; }
 }
+
+
+/* Password recovery */
+.auth-recovery-row { display: flex; justify-content: flex-end; margin: -9px 0 18px; }
+.auth-link-button { border: 0; padding: 4px 0; color: var(--auth-accent, #8b7cf6); background: transparent; font: inherit; font-size: 12px; font-weight: 750; cursor: pointer; }
+.auth-link-button:hover { text-decoration: underline; }
+.auth-recovery-card { width: min(100%, 440px); margin: 24px auto 0; }
+.auth-recovery-form { display: grid; gap: 12px; margin-top: 16px; }
+.auth-recovery-challenge { display: grid; gap: 7px; padding: 16px; border: 1px solid rgba(129,140,248,.3); border-radius: 14px; background: rgba(129,140,248,.08); text-align: center; }
+.auth-recovery-challenge span { color: inherit; opacity: .65; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.auth-recovery-challenge strong { font-size: 26px; letter-spacing: .04em; }
+.auth-link-button:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; border-radius: 4px; }

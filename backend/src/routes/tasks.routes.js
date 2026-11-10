@@ -302,7 +302,6 @@ router.get("/", async (req, res) => {
                   t.frequency = 'once'
                   AND COALESCE(t.status, 'active') = 'done'
               )
-              AND (t.frequency <> 'once' OR COALESCE(t.status, 'active') <> 'done')
             ORDER BY
                 FIELD(t.priority, 'High', 'Medium', 'Low'),
                 t.deadline ASC,

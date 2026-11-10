@@ -341,11 +341,9 @@ router.post("/forgot-password/send-code", async (req, res) => {
             await ensureSupabaseIdentity(flow.email);
             await sendSupabaseRecoveryCode(flow.email);
         } catch (error) {
-            recoveryFlows.delete(flowId);
+            // Keep the public response identical for existing and unknown usernames.
+            // The server log records the provider failure without exposing account existence.
             console.error("[Grindly:PasswordRecovery] Email dispatch failed:", error.message);
-            return res.status(503).json({
-                message: "L'envoi du code n'est pas encore disponible. Vérifie la configuration Supabase et de son fournisseur e-mail.",
-            });
         }
     }
 

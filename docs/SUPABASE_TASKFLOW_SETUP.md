@@ -46,11 +46,11 @@ Resend documente aussi les ports 587/STARTTLS et 2465/SSL. Ne jamais mettre la c
 
 ## 3. Clés et variables d'environnement
 
-- Frontend : `frontend/.env` — uniquement `VITE_SUPABASE_URL` et `VITE_SUPABASE_PUBLISHABLE_KEY`.
+- Frontend : aucune clé Supabase n'est nécessaire pour ce flux ; le navigateur appelle uniquement le backend TaskFlow.
 - Backend AlwaysData : `SUPABASE_URL=https://ffykzjxnsgdkzxcppvoo.supabase.co` et `SUPABASE_SECRET_KEY` (clé secret Supabase), dans les variables privées de l'application.
 - La clé API Resend est enregistrée uniquement dans le panneau SMTP Supabase, pas dans le dépôt Git.
 
-La clé publishable peut être utilisée dans le navigateur. La clé secret Supabase est privilégiée : uniquement côté serveur, jamais avec un préfixe `VITE_`, jamais dans GitHub.
+La clé secret Supabase est utilisée uniquement côté serveur, jamais dans le navigateur, jamais avec un préfixe `VITE_`, jamais dans GitHub.
 
 ## 4. Architecture de récupération — point bloquant à traiter
 

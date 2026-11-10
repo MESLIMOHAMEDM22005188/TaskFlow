@@ -296,7 +296,7 @@ router.get("/", async (req, res) => {
                                    AND ds.user_id = ?
                                    AND ds.date = ?
                      LEFT JOIN themes th ON th.id = t.theme_id
-            WHERE t.user_id = ? AND COALESCE(t.status, 'active') NOT IN ('archived', 'done')
+            WHERE t.user_id = ? AND COALESCE(t.status, 'active') <> 'archived'
               AND (t.frequency <> 'once' OR COALESCE(t.status, 'active') <> 'done')
             ORDER BY
                 FIELD(t.priority, 'High', 'Medium', 'Low'),

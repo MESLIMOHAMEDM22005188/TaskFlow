@@ -4,6 +4,32 @@ const jwt = require("jsonwebtoken");
 const db = require("../config/db");
 
 const authMiddleware = require("../middleware/auth");
+
+const crypto = require("crypto");
+
+// Password recovery challenges are short-lived, single-use and stored only
+// as hashes. The arithmetic answer is verified by the server.
+const recoveryChallenges = new Map();
+const RECOVERY_TTL_MS = 10 * 60 * 1000;
+
+function makeRecoveryChallenge() {
+    const left = crypto.randomInt(2, 13);
+    const right = crypto.randomInt(2, 13);
+    const id = crypto.randomBytes(24).toString("hex");
+    recoveryChallenges.set(id, {
+        answerHash: crypto.createHash("sha256").update(String(left * right)).digest("hex"),
+        expiresAt: Date.now() + RECOVERY_TTL_MS,
+        attempts: 0,
+    });
+    return { challengeId: id, question: `${left} × ${right}` };
+}
+
+function validRecoveryEmail(email) {
+    return typeof email === "string" && email.length <= 254 &&
+        /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim());
+}
+
+
 const router = express.Router();
 
 // Username policy: 3–20 ASCII letters, digits, underscores or hyphens.
@@ -170,6 +196,79 @@ router.post("/signup", async (req, res) => {
         console.error(err);
         res.status(500).json({ message: "Unable to create account" });
     }
+});
+
+
+/**
+ * Starts a password recovery flow. Until an email provider is configured,
+ * the UI receives an explicit notice and the account is not modified.
+ *
+ * This avoids pretending that an email has been sent when no mail service
+ * is installed. Challenge generation remains server-side.
+ */
+router.post("/forgot-password/challenge", async (req, res) => {
+    try {
+        const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+        if (!validRecoveryEmail(email)) {
+            return res.status(400).json({ message: "Saisis une adresse e-mail valide." });
+        }
+
+        // Avoid account enumeration: the same response shape is returned
+        // regardless of whether the address exists.
+        const [rows] = await db.execute(
+            "SELECT id FROM users WHERE LOWER(email) = ? LIMIT 1",
+            [email]
+        );
+
+        const challenge = makeRecoveryChallenge();
+        res.json({
+            message: "La récupération par e-mail n'est pas encore activée sur cette application. Aucun e-mail n'a été envoyé.",
+            emailDeliveryConfigured: false,
+            challenge: challenge.question,
+            challengeId: challenge.challengeId,
+            accountEligible: rows.length > 0
+        });
+    } catch (error) {
+        console.error("[Grindly:PasswordRecovery] Challenge error:", error);
+        res.status(500).json({ message: "Impossible de préparer la récupération pour le moment." });
+    }
+});
+
+/**
+ * Completes an explicit recovery request only when mail delivery is enabled.
+ * Until SMTP credentials/provider are set up, no unauthenticated password
+ * mutation route is exposed. The arithmetic check is a human interaction,
+ * not a replacement for possession of the registered mailbox.
+ */
+router.post("/forgot-password/reset", async (req, res) => {
+    const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+    const challengeId = typeof req.body?.challengeId === "string" ? req.body.challengeId : "";
+    const answer = String(req.body?.answer ?? "");
+    const newPassword = req.body?.newPassword;
+
+    if (!validRecoveryEmail(email) || !challengeId || !/^\\d{1,4}$/.test(answer) || !isStrongPassword(newPassword)) {
+        return res.status(400).json({
+            message: "Vérifie l'adresse e-mail, le résultat du calcul et le nouveau mot de passe (8 caractères minimum, avec majuscule, minuscule et chiffre)."
+        });
+    }
+
+    const challenge = recoveryChallenges.get(challengeId);
+    recoveryChallenges.delete(challengeId);
+    if (!challenge || challenge.expiresAt < Date.now() || challenge.attempts >= 3) {
+        return res.status(400).json({ message: "Le calcul a expiré. Recommence la procédure." });
+    }
+
+    const answerHash = crypto.createHash("sha256").update(answer).digest("hex");
+    const expected = Buffer.from(challenge.answerHash, "hex");
+    const received = Buffer.from(answerHash, "hex");
+    if (expected.length !== received.length || !crypto.timingSafeEqual(expected, received)) {
+        return res.status(400).json({ message: "Résultat incorrect. Recommence la procédure." });
+    }
+
+    return res.status(503).json({
+        message: "La réinitialisation n'est pas activée : aucun service d'envoi d'e-mail n'est configuré. Le mot de passe n'a pas été modifié.",
+        emailDeliveryConfigured: false
+    });
 });
 
 router.put("/change-password", authMiddleware, async (req, res) => {

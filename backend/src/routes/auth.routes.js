@@ -7,26 +7,100 @@ const authMiddleware = require("../middleware/auth");
 
 const crypto = require("crypto");
 
-// Password recovery challenges are short-lived, single-use and stored only
-// as hashes. The arithmetic answer is verified by the server.
+// Recovery state is short-lived and kept server-side. Only hashes of arithmetic
+// answers are stored; email addresses and MySQL user IDs never reach the browser.
 const recoveryChallenges = new Map();
+const recoveryFlows = new Map();
 const RECOVERY_TTL_MS = 10 * 60 * 1000;
+const MAX_RECOVERY_ATTEMPTS = 5;
 
-function makeRecoveryChallenge() {
+function pruneRecoveryState() {
+    const now = Date.now();
+    for (const [key, value] of recoveryChallenges) {
+        if (value.expiresAt <= now) recoveryChallenges.delete(key);
+    }
+    for (const [key, value] of recoveryFlows) {
+        if (value.expiresAt <= now) recoveryFlows.delete(key);
+    }
+    while (recoveryChallenges.size > 5000) recoveryChallenges.delete(recoveryChallenges.keys().next().value);
+    while (recoveryFlows.size > 5000) recoveryFlows.delete(recoveryFlows.keys().next().value);
+}
+
+function makeRecoveryChallenge(user) {
+    pruneRecoveryState();
     const left = crypto.randomInt(2, 13);
     const right = crypto.randomInt(2, 13);
-    const id = crypto.randomBytes(24).toString("hex");
+    const id = crypto.randomBytes(32).toString("hex");
     recoveryChallenges.set(id, {
         answerHash: crypto.createHash("sha256").update(String(left * right)).digest("hex"),
+        userId: user?.id ?? null,
+        email: user?.email ?? null,
         expiresAt: Date.now() + RECOVERY_TTL_MS,
         attempts: 0,
     });
-    return { challengeId: id, question: `${left} × ${right}` };
+    return { challengeId: id, question: String(left) + " × " + String(right) };
 }
 
 function validRecoveryEmail(email) {
     return typeof email === "string" && email.length <= 254 &&
         /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+}
+
+function getSupabaseConfig() {
+    const url = process.env.SUPABASE_URL || "https://ffykzjxnsgdkzxcppvoo.supabase.co";
+    const secret = process.env.SUPABASE_SECRET_KEY;
+    if (!secret) throw new Error("SUPABASE_SECRET_KEY is missing from the backend environment.");
+    return { url: url.replace(/\/+$/, ""), secret };
+}
+
+async function supabaseAuthRequest(path, body) {
+    const config = getSupabaseConfig();
+    const response = await fetch(config.url + "/auth/v1/" + path, {
+        method: "POST",
+        headers: {
+            apikey: config.secret,
+            Authorization: "Bearer " + config.secret,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+    });
+    let payload = {};
+    try { payload = await response.json(); } catch { /* Empty or non-JSON response. */ }
+    return { response, payload };
+}
+
+// Provision a confirmed Supabase identity lazily for each existing MySQL user.
+// Its random password is never exposed or used by TaskFlow.
+async function ensureSupabaseIdentity(email) {
+    const randomPassword = crypto.randomBytes(48).toString("base64url");
+    const result = await supabaseAuthRequest("admin/users", {
+        email,
+        password: randomPassword,
+        email_confirm: true,
+    });
+    if (result.response.ok) return;
+
+    const details = JSON.stringify(result.payload).toLowerCase();
+    const alreadyExists = result.response.status === 422 &&
+        (details.includes("already registered") ||
+         details.includes("already exists") ||
+         details.includes("user_already_exists"));
+    if (!alreadyExists) {
+        throw new Error("Supabase could not provision the recovery identity (HTTP " + result.response.status + ").");
+    }
+}
+
+async function sendSupabaseRecoveryCode(email) {
+    const result = await supabaseAuthRequest("recover", { email });
+    if (!result.response.ok) {
+        throw new Error("Supabase could not send the recovery email (HTTP " + result.response.status + ").");
+    }
+}
+
+async function verifySupabaseRecoveryCode(email, token) {
+    const result = await supabaseAuthRequest("verify", { email, token, type: "recovery" });
+    return Boolean(result.response.ok && result.payload.user?.email &&
+        result.payload.user.email.toLowerCase() === email.toLowerCase());
 }
 
 
@@ -200,75 +274,138 @@ router.post("/signup", async (req, res) => {
 
 
 /**
- * Starts a password recovery flow. Until an email provider is configured,
- * the UI receives an explicit notice and the account is not modified.
- *
- * This avoids pretending that an email has been sent when no mail service
- * is installed. Challenge generation remains server-side.
+ * Step 1: find the MySQL account by username and issue a generic challenge.
+ * The response is identical whether the account exists or not.
  */
 router.post("/forgot-password/challenge", async (req, res) => {
     try {
-        const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
-        if (!validRecoveryEmail(email)) {
-            return res.status(400).json({ message: "Saisis une adresse e-mail valide." });
+        const username = typeof req.body?.username === "string" ? req.body.username.trim() : "";
+        if (!username || username.length > 20 || !/^[A-Za-z0-9_-]{3,20}$/.test(username)) {
+            return res.status(400).json({ message: "Saisis un pseudo TaskFlow valide." });
         }
-
-        // Avoid account enumeration: the same response shape is returned
-        // regardless of whether the address exists.
         const [rows] = await db.execute(
-            "SELECT id FROM users WHERE LOWER(email) = ? LIMIT 1",
-            [email]
+            "SELECT id, email FROM users WHERE LOWER(username) = LOWER(?) LIMIT 1",
+            [username]
         );
-
-        const challenge = makeRecoveryChallenge();
-        res.json({
-            message: "La récupération par e-mail n'est pas encore activée sur cette application. Aucun e-mail n'a été envoyé.",
-            emailDeliveryConfigured: false,
+        const user = rows.length === 1 && validRecoveryEmail(rows[0].email)
+            ? { id: rows[0].id, email: rows[0].email.trim().toLowerCase() }
+            : null;
+        const challenge = makeRecoveryChallenge(user);
+        return res.json({
+            message: "Si ce pseudo correspond à un compte, tu pourras recevoir un code sur son adresse e-mail enregistrée.",
             challenge: challenge.question,
             challengeId: challenge.challengeId,
-            accountEligible: rows.length > 0
         });
     } catch (error) {
-        console.error("[Grindly:PasswordRecovery] Challenge error:", error);
-        res.status(500).json({ message: "Impossible de préparer la récupération pour le moment." });
+        console.error("[Grindly:PasswordRecovery] Challenge error:", error.message);
+        return res.status(500).json({ message: "Impossible de préparer la récupération pour le moment." });
     }
 });
 
 /**
- * Completes an explicit recovery request only when mail delivery is enabled.
- * Until SMTP credentials/provider are set up, no unauthenticated password
- * mutation route is exposed. The arithmetic check is a human interaction,
- * not a replacement for possession of the registered mailbox.
+ * Step 2: validate the arithmetic challenge, provision the Supabase Auth
+ * identity if needed, and ask Supabase to send its recovery OTP.
  */
-router.post("/forgot-password/reset", async (req, res) => {
-    const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+router.post("/forgot-password/send-code", async (req, res) => {
     const challengeId = typeof req.body?.challengeId === "string" ? req.body.challengeId : "";
     const answer = String(req.body?.answer ?? "");
-    const newPassword = req.body?.newPassword;
-
-    if (!validRecoveryEmail(email) || !challengeId || !/^\d{1,4}$/.test(answer) || !isStrongPassword(newPassword)) {
-        return res.status(400).json({
-            message: "Vérifie l'adresse e-mail, le résultat du calcul et le nouveau mot de passe (8 caractères minimum, avec majuscule, minuscule et chiffre)."
-        });
-    }
-
     const challenge = recoveryChallenges.get(challengeId);
-    recoveryChallenges.delete(challengeId);
-    if (!challenge || challenge.expiresAt < Date.now() || challenge.attempts >= 3) {
-        return res.status(400).json({ message: "Le calcul a expiré. Recommence la procédure." });
+    if (!challenge || challenge.expiresAt <= Date.now() ||
+        challenge.attempts >= 3 || !/^\d{1,4}$/.test(answer)) {
+        recoveryChallenges.delete(challengeId);
+        return res.status(400).json({ message: "Le calcul a expiré ou est invalide. Recommence." });
     }
 
     const answerHash = crypto.createHash("sha256").update(answer).digest("hex");
     const expected = Buffer.from(challenge.answerHash, "hex");
     const received = Buffer.from(answerHash, "hex");
     if (expected.length !== received.length || !crypto.timingSafeEqual(expected, received)) {
-        return res.status(400).json({ message: "Résultat incorrect. Recommence la procédure." });
+        challenge.attempts += 1;
+        if (challenge.attempts >= 3) recoveryChallenges.delete(challengeId);
+        return res.status(400).json({ message: "Résultat incorrect. Vérifie le calcul." });
     }
 
-    return res.status(503).json({
-        message: "La réinitialisation n'est pas activée : aucun service d'envoi d'e-mail n'est configuré. Le mot de passe n'a pas été modifié.",
-        emailDeliveryConfigured: false
+    recoveryChallenges.delete(challengeId);
+    const flowId = crypto.randomBytes(32).toString("hex");
+    const flow = {
+        userId: challenge.userId,
+        email: challenge.email,
+        expiresAt: Date.now() + RECOVERY_TTL_MS,
+        attempts: 0,
+    };
+    recoveryFlows.set(flowId, flow);
+    pruneRecoveryState();
+
+    if (flow.userId && flow.email) {
+        try {
+            await ensureSupabaseIdentity(flow.email);
+            await sendSupabaseRecoveryCode(flow.email);
+        } catch (error) {
+            recoveryFlows.delete(flowId);
+            console.error("[Grindly:PasswordRecovery] Email dispatch failed:", error.message);
+            return res.status(503).json({
+                message: "L'envoi du code n'est pas encore disponible. Vérifie la configuration Supabase et de son fournisseur e-mail.",
+            });
+        }
+    }
+
+    return res.json({
+        flowId,
+        message: "Si le compte existe, un code de vérification a été envoyé à son adresse e-mail enregistrée.",
     });
+});
+
+/**
+ * Step 3: verify the Supabase recovery OTP server-side, then update only the
+ * corresponding MySQL bcrypt password. Supabase sessions never reach the client.
+ */
+router.post("/forgot-password/reset", async (req, res) => {
+    const flowId = typeof req.body?.flowId === "string" ? req.body.flowId : "";
+    const token = typeof req.body?.token === "string" ? req.body.token.trim() : "";
+    const newPassword = req.body?.newPassword;
+    const flow = recoveryFlows.get(flowId);
+
+    if (!flow || flow.expiresAt <= Date.now() ||
+        flow.attempts >= MAX_RECOVERY_ATTEMPTS ||
+        !/^\d{6}$/.test(token) || !isStrongPassword(newPassword)) {
+        if (flow && (flow.expiresAt <= Date.now() || flow.attempts >= MAX_RECOVERY_ATTEMPTS)) {
+            recoveryFlows.delete(flowId);
+        }
+        return res.status(400).json({
+            message: "Code invalide ou expiré. Vérifie le code et les critères du nouveau mot de passe.",
+        });
+    }
+    if (!flow.userId || !flow.email) {
+        recoveryFlows.delete(flowId);
+        return res.status(400).json({ message: "Code invalide ou expiré. Recommence la récupération." });
+    }
+
+    try {
+        const verified = await verifySupabaseRecoveryCode(flow.email, token);
+        if (!verified) {
+            flow.attempts += 1;
+            if (flow.attempts >= MAX_RECOVERY_ATTEMPTS) recoveryFlows.delete(flowId);
+            return res.status(400).json({ message: "Code incorrect ou expiré." });
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        const [result] = await db.execute(
+            "UPDATE users SET password = ? WHERE id = ? AND LOWER(email) = ?",
+            [hashedPassword, flow.userId, flow.email]
+        );
+        if (!result.affectedRows) {
+            recoveryFlows.delete(flowId);
+            return res.status(400).json({ message: "Le compte n'a pas pu être mis à jour. Recommence la récupération." });
+        }
+
+        for (const [pendingId, pendingFlow] of recoveryFlows) {
+            if (pendingFlow.userId === flow.userId) recoveryFlows.delete(pendingId);
+        }
+        return res.json({ message: "Mot de passe modifié. Tu peux maintenant te connecter à TaskFlow." });
+    } catch (error) {
+        console.error("[Grindly:PasswordRecovery] Reset error:", error.message);
+        return res.status(503).json({ message: "La vérification est momentanément indisponible. Recommence la procédure." });
+    }
 });
 
 router.put("/change-password", authMiddleware, async (req, res) => {

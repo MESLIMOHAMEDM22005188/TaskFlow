@@ -245,7 +245,7 @@ router.get("/", async (req, res) => {
     try {
         await ensureTaskThemesTable()
         await ensureTaskSchedulingSchema()
-        const today = new Date().toISOString().split("T")[0]
+        const today = formatSqlDate(new Date())
 
         const [tasks] = await db.execute(`
             SELECT
@@ -296,7 +296,12 @@ router.get("/", async (req, res) => {
                                    AND ds.user_id = ?
                                    AND ds.date = ?
                      LEFT JOIN themes th ON th.id = t.theme_id
-            WHERE t.user_id = ? AND COALESCE(t.status, 'active') <> 'archived'
+            WHERE t.user_id = ?
+              AND COALESCE(t.status, 'active') <> 'archived'
+              AND NOT (
+                  t.frequency = 'once'
+                  AND COALESCE(t.status, 'active') = 'done'
+              )
             ORDER BY
                 FIELD(t.priority, 'High', 'Medium', 'Low'),
                 t.deadline ASC,

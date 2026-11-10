@@ -26,7 +26,7 @@ function makeRecoveryChallenge() {
 
 function validRecoveryEmail(email) {
     return typeof email === "string" && email.length <= 254 &&
-        /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim());
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
 

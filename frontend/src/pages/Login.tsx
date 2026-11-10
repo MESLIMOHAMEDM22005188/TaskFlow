@@ -259,9 +259,6 @@ export default function Login() {
                         {recoveryMessage && <div className="auth-alert" role="status">{recoveryMessage}</div>}
                     </section>
                 )}
-                        {recoveryMessage && <div className="auth-alert" role="status">{recoveryMessage}</div>}
-                    </section>
-                )}
             </section>
             <footer className="auth-footer">GRINDLY <span>·</span> TES OBJECTIFS, UN JOUR À LA FOIS</footer>
         </main>

@@ -52,9 +52,9 @@ Resend documente aussi les ports 587/STARTTLS et 2465/SSL. Ne jamais mettre la c
 
 La clé secret Supabase est utilisée uniquement côté serveur, jamais dans le navigateur, jamais avec un préfixe `VITE_`, jamais dans GitHub.
 
-## 4. Architecture de récupération — point bloquant à traiter
+## 4. Architecture de récupération — implémentation backend
 
-Les utilisateurs et leurs mots de passe hachés restent dans MySQL. Le backend implémente désormais une récupération à la demande pour tous les comptes MySQL :
+Les utilisateurs et leurs mots de passe hachés restent dans MySQL. Le backend implémente une récupération à la demande pour tous les comptes MySQL. Le SMTP personnalisé doit être activé dans Supabase et l'expéditeur doit appartenir à un domaine vérifié dans Resend :
 
 1. L'utilisateur saisit son pseudo TaskFlow.
 2. Le backend cherche `id` et `email` dans MySQL sans révéler l'adresse au navigateur.

@@ -246,7 +246,7 @@ router.post("/forgot-password/reset", async (req, res) => {
     const answer = String(req.body?.answer ?? "");
     const newPassword = req.body?.newPassword;
 
-    if (!validRecoveryEmail(email) || !challengeId || !/^\\d{1,4}$/.test(answer) || !isStrongPassword(newPassword)) {
+    if (!validRecoveryEmail(email) || !challengeId || !/^\d{1,4}$/.test(answer) || !isStrongPassword(newPassword)) {
         return res.status(400).json({
             message: "Vérifie l'adresse e-mail, le résultat du calcul et le nouveau mot de passe (8 caractères minimum, avec majuscule, minuscule et chiffre)."
         });

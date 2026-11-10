@@ -9,31 +9,30 @@
 
 MySQL sur AlwaysData reste la base principale de TaskFlow. Supabase est prévu pour Auth, l'envoi des codes de récupération et leur vérification. Les tâches, profils et statistiques ne sont pas migrés.
 
-## 1. Configuration Brevo SMTP
+## 1. Configuration Resend SMTP
 
-Dans Brevo :
+Créer un compte sur [Resend](https://resend.com/signup), puis :
 
-1. Ouvrir **Settings → Senders, Domains & Dedicated IPs**.
-2. Ajouter un domaine d'envoi que vous contrôlez et publier les enregistrements DNS SPF/DKIM fournis par Brevo. Attendre que le domaine soit authentifié.
-3. Créer un expéditeur vérifié, par exemple `no-reply@votre-domaine.fr`.
-4. Ouvrir **Settings → SMTP & API → SMTP** (https://app.brevo.com/settings/keys/smtp).
-5. Copier le login SMTP affiché et générer une **SMTP key**.
+1. Ajouter un domaine d'envoi que vous contrôlez dans **Domains**.
+2. Publier les enregistrements DNS SPF/DKIM fournis par Resend chez le fournisseur DNS du domaine.
+3. Attendre que Resend indique que le domaine est vérifié.
+4. Créer une API key dédiée à TaskFlow dans **API Keys**. Ne pas la publier dans GitHub.
 
-Ne pas utiliser le mot de passe du compte Brevo ni une API key. La SMTP key est un secret et ne doit jamais être commitée dans GitHub.
-
-Dans Supabase : **Authentication → Emails → SMTP Settings** (https://supabase.com/dashboard/project/ffykzjxnsgdkzxcppvoo/auth/smtp), activer le SMTP personnalisé et renseigner :
+Dans Supabase : [Authentication → Emails → SMTP Settings](https://supabase.com/dashboard/project/ffykzjxnsgdkzxcppvoo/auth/smtp), activer le SMTP personnalisé et renseigner :
 
 | Champ Supabase | Valeur |
 | --- | --- |
-| Sender email | L'expéditeur vérifié chez Brevo, ex. `no-reply@votre-domaine.fr` |
+| Sender email | Une adresse du domaine vérifié, par exemple `no-reply@votre-domaine.fr` |
 | Sender name | `TaskFlow` |
-| Host | `smtp-relay.brevo.com` |
-| Port | `587` |
-| Username | Le login SMTP affiché dans Brevo |
-| Password | La SMTP key générée dans Brevo |
-| Minimum interval per user | Conserver la valeur par défaut (60 secondes) |
+| Host | `smtp.resend.com` |
+| Port | `465` (SSL) |
+| Username | `resend` |
+| Password | La clé API Resend `re_...` |
+| Minimum interval per user | Conserver au moins 60 secondes |
 
-Enregistrer. Le port 587 utilise STARTTLS. Le port 465 est une alternative avec SSL/TLS. Ne jamais mettre le host SMTP dans le champ username.
+Resend documente aussi les ports 587/STARTTLS et 2465/SSL. Ne jamais mettre la clé Resend dans le frontend ou dans GitHub.
+
+**Important :** le domaine vérifié est nécessaire pour envoyer des e-mails à tous les utilisateurs. L'expéditeur de test `onboarding@resend.dev` n'est pas un expéditeur de production pour les comptes de tiers.
 
 ## 2. Configuration des e-mails Supabase Auth
 
@@ -48,33 +47,39 @@ Enregistrer. Le port 587 utilise STARTTLS. Le port 465 est une alternative avec 
 ## 3. Clés et variables d'environnement
 
 - Frontend : `frontend/.env` — uniquement `VITE_SUPABASE_URL` et `VITE_SUPABASE_PUBLISHABLE_KEY`.
-- Backend AlwaysData : `SUPABASE_URL` et `SUPABASE_SECRET_KEY`, dans les variables privées de l'application.
-- Les identifiants SMTP Brevo sont enregistrés dans le panneau SMTP Supabase, pas dans le dépôt Git.
+- Backend AlwaysData : `SUPABASE_URL=https://ffykzjxnsgdkzxcppvoo.supabase.co` et `SUPABASE_SECRET_KEY` (clé secret Supabase), dans les variables privées de l'application.
+- La clé API Resend est enregistrée uniquement dans le panneau SMTP Supabase, pas dans le dépôt Git.
 
 La clé publishable peut être utilisée dans le navigateur. La clé secret Supabase est privilégiée : uniquement côté serveur, jamais avec un préfixe `VITE_`, jamais dans GitHub.
 
 ## 4. Architecture de récupération — point bloquant à traiter
 
-Les utilisateurs et leurs mots de passe hachés sont actuellement dans MySQL. Ils ne sont pas automatiquement présents dans Supabase Auth. Avant d'activer la récupération, le backend doit provisionner ou lier les identités Supabase de façon contrôlée, demander un OTP de récupération, vérifier le code côté serveur, puis seulement autoriser la mise à jour du hash bcrypt MySQL.
+Les utilisateurs et leurs mots de passe hachés restent dans MySQL. Le backend implémente désormais une récupération à la demande pour tous les comptes MySQL :
 
-Ne pas activer l'inscription automatique Supabase comme raccourci et ne jamais modifier le mot de passe MySQL sur la seule base du calcul de multiplication.
+1. L'utilisateur saisit son pseudo TaskFlow.
+2. Le backend cherche `id` et `email` dans MySQL sans révéler l'adresse au navigateur.
+3. Après le défi arithmétique, le backend crée à la demande une identité Supabase Auth confirmée avec un mot de passe aléatoire inconnu, ou réutilise l'identité si elle existe déjà.
+4. Supabase Auth envoie un code de récupération à l'adresse MySQL enregistrée.
+5. Le backend vérifie le code Supabase avec le type `recovery`, puis met à jour uniquement le hash bcrypt du compte MySQL correspondant.
 
-La branche contient actuellement l'interface de récupération et le défi arithmétique côté serveur, mais l'envoi d'e-mail et le pont de vérification Supabase → mise à jour MySQL ne sont pas encore actifs. Ne pas considérer cette fonction comme opérationnelle ni fusionner la branche avant la fin de cette implémentation et de ses tests.
+Les tâches, profils et statistiques ne sont pas migrés vers Supabase. La clé Supabase secrète reste uniquement côté serveur. Les codes et les identifiants de flux sont temporaires et conservés en mémoire du processus backend ; un redémarrage invalide les procédures en cours.
+
+Le défi arithmétique ne prouve pas la propriété de l'adresse e-mail : seul le code reçu sur cette adresse autorise la modification du mot de passe. Ne pas exposer le service role/secret key au frontend.
 
 ## 5. Vérifications avant mise en production
 
-- [ ] Domaine d'envoi authentifié (SPF/DKIM) et expéditeur validé dans Brevo.
-- [ ] SMTP personnalisé activé dans Supabase avec la SMTP key, pas une API key.
+- [ ] Domaine d'envoi authentifié (SPF/DKIM) et expéditeur validé dans Resend.
+- [ ] SMTP personnalisé activé dans Supabase avec les paramètres Resend.
 - [ ] E-mail Reset Password utilisant `{{ .Token }}`.
 - [ ] Site URL et URLs de redirection correctes.
 - [ ] Clé secrète Supabase stockée uniquement dans les variables privées AlwaysData.
-- [ ] Comptes MySQL existants liés/provisionnés de façon sécurisée dans Supabase Auth.
+- [ ] Provisionnement Supabase Auth à la demande testé sur plusieurs comptes MySQL.
 - [ ] OTP vérifié côté serveur avant modification du hash MySQL.
 - [ ] Limitation de débit, anti-énumération des comptes, expiration et usage unique testés.
 
 ## Références
 
-- Brevo — guide SMTP : https://help.brevo.com/hc/fr/articles/7924908994450-Envoyer-des-emails-transactionnels-avec-Brevo-SMTP
-- Brevo — paramètres SMTP : https://developers.brevo.com/docs/smtp-integration
+- Resend — SMTP : https://resend.com/changelog/smtp-service
+- Resend — intégration Supabase : https://resend.com/supabase
 - Supabase — SMTP personnalisé : https://supabase.com/docs/guides/auth/auth-smtp
 - Supabase — modèles d'e-mails : https://supabase.com/docs/guides/auth/auth-email-templates

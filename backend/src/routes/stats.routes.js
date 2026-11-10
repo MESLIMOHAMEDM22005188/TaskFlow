@@ -6,7 +6,7 @@ const router = express.Router()
 // GET stats générales
 router.get("/overview", async (req, res) => {
     const [[{ totalTasks }]] = await db.execute(
-        "SELECT COUNT(*) as totalTasks FROM task_completions WHERE user_id = ?",
+        "SELECT COUNT(*) AS totalTasks FROM task_completions WHERE user_id = ?",
         [req.userId]
     )
 
@@ -83,17 +83,24 @@ router.get("/tasks-per-day", async (req, res) => {
     const numberOfDays = period === "year" ? 365 : period === "month" ? 30 : 7
     const lookbackDays = numberOfDays - 1
 
-    const [rows] = await db.execute(`
-        SELECT
-            DATE_FORMAT(completed_at, '%Y-%m-%d') AS date,
-            COUNT(*) AS count
-        FROM task_completions
-        WHERE user_id = ? AND completed_at >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
-        GROUP BY DATE_FORMAT(completed_at, '%Y-%m-%d')
-        ORDER BY date ASC
-    `, [req.userId, lookbackDays])
+    try {
+        const [rows] = await db.execute(`
+            SELECT
+                DATE_FORMAT(completed_at, '%Y-%m-%d') AS date,
+                COUNT(*) AS count
+            FROM task_completions
+            WHERE user_id = ?
+              AND completed_at >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+              AND completed_at < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+            GROUP BY DATE(completed_at)
+            ORDER BY DATE(completed_at) ASC
+        `, [req.userId, lookbackDays])
 
-    res.json(fillDailyGaps(rows, numberOfDays))
+        res.json(fillDailyGaps(rows, numberOfDays))
+    } catch (error) {
+        console.error("[Grindly:Stats] tasks-per-day failed:", error)
+        res.status(500).json({ message: "Impossible de charger les tâches par jour." })
+    }
 })
 
 // Remplit les jours absents de la réponse avec 0 pour garder un axe temporel continu.
@@ -196,9 +203,8 @@ router.get("/xp-over-time", async (req, res) => {
 // Remplit les trous dans la série temporelle avec des 0
 // Sans ça, Recharts relie les points existants en sautant les jours vides
 function fillGaps(rows, period) {
-    if (rows.length === 0) return []
     const map = {}
-    rows.forEach(r => { map[r.period] = Number(r.xp) })
+    rows.forEach(r => { map[String(r.period).slice(0, 10)] = Number(r.xp) || 0 })
     const result = []
     const now = new Date()
     let start, fmt
@@ -317,17 +323,26 @@ router.get("/focus-per-day", async (req, res) => {
 
 // GET heatmap : toute l'historique pour que le filtre « Tout » soit exact
 router.get("/heatmap", async (req, res) => {
-    const [rows] = await db.execute(`
-        SELECT
-            DATE_FORMAT(completed_at, '%Y-%m-%d') AS date,
-            COUNT(*) AS count
-        FROM task_completions
-        WHERE user_id = ?
-        GROUP BY DATE_FORMAT(completed_at, '%Y-%m-%d')
-        ORDER BY date ASC
-    `, [req.userId])
+    try {
+        // Bound the history to a stable 10-year window; the UI can still request
+        // "all" within this supported retention horizon.
+        const [rows] = await db.execute(`
+            SELECT
+                DATE_FORMAT(completed_at, '%Y-%m-%d') AS date,
+                COUNT(*) AS count
+            FROM task_completions
+            WHERE user_id = ?
+              AND completed_at >= DATE_SUB(CURDATE(), INTERVAL 10 YEAR)
+              AND completed_at < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+            GROUP BY DATE(completed_at)
+            ORDER BY DATE(completed_at) ASC
+        `, [req.userId])
 
-    res.json(rows.map(row => ({ ...row, count: Number(row.count) || 0 })))
+        res.json(rows.map(row => ({ ...row, count: Number(row.count) || 0 })))
+    } catch (error) {
+        console.error("[Grindly:Stats] heatmap failed:", error)
+        res.status(500).json({ message: "Impossible de charger la carte d’activité." })
+    }
 })
 
 module.exports = router

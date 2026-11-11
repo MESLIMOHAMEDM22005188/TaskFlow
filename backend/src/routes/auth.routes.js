@@ -1,6 +1,7 @@
 const express = require("express");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const crypto = require("node:crypto");
 const db = require("../config/db");
 
 const authMiddleware = require("../middleware/auth");
@@ -93,6 +94,120 @@ function isStrongPassword(password) {
         /[a-z]/.test(password) &&
         /\d/.test(password);
 }
+
+
+const RESET_SUCCESS_MESSAGE = "Si cette adresse est associée à un compte, un lien de réinitialisation a été envoyé.";
+const RESET_TOKEN_TTL_MINUTES = 30;
+
+async function ensurePasswordResetTable() {
+    await db.execute(`
+        CREATE TABLE IF NOT EXISTS password_reset_tokens (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            user_id BIGINT NOT NULL,
+            token_hash CHAR(64) NOT NULL UNIQUE,
+            expires_at DATETIME NOT NULL,
+            used_at DATETIME NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_password_reset_user (user_id),
+            INDEX idx_password_reset_expiry (expires_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    `);
+}
+
+router.post("/forgot-password", async (req, res) => {
+    const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+    if (!isValidEmail(email)) {
+        return res.status(400).json({ message: "Saisis une adresse e-mail valide." });
+    }
+
+    try {
+        const [users] = await db.execute("SELECT id, email FROM users WHERE email = ? LIMIT 1", [email]);
+        if (!users.length) return res.json({ message: RESET_SUCCESS_MESSAGE });
+
+        const apiKey = process.env.RESEND_API_KEY;
+        const from = process.env.RESET_EMAIL_FROM;
+        const appUrl = process.env.APP_URL || "https://grindlyy.alwaysdata.net";
+        if (!apiKey || !from) {
+            console.error("[Grindly:Auth] Missing RESEND_API_KEY or RESET_EMAIL_FROM");
+            return res.status(503).json({ message: "Service de récupération temporairement indisponible." });
+        }
+
+        await ensurePasswordResetTable();
+        const token = crypto.randomBytes(32).toString("hex");
+        const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+        const resetUrl = new URL("/reset-password", appUrl);
+        resetUrl.searchParams.set("token", token);
+
+        const [insertResult] = await db.execute(
+            "INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 30 MINUTE))",
+            [users[0].id, tokenHash]
+        );
+
+        try {
+            const response = await fetch("https://api.resend.com/emails", {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${apiKey}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    from,
+                    to: [users[0].email],
+                    subject: "Réinitialisation de ton mot de passe Grindly",
+                    html: `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;color:#1e293b"><h2>Réinitialiser ton mot de passe</h2><p>Une demande de réinitialisation a été reçue pour ton compte Grindly.</p><p><a href="${resetUrl.toString()}" style="display:inline-block;padding:12px 20px;background:#6366f1;color:#fff;border-radius:8px;text-decoration:none">Choisir un nouveau mot de passe</a></p><p>Ce lien expire dans ${RESET_TOKEN_TTL_MINUTES} minutes. Si tu n'es pas à l'origine de cette demande, ignore cet e-mail.</p></div>`,
+                }),
+                signal: AbortSignal.timeout(10000),
+            });
+            if (!response.ok) {
+                console.error("[Grindly:Auth] Resend error", response.status);
+                throw new Error("Email delivery failed");
+            }
+        } catch (error) {
+            await db.execute("DELETE FROM password_reset_tokens WHERE id = ?", [insertResult.insertId]);
+            throw error;
+        }
+        return res.json({ message: RESET_SUCCESS_MESSAGE });
+    } catch (error) {
+        console.error("[Grindly:Auth] Password reset request failed:", error);
+        return res.status(503).json({ message: "Envoi indisponible pour le moment. Réessaie plus tard." });
+    }
+});
+
+router.post("/reset-password", async (req, res) => {
+    const { token, password } = req.body || {};
+    if (typeof token !== "string" || !/^[a-f0-9]{64}$/.test(token)) {
+        return res.status(400).json({ message: "Lien de réinitialisation invalide." });
+    }
+    if (!isStrongPassword(password)) {
+        return res.status(400).json({ message: "Utilise au moins 8 caractères, une majuscule, une minuscule et un chiffre." });
+    }
+    let connection;
+    try {
+        await ensurePasswordResetTable();
+        const hash = crypto.createHash("sha256").update(token).digest("hex");
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+        const [rows] = await connection.execute(
+            "SELECT id, user_id FROM password_reset_tokens WHERE token_hash = ? AND used_at IS NULL AND expires_at > NOW() FOR UPDATE",
+            [hash]
+        );
+        if (!rows.length) {
+            await connection.rollback();
+            return res.status(400).json({ message: "Ce lien est expiré ou a déjà été utilisé. Demande un nouveau lien." });
+        }
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await connection.execute("UPDATE users SET password = ? WHERE id = ?", [hashedPassword, rows[0].user_id]);
+        await connection.execute("UPDATE password_reset_tokens SET used_at = NOW() WHERE user_id = ? AND used_at IS NULL", [rows[0].user_id]);
+        await connection.commit();
+        return res.json({ message: "Mot de passe mis à jour. Tu peux te connecter." });
+    } catch (error) {
+        if (connection) await connection.rollback().catch(() => {});
+        console.error("[Grindly:Auth] Password reset failed:", error);
+        return res.status(500).json({ message: "Réinitialisation impossible pour le moment." });
+    } finally {
+        if (connection) connection.release();
+    }
+});
 
 router.post("/signup", async (req, res) => {
     try {

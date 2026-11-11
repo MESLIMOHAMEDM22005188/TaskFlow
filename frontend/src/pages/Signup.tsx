@@ -209,6 +209,7 @@ export default function Signup() {
                     </button>
 
                     <p className="auth-switch">Tu as déjà un compte ? <Link to="/login">Se connecter</Link></p>
+                    <p className="auth-switch"><Link to="/forgot-password">Mot de passe oublié ?</Link></p>
                     <p className="auth-legal">Tes informations servent à créer et sécuriser ton espace Grindly.</p>
                 </form>
             </section>

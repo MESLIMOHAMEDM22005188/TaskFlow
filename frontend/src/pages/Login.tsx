@@ -89,6 +89,8 @@ export default function Login() {
                         required
                     />
 
+                    <p style={{ textAlign: "right", margin: "0 0 14px" }}><Link to="/forgot-password" className="auth-switch">Mot de passe oublié ?</Link></p>
+
                     <button className="auth-button" type="submit" disabled={loading}>
                         {loading ? <><span className="auth-spinner" /> Connexion en cours…</> : <>Se connecter <span aria-hidden="true">→</span></>}
                     </button>

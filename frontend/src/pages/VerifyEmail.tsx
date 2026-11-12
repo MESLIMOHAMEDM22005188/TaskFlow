@@ -5,19 +5,26 @@ import AuthThemeToggle from "../components/AuthThemeToggle";
 import "../assets/css/auth.css";
 import "../assets/css/email-verification.css";
 
-type LocationState = { email?: string } | null;
+type LocationState = { email?: string; emailSent?: boolean } | null;
 
 export default function VerifyEmail() {
     const location = useLocation();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
-    const locationEmail = (location.state as LocationState)?.email || "";
+    const locationState = location.state as LocationState;
+    const locationEmail = locationState?.email || "";
     const [email, setEmail] = useState(locationEmail || searchParams.get("email") || "");
     const [code, setCode] = useState("");
     const [loading, setLoading] = useState(false);
     const [resending, setResending] = useState(false);
     const [error, setError] = useState("");
-    const [message, setMessage] = useState("");
+    const [message, setMessage] = useState(
+        locationState?.emailSent === false
+            ? "Ton compte a été créé, mais l’envoi du code n’a pas abouti. Utilise le bouton de renvoi ci-dessous."
+            : locationState?.emailSent === true
+                ? "Un code de vérification vient d’être envoyé. Pense à regarder les courriers indésirables."
+                : ""
+    );
 
     const handleVerify = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();

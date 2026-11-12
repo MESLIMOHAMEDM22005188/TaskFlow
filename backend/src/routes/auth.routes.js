@@ -251,7 +251,16 @@ async function issueEmailVerificationCode(userId, email) {
         [userId, codeHash]
     );
 
-    await sendEmailVerificationMessage(email, code);
+    try {
+        await sendEmailVerificationMessage(email, code);
+    } catch (error) {
+        // A code that could not be delivered must not block an immediate retry.
+        await db.execute(
+            "UPDATE email_verification_codes SET used_at = NOW() WHERE user_id = ? AND code_hash = ? AND used_at IS NULL",
+            [userId, codeHash]
+        );
+        throw error;
+    }
 }
 
 router.post("/signup", async (req, res) => {
@@ -428,7 +437,7 @@ router.post("/resend-verification", async (req, res) => {
         );
         if (users.length && Number(users[0].email_verified) !== 1) {
             const [[latestCode]] = await db.execute(
-                "SELECT created_at FROM email_verification_codes WHERE user_id = ? ORDER BY created_at DESC, id DESC LIMIT 1",
+                "SELECT created_at FROM email_verification_codes WHERE user_id = ? AND used_at IS NULL ORDER BY created_at DESC, id DESC LIMIT 1",
                 [users[0].id]
             );
             const lastSentAt = latestCode?.created_at ? new Date(latestCode.created_at).getTime() : 0;

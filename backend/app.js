@@ -121,6 +121,8 @@ app.get("/api/test", (_req, res) => {
 
 app.use("/api/auth/login", authLimiter)
 app.use("/api/auth/signup", authLimiter)
+app.use("/api/auth/verify-email", authLimiter)
+app.use("/api/auth/resend-verification", authLimiter)
 app.use("/api/auth/forgot-password", authLimiter)
 app.use("/api/auth", authRoutes)
 app.use("/api/tasks", authMiddleware, taskRoutes)

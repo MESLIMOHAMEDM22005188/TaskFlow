@@ -195,7 +195,6 @@ function isStrongPassword(password) {
 }
 
 
-const EMAIL_VERIFICATION_TTL_MINUTES = 15;
 const MAX_EMAIL_VERIFICATION_ATTEMPTS = 5;
 
 function hashEmailVerificationCode(code) {
@@ -428,10 +427,20 @@ router.post("/resend-verification", async (req, res) => {
             [email]
         );
         if (users.length && Number(users[0].email_verified) !== 1) {
-            try {
-                await issueEmailVerificationCode(users[0].id, email);
-            } catch (error) {
-                console.error("[Grindly:EmailVerification] Resend failed:", error.message);
+            const [[latestCode]] = await db.execute(
+                "SELECT created_at FROM email_verification_codes WHERE user_id = ? ORDER BY created_at DESC, id DESC LIMIT 1",
+                [users[0].id]
+            );
+            const lastSentAt = latestCode?.created_at ? new Date(latestCode.created_at).getTime() : 0;
+            const cooldownMs = 60 * 1000;
+
+            // Avoid sending repeated messages while allowing a fresh code after one minute.
+            if (!lastSentAt || Date.now() - lastSentAt >= cooldownMs) {
+                try {
+                    await issueEmailVerificationCode(users[0].id, email);
+                } catch (error) {
+                    console.error("[Grindly:EmailVerification] Resend failed:", error.message);
+                }
             }
         }
 

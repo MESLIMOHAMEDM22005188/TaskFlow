@@ -228,22 +228,8 @@ router.post("/signup", async (req, res) => {
             );
             userId = result.insertId;
 
-            await connection.execute(
-                `
-                    INSERT INTO themes (user_id, name, emoji, color)
-                    VALUES
-                        (?, 'Work', '💼', '#3b82f6'),
-                        (?, 'Studies', '📚', '#8b5cf6'),
-                        (?, 'Sport', '💪', '#22c55e'),
-                        (?, 'Health', '❤️', '#ef4444'),
-                        (?, 'Finance', '💰', '#f59e0b'),
-                        (?, 'Personal Development', '🧠', '#06b6d4'),
-                        (?, 'Leisure', '🎮', '#ec4899'),
-                        (?, 'Family', '👨‍👩‍👧', '#14b8a6'),
-                        (?, 'Faith', '🕌', '#0f766e')
-                `,
-                [userId, userId, userId, userId, userId, userId, userId, userId, userId]
-            );
+            // Les thèmes standards sont fournis par le catalogue global.
+            // Ne pas les recopier dans chaque compte : cela créait des doublons.
             await connection.commit();
         } catch (error) {
             try { await connection.rollback(); } catch (rollbackError) {

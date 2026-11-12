@@ -6,6 +6,7 @@ import { applyLanguage, type GrindlyLanguage } from "./i18n"
 import { AuthChoice } from "./pages/AuthChoice"
 import Login from "./pages/Login"
 import Signup from "./pages/Signup"
+import VerifyEmail from "./pages/VerifyEmail"
 import { Dashboard } from "./pages/Dashboard"
 import Objectifs from "./pages/Objectifs"
 import Flow from "./pages/Flow"
@@ -173,6 +174,7 @@ function App() {
             <Route path="/"           element={<AuthChoice />} />
             <Route path="/login"      element={<Login />} />
             <Route path="/signup"     element={<Signup />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
             <Route path="/dashboard"  element={<RequireAuth><Dashboard /></RequireAuth>} />
             <Route path="/objectifs"  element={<RequireAuth><Objectifs /></RequireAuth>} />
             <Route path="/flow"       element={<RequireAuth><Flow /></RequireAuth>} />

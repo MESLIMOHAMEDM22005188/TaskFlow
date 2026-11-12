@@ -32,12 +32,14 @@ const defaultOrigins = [
     "http://localhost:4173",
     "http://127.0.0.1:4173",
     "https://grindlyy.alwaysdata.net",
+    // Capacitor Android WebView origin (server.androidScheme = https).
+    "https://localhost",
 ]
 const configuredOrigins = (process.env.CORS_ALLOWED_ORIGINS || "")
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean)
-const allowedOrigins = configuredOrigins.length > 0 ? configuredOrigins : defaultOrigins
+const allowedOrigins = [...new Set([...defaultOrigins, ...configuredOrigins])]
 
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,

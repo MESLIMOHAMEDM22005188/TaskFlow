@@ -10,6 +10,7 @@ export default function Login() {
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [verificationEmail, setVerificationEmail] = useState("");
     const [showRecovery, setShowRecovery] = useState(false);
     const [recoveryUsername, setRecoveryUsername] = useState("");
     const [recoveryChallenge, setRecoveryChallenge] = useState("");
@@ -88,6 +89,7 @@ export default function Login() {
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setError("");
+        setVerificationEmail("");
         setLoading(true);
         try {
             const res = await api.post("/auth/login", { email: email.trim(), password });
@@ -100,9 +102,15 @@ export default function Login() {
         } catch (err: any) {
             const status = err?.response?.status;
             const message = err?.response?.data?.message;
-            setError(status === 401
-                ? "Adresse e-mail ou mot de passe incorrect."
-                : message || "Impossible de se connecter pour le moment. Réessaie dans quelques instants.");
+            const code = err?.response?.data?.code;
+            if (status === 403 && code === "EMAIL_NOT_VERIFIED") {
+                setVerificationEmail(email.trim().toLowerCase());
+                setError(message || "Ton adresse e-mail doit être vérifiée avant la connexion.");
+            } else {
+                setError(status === 401
+                    ? "Adresse e-mail ou mot de passe incorrect."
+                    : message || "Impossible de se connecter pour le moment. Réessaie dans quelques instants.");
+            }
         } finally {
             setLoading(false);
         }
@@ -136,6 +144,13 @@ export default function Login() {
                     </div>
 
                     {error && <div className="auth-alert" role="alert">{error}</div>}
+                    {verificationEmail && (
+                        <p className="auth-switch">
+                            <Link to={`/verify-email?email=${encodeURIComponent(verificationEmail)}`} state={{ email: verificationEmail }}>
+                                Vérifier mon adresse e-mail
+                            </Link>
+                        </p>
+                    )}
 
                     <label className="auth-label" htmlFor="login-email">Adresse e-mail</label>
                     <input

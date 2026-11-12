@@ -194,23 +194,78 @@ function isStrongPassword(password) {
         /\d/.test(password);
 }
 
+
+const EMAIL_VERIFICATION_TTL_MINUTES = 15;
+const MAX_EMAIL_VERIFICATION_ATTEMPTS = 5;
+
+function hashEmailVerificationCode(code) {
+    if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET is required to protect email verification codes.");
+    return crypto.createHmac("sha256", process.env.JWT_SECRET).update(String(code)).digest("hex");
+}
+
+async function sendEmailVerificationMessage(email, code) {
+    const apiKey = process.env.RESEND_API_KEY;
+    const from = process.env.EMAIL_FROM || process.env.RESET_EMAIL_FROM;
+    if (!apiKey || !from) {
+        throw new Error("RESEND_API_KEY and EMAIL_FROM (or RESET_EMAIL_FROM) must be configured.");
+    }
+
+    const response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+            Authorization: "Bearer " + apiKey,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            from,
+            to: [email],
+            subject: "Grindly — vérifie ton adresse e-mail",
+            html: `
+                <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;color:#20202b;line-height:1.6">
+                    <h1 style="font-size:24px">Bienvenue sur Grindly</h1>
+                    <p>Pour activer ton compte, saisis le code de vérification ci-dessous :</p>
+                    <p style="font-size:32px;font-weight:700;letter-spacing:8px;padding:16px 20px;background:#f3f0ff;border-radius:12px;text-align:center">${code}</p>
+                    <p>Ce code expire dans 15 minutes. Si tu n'as pas demandé la création d'un compte, ignore cet e-mail.</p>
+                    <p style="color:#6b7280;font-size:12px">Grindly · Tes objectifs, un jour à la fois.</p>
+                </div>
+            `,
+            text: "Bienvenue sur Grindly. Ton code de vérification est : " + code + ". Il expire dans 15 minutes. Si tu n'as pas demandé la création d'un compte, ignore cet e-mail.",
+        }),
+    });
+
+    if (!response.ok) throw new Error("Resend rejected the verification email (HTTP " + response.status + ").");
+}
+
+async function issueEmailVerificationCode(userId, email) {
+    const code = String(crypto.randomInt(100000, 1000000));
+    const codeHash = hashEmailVerificationCode(code);
+
+    await db.execute(
+        "UPDATE email_verification_codes SET used_at = NOW() WHERE user_id = ? AND used_at IS NULL",
+        [userId]
+    );
+    await db.execute(
+        "DELETE FROM email_verification_codes WHERE expires_at < DATE_SUB(NOW(), INTERVAL 7 DAY) OR used_at < DATE_SUB(NOW(), INTERVAL 7 DAY)"
+    );
+    await db.execute(
+        "INSERT INTO email_verification_codes (user_id, code_hash, attempts, expires_at) VALUES (?, ?, 0, DATE_ADD(NOW(), INTERVAL 15 MINUTE))",
+        [userId, codeHash]
+    );
+
+    await sendEmailVerificationMessage(email, code);
+}
+
 router.post("/signup", async (req, res) => {
     try {
         const { username, email, password } = req.body;
 
         const usernameError = getUsernameError(username);
-        if (usernameError) {
-            return res.status(400).json({ message: usernameError });
-        }
+        if (usernameError) return res.status(400).json({ message: usernameError });
         if (!isValidEmail(email)) {
-            return res.status(400).json({
-                message: "Adresse e-mail invalide. Vérifie le format et réessaie.",
-            });
+            return res.status(400).json({ message: "Adresse e-mail invalide. Vérifie le format et réessaie." });
         }
         if (!isStrongPassword(password)) {
-            return res.status(400).json({
-                message: "Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule et un chiffre.",
-            });
+            return res.status(400).json({ message: "Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule et un chiffre." });
         }
 
         const normalizedUsername = username.trim();
@@ -220,9 +275,7 @@ router.post("/signup", async (req, res) => {
             "SELECT id FROM users WHERE LOWER(username) = LOWER(?) LIMIT 1",
             [normalizedUsername]
         );
-        if (existingNames.length > 0) {
-            return res.status(409).json({ message: "Ce pseudo est déjà utilisé." });
-        }
+        if (existingNames.length > 0) return res.status(409).json({ message: "Ce pseudo est déjà utilisé." });
 
         const [existingUsers] = await db.execute(
             "SELECT id FROM users WHERE email = ? LIMIT 1",
@@ -238,7 +291,6 @@ router.post("/signup", async (req, res) => {
 
         try {
             await connection.beginTransaction();
-
             const [result] = await connection.execute(
                 "INSERT INTO users (email, password, username, email_verified) VALUES (?, ?, ?, 0)",
                 [normalizedEmail, hashed, normalizedUsername]
@@ -259,12 +311,8 @@ router.post("/signup", async (req, res) => {
                         (?, 'Family', '👨‍👩‍👧', '#14b8a6'),
                         (?, 'Faith', '🕌', '#0f766e')
                 `,
-                [
-                    userId, userId, userId, userId, userId,
-                    userId, userId, userId, userId,
-                ]
+                [userId, userId, userId, userId, userId, userId, userId, userId, userId]
             );
-
             await connection.commit();
         } catch (error) {
             try { await connection.rollback(); } catch (rollbackError) {
@@ -283,8 +331,6 @@ router.post("/signup", async (req, res) => {
             await issueEmailVerificationCode(userId, normalizedEmail);
             emailSent = true;
         } catch (emailError) {
-            // Keep the account pending and let the user request another code from
-            // the verification screen. Never log the code or the Resend API key.
             console.error("[Grindly:EmailVerification] Initial email delivery failed:", emailError.message);
         }
 
@@ -296,8 +342,8 @@ router.post("/signup", async (req, res) => {
             email: normalizedEmail,
             emailSent,
         });
-    } catch (err) {
-        console.error("[Grindly:Signup] Account creation failed:", err);
+    } catch (error) {
+        console.error("[Grindly:Signup] Account creation failed:", error);
         return res.status(500).json({ message: "Impossible de créer le compte pour le moment." });
     }
 });
@@ -335,12 +381,13 @@ router.post("/verify-email", async (req, res) => {
         const valid = expected.length === received.length && crypto.timingSafeEqual(expected, received);
 
         if (!valid) {
+            const nextAttempts = Number(codes[0].attempts) + 1;
             await db.execute(
-                "UPDATE email_verification_codes SET attempts = attempts + 1, used_at = CASE WHEN attempts + 1 >= ? THEN NOW() ELSE used_at END WHERE id = ?",
-                [MAX_EMAIL_VERIFICATION_ATTEMPTS, codes[0].id]
+                "UPDATE email_verification_codes SET attempts = ?, used_at = CASE WHEN ? >= ? THEN NOW() ELSE used_at END WHERE id = ?",
+                [nextAttempts, nextAttempts, MAX_EMAIL_VERIFICATION_ATTEMPTS, codes[0].id]
             );
             return res.status(400).json({
-                message: Number(codes[0].attempts) + 1 >= MAX_EMAIL_VERIFICATION_ATTEMPTS
+                message: nextAttempts >= MAX_EMAIL_VERIFICATION_ATTEMPTS
                     ? "Trop de tentatives. Demande un nouveau code."
                     : "Code incorrect. Vérifie les 6 chiffres et réessaie.",
             });
@@ -349,10 +396,7 @@ router.post("/verify-email", async (req, res) => {
         const connection = await db.getConnection();
         try {
             await connection.beginTransaction();
-            await connection.execute(
-                "UPDATE users SET email_verified = 1 WHERE id = ?",
-                [user.id]
-            );
+            await connection.execute("UPDATE users SET email_verified = 1 WHERE id = ?", [user.id]);
             await connection.execute(
                 "UPDATE email_verification_codes SET used_at = NOW() WHERE user_id = ? AND used_at IS NULL",
                 [user.id]
@@ -377,9 +421,7 @@ router.post("/verify-email", async (req, res) => {
 router.post("/resend-verification", async (req, res) => {
     try {
         const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
-        if (!isValidEmail(email)) {
-            return res.status(400).json({ message: "Saisis une adresse e-mail valide." });
-        }
+        if (!isValidEmail(email)) return res.status(400).json({ message: "Saisis une adresse e-mail valide." });
 
         const [users] = await db.execute(
             "SELECT id, email_verified FROM users WHERE email = ? LIMIT 1",
@@ -393,7 +435,6 @@ router.post("/resend-verification", async (req, res) => {
             }
         }
 
-        // Keep the response identical for unknown, verified and pending accounts.
         return res.json({
             message: "Si un compte en attente correspond à cette adresse, un nouveau code a été envoyé.",
         });
@@ -402,94 +443,6 @@ router.post("/resend-verification", async (req, res) => {
         return res.status(500).json({ message: "Impossible de demander un nouvel envoi pour le moment." });
     }
 });
-SUB(NOW(), INTERVAL 7 DAY)"
-    );
-    await db.execute(
-        "INSERT INTO email_verification_codes (user_id, code_hash, attempts, expires_at) VALUES (?, ?, 0, DATE_ADD(NOW(), INTERVAL 15 MINUTE))",
-        [userId, codeHash]
-    );
-
-    await sendEmailVerificationMessage(email, code);
-}
-
-router.post("/signup", async (req, res) => {
-    try {
-        const { username, email, password } = req.body;
-
-        const usernameError = getUsernameError(username);
-        if (usernameError) {
-            return res.status(400).json({ message: usernameError });
-        }
-        if (!isValidEmail(email)) {
-            return res.status(400).json({
-                message: "Adresse e-mail invalide. Vérifie le format et réessaie.",
-            });
-        }
-        if (!isStrongPassword(password)) {
-            return res.status(400).json({
-                message: "Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule et un chiffre.",
-            });
-        }
-
-        const normalizedUsername = username.trim();
-        const normalizedEmail = email.trim().toLowerCase();
-
-        const [existingNames] = await db.execute(
-            "SELECT id FROM users WHERE LOWER(username) = LOWER(?) LIMIT 1",
-            [normalizedUsername]
-        );
-        if (existingNames.length > 0) {
-            return res.status(409).json({ message: "Ce pseudo est déjà utilisé." });
-        }
-
-        const [existingUsers] = await db.execute(
-            "SELECT id FROM users WHERE email = ?",
-            [normalizedEmail]
-        );
-
-        if (existingUsers.length > 0) {
-            return res.status(409).json({
-                message: "Email already in use",
-            });
-        }
-
-        const hashed = await bcrypt.hash(password, 10);
-
-        const [result] = await db.execute(
-            "INSERT INTO users (email, password, username) VALUES (?, ?, ?)",
-            [normalizedEmail, hashed, normalizedUsername]
-        );
-
-        const userId = result.insertId;
-
-        // Create default themes for every new user
-        await db.execute(
-            `
-                INSERT INTO themes (user_id, name, emoji, color)
-                VALUES
-                    (?, 'Work', '💼', '#3b82f6'),
-                    (?, 'Studies', '📚', '#8b5cf6'),
-                    (?, 'Sport', '💪', '#22c55e'),
-                    (?, 'Health', '❤️', '#ef4444'),
-                    (?, 'Finance', '💰', '#f59e0b'),
-                    (?, 'Personal Development', '🧠', '#06b6d4'),
-                    (?, 'Leisure', '🎮', '#ec4899'),
-                    (?, 'Family', '👨‍👩‍👧', '#14b8a6'),
-                    (?, 'Faith', '🕌', '#0f766e')
-            `,
-            [
-                userId, userId, userId, userId, userId,
-                userId, userId, userId, userId,
-            ]
-        );
-
-        res.json({ message: "Account created successfully" });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Unable to create account" });
-    }
-});
-
 
 /**
  * Step 1: find the MySQL account by username and issue a generic challenge.

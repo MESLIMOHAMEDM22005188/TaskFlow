@@ -80,14 +80,15 @@ export function Dashboard() {
     const uniqueThemes = useMemo(() => {
         const seen = new Set<string>()
         return themes.filter(theme => {
-            const normalizedName = theme.name
-                .normalize("NFD")
-                .replace(/[\\u0300-\\u036f]/g, "")
+            const key = String(theme.name ?? "")
+                .normalize("NFKD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/[\u200B-\u200D\uFEFF]/g, "")
+                .replace(/\s+/g, " ")
                 .trim()
-                .replace(/\\s+/g, " ")
                 .toLocaleLowerCase("fr-FR")
-            if (!normalizedName || seen.has(normalizedName)) return false
-            seen.add(normalizedName)
+            if (!key || seen.has(key)) return false
+            seen.add(key)
             return true
         })
     }, [themes])

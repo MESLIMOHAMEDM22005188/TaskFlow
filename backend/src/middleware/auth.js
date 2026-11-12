@@ -21,8 +21,15 @@ async function authenticateToken(req, res, next) {
     let authStage = "validate-user"
     let userId = Number(decodedToken.userId)
     try {
-        const [[user]] = await db.execute("SELECT id FROM users WHERE id = ? LIMIT 1", [userId])
+        const [[user]] = await db.execute("SELECT id, email, email_verified FROM users WHERE id = ? LIMIT 1", [userId])
         if (!user) return res.status(401).json({ message: "Account unavailable." })
+        if (Number(user.email_verified) !== 1) {
+            return res.status(403).json({
+                code: "EMAIL_NOT_VERIFIED",
+                message: "Ton adresse e-mail doit être vérifiée avant d'accéder à Grindly.",
+                email: user.email,
+            })
+        }
 
         // Best-effort activity heartbeat. Presence must never block authentication.
         authStage = "update-presence"

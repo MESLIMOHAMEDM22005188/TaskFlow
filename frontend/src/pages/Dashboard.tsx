@@ -75,6 +75,23 @@ export function Dashboard() {
     const [showThemes, setShowThemes] = useState(false)
     const [annualDateInput, setAnnualDateInput] = useState("")
 
+    // Certains comptes peuvent contenir plusieurs thèmes portant le même nom.
+    // On n'affiche qu'une seule pastille par nom, sans modifier les données en base.
+    const uniqueThemes = useMemo(() => {
+        const seen = new Set<string>()
+        return themes.filter(theme => {
+            const normalizedName = theme.name
+                .normalize("NFD")
+                .replace(/[\\u0300-\\u036f]/g, "")
+                .trim()
+                .replace(/\\s+/g, " ")
+                .toLocaleLowerCase("fr-FR")
+            if (!normalizedName || seen.has(normalizedName)) return false
+            seen.add(normalizedName)
+            return true
+        })
+    }, [themes])
+
     const periodLabels: Record<string, string> = {
         daily: "jour",
         weekly: "semaine",
@@ -308,34 +325,33 @@ export function Dashboard() {
                                 <input className="theme-input" value={note} onChange={event => setNote(event.target.value)} placeholder="Ajouter un détail" maxLength={1000} />
                             </label>
 
-                            {themes.length > 0 && (
-                                <fieldset style={{ border: "1px solid rgba(128,128,128,.3)", borderRadius: 12, padding: 12 }}>
+                            {uniqueThemes.length > 0 && (
+                                <fieldset className="task-theme-picker">
                                     <legend className="theme-label">Thèmes (3 maximum)</legend>
-                                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                                        {themes.map(theme => {
+                                    <div className="task-theme-picker-options">
+                                        {uniqueThemes.map(theme => {
                                             const selected = themeIds.includes(theme.id)
+                                            const disabled = !selected && themeIds.length >= 3
                                             return (
                                                 <button
                                                     key={theme.id}
                                                     type="button"
+                                                    className={"task-theme-chip" + (selected ? " selected" : "")}
                                                     onClick={() => toggleThemeSelection(theme.id)}
-                                                    disabled={!selected && themeIds.length >= 3}
+                                                    disabled={disabled}
                                                     aria-pressed={selected}
                                                     style={{
-                                                        border: `1px solid ${theme.color || "#888"}`,
-                                                        borderRadius: 999,
-                                                        padding: "7px 12px",
-                                                        background: selected ? `${theme.color || "#888"}22` : "transparent",
-                                                        color: "inherit",
-                                                        opacity: !selected && themeIds.length >= 3 ? 0.45 : 1,
-                                                        cursor: "pointer",
-                                                    }}
+                                                        "--task-theme-color": theme.color || "#888",
+                                                    } as React.CSSProperties}
                                                 >
-                                                    {theme.emoji || "•"} {theme.name}{selected ? " ✓" : ""}
+                                                    <span aria-hidden="true">{theme.emoji || "•"}</span>
+                                                    {theme.name}
+                                                    {selected && <span className="task-theme-chip-check" aria-hidden="true">✓</span>}
                                                 </button>
                                             )
                                         })}
                                     </div>
+                                    <p className="task-theme-picker-hint">{themeIds.length}/3 thèmes sélectionnés</p>
                                 </fieldset>
                             )}
 

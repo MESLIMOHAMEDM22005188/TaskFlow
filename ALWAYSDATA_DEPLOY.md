@@ -40,7 +40,7 @@ DB_HOST=mysql-example.alwaysdata.net
 DB_PORT=3306
 DB_NAME=database_name
 DB_USER=user
-DB_PASSWORD=replace-with-database-password
+DB_PASS=replace-with-database-password
 DB_CONNECTION_LIMIT=10
 
 JWT_SECRET=replace-with-a-long-random-secret

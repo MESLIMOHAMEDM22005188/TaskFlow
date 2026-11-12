@@ -99,9 +99,16 @@ export default function Signup() {
 
         setLoading(true);
         try {
-            await api.post("/auth/signup", { username: username.trim(), email: email.trim(), password });
-            setSuccess("Ton compte a été créé. Tu vas être redirigé vers la connexion…");
-            window.setTimeout(() => navigate("/login", { replace: true }), 900);
+            const response = await api.post("/auth/signup", {
+                username: username.trim(),
+                email: email.trim(),
+                password,
+            });
+            const targetEmail = response.data?.email || email.trim().toLowerCase();
+            navigate(`/verify-email?email=${encodeURIComponent(targetEmail)}`, {
+                replace: true,
+                state: { email: targetEmail, emailSent: response.data?.emailSent !== false },
+            });
         } catch (err: any) {
             const message = err?.response?.data?.message;
             setError(message || "Impossible de créer le compte pour le moment. Vérifie les informations et réessaie.");

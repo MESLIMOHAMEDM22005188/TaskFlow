@@ -22,7 +22,24 @@ router.get("/", async (req, res) => {
             [req.userId]
         )
 
-        res.json(rows)
+        // Les thèmes standards peuvent exister à la fois dans le catalogue global
+        // et dans les anciens comptes où ils étaient copiés à l'inscription.
+        // On conserve une seule entrée par nom normalisé pour l'interface.
+        const seenNames = new Set()
+        const uniqueRows = rows.filter(theme => {
+            const key = String(theme.name || "")
+                .normalize("NFKD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/[\u200B-\u200D\uFEFF]/g, "")
+                .replace(/\s+/g, " ")
+                .trim()
+                .toLocaleLowerCase("fr-FR")
+            if (!key || seenNames.has(key)) return false
+            seenNames.add(key)
+            return true
+        })
+
+        res.json(uniqueRows)
 
     } catch (err) {
         console.error("GET /themes:", err)

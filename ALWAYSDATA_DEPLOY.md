@@ -10,7 +10,7 @@
 
 ## Alwaysdata Service (backend 24/7)
 
-Create the service in **Advanced > Services**.
+Create the service in **Advanced > Services**. In **Web > Sites**, set the public address `grindlyy.alwaysdata.net` to a **Reverse proxy** targeting `http://services-grindlyy.alwaysdata.net:8300`.
 
 Recommended configuration:
 
@@ -22,7 +22,7 @@ Recommended configuration:
 
 Alwaysdata Services must listen on IPv6 address `::` and use an available port in the range `8300-8499`. Choose the same port in the service configuration and the backend environment.
 
-The service is exposed on the account's services hostname and selected port. If the public website domain must proxy requests to this service, configure that routing separately in the website/HTTP server settings; creating a Service alone does not automatically map the website domain to it.
+The service is exposed on `services-grindlyy.alwaysdata.net:8300`. To keep the public HTTPS domain, configure `Web > Sites` for `grindlyy.alwaysdata.net` as a **Reverse proxy** targeting `http://services-grindlyy.alwaysdata.net:8300`. A Service alone does not automatically map the website domain to the application. This is the recommended Alwaysdata 24/7 architecture: a Service for the persistent process and a Reverse proxy site for HTTP access.
 
 Service logs are available in the Alwaysdata administration panel and under `/home/grindlyy/admin/logs/services/`.
 
@@ -40,7 +40,7 @@ DB_HOST=mysql-example.alwaysdata.net
 DB_PORT=3306
 DB_NAME=database_name
 DB_USER=user
-DB_PASS=replace-with-database-password
+DB_PASSWORD=replace-with-database-password
 DB_CONNECTION_LIMIT=10
 
 JWT_SECRET=replace-with-a-long-random-secret

@@ -369,7 +369,8 @@ export function useDashboard() {
             })
         } catch (err) {
             console.error("Impossible de supprimer définitivement la tâche :", err)
-            alert("La suppression a échoué. Vérifie ta connexion puis réessaie.")
+            const message = err instanceof Error ? err.message : "Erreur inconnue"
+            alert(`La suppression a échoué : ${message}`)
         }
     }
 

@@ -1,12 +1,14 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import api from "../services/api";
 import AuthThemeToggle from "../components/AuthThemeToggle";
 import "../assets/css/auth.css";
 
 export default function Login() {
     const navigate = useNavigate();
-    const [email, setEmail] = useState("");
+    const location = useLocation();
+    const initialEmail = (location.state as { email?: string } | null)?.email || "";
+    const [email, setEmail] = useState(initialEmail);
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");

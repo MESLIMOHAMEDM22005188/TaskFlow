@@ -1,0 +1,43 @@
+.verification-layout {
+    align-items: center;
+}
+
+.verification-card {
+    width: min(100%, 480px);
+}
+
+.verification-code-input {
+    text-align: center;
+    letter-spacing: 0.45em;
+    font-size: 1.35rem;
+    font-weight: 750;
+    font-variant-numeric: tabular-nums;
+}
+
+.verification-resend {
+    display: block;
+    width: 100%;
+    margin-top: 14px;
+    padding: 10px 12px;
+    border: 1px solid var(--auth-border, rgba(148, 163, 184, 0.25));
+    border-radius: 10px;
+    background: transparent;
+    color: var(--auth-text, inherit);
+    font: inherit;
+    cursor: pointer;
+}
+
+.verification-resend:hover:not(:disabled) {
+    border-color: var(--accent, #8b5cf6);
+}
+
+.verification-resend:disabled {
+    cursor: wait;
+    opacity: 0.65;
+}
+
+@media (max-width: 760px) {
+    .verification-code-input {
+        letter-spacing: 0.3em;
+    }
+}

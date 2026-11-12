@@ -165,7 +165,7 @@ export default function Login() {
                         required
                     />
 
-                    <div className="auth-recovery-row"><button type="button" className="auth-link-button" onClick={() => { setShowRecovery(value => !value); setRecoveryUsername(""); setRecoveryStep(0); setRecoveryMessage(""); }}>Mot de passe oublié ?</button></div>
+                    <div className="auth-recovery-row"><button type="button" className="auth-link-button" onClick={() => navigate("/forgetpassword")}>Mot de passe oublié ?</button></div>
 
                     <label className="auth-label" htmlFor="login-password">Mot de passe</label>
                     <input

@@ -75,11 +75,21 @@ api.interceptors.response.use(
             online: navigator.onLine,
         });
 
-        if (error?.response?.status === 401) {
+        const responseCode = error?.response?.data?.code;
+        if (error?.response?.status === 403 && responseCode === "EMAIL_NOT_VERIFIED") {
+            localStorage.removeItem("token");
+            const email = typeof error?.response?.data?.email === "string"
+                ? error.response.data.email
+                : "";
+            const query = email ? `?email=${encodeURIComponent(email)}` : "";
+            if (window.location.pathname !== "/verify-email") {
+                window.location.replace(`/verify-email${query}`);
+            }
+        } else if (error?.response?.status === 401) {
             console.warn(LOG_PREFIX, "401: session token will be cleared");
             localStorage.removeItem("token");
 
-            const publicPaths = ["/", "/login", "/signup"];
+            const publicPaths = ["/", "/login", "/signup", "/verify-email"];
             if (!publicPaths.includes(window.location.pathname)) {
                 console.warn(LOG_PREFIX, "Redirecting to /login from", window.location.pathname);
                 window.location.replace("/login");

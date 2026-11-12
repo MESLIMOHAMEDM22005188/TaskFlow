@@ -225,6 +225,224 @@ router.post("/signup", async (req, res) => {
         }
 
         const [existingUsers] = await db.execute(
+            "SELECT id FROM users WHERE email = ? LIMIT 1",
+            [normalizedEmail]
+        );
+        if (existingUsers.length > 0) {
+            return res.status(409).json({ message: "Cette adresse e-mail est déjà utilisée." });
+        }
+
+        const hashed = await bcrypt.hash(password, 10);
+        const connection = await db.getConnection();
+        let userId;
+
+        try {
+            await connection.beginTransaction();
+
+            const [result] = await connection.execute(
+                "INSERT INTO users (email, password, username, email_verified) VALUES (?, ?, ?, 0)",
+                [normalizedEmail, hashed, normalizedUsername]
+            );
+            userId = result.insertId;
+
+            await connection.execute(
+                `
+                    INSERT INTO themes (user_id, name, emoji, color)
+                    VALUES
+                        (?, 'Work', '💼', '#3b82f6'),
+                        (?, 'Studies', '📚', '#8b5cf6'),
+                        (?, 'Sport', '💪', '#22c55e'),
+                        (?, 'Health', '❤️', '#ef4444'),
+                        (?, 'Finance', '💰', '#f59e0b'),
+                        (?, 'Personal Development', '🧠', '#06b6d4'),
+                        (?, 'Leisure', '🎮', '#ec4899'),
+                        (?, 'Family', '👨‍👩‍👧', '#14b8a6'),
+                        (?, 'Faith', '🕌', '#0f766e')
+                `,
+                [
+                    userId, userId, userId, userId, userId,
+                    userId, userId, userId, userId,
+                ]
+            );
+
+            await connection.commit();
+        } catch (error) {
+            try { await connection.rollback(); } catch (rollbackError) {
+                console.error("[Grindly:Signup] Rollback failed:", rollbackError.message);
+            }
+            if (error.code === "ER_DUP_ENTRY") {
+                return res.status(409).json({ message: "Ce pseudo ou cette adresse e-mail est déjà utilisé." });
+            }
+            throw error;
+        } finally {
+            connection.release();
+        }
+
+        let emailSent = false;
+        try {
+            await issueEmailVerificationCode(userId, normalizedEmail);
+            emailSent = true;
+        } catch (emailError) {
+            // Keep the account pending and let the user request another code from
+            // the verification screen. Never log the code or the Resend API key.
+            console.error("[Grindly:EmailVerification] Initial email delivery failed:", emailError.message);
+        }
+
+        return res.status(201).json({
+            message: emailSent
+                ? "Compte créé. Un code de vérification a été envoyé à ton adresse e-mail."
+                : "Compte créé, mais l'envoi du code a échoué. Tu peux demander un nouvel envoi.",
+            requiresEmailVerification: true,
+            email: normalizedEmail,
+            emailSent,
+        });
+    } catch (err) {
+        console.error("[Grindly:Signup] Account creation failed:", err);
+        return res.status(500).json({ message: "Impossible de créer le compte pour le moment." });
+    }
+});
+
+router.post("/verify-email", async (req, res) => {
+    try {
+        const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+        const code = typeof req.body?.code === "string" ? req.body.code.trim() : "";
+        if (!isValidEmail(email) || !/^\d{6}$/.test(code)) {
+            return res.status(400).json({ message: "Adresse e-mail ou code invalide." });
+        }
+
+        const [users] = await db.execute(
+            "SELECT id, email_verified FROM users WHERE email = ? LIMIT 1",
+            [email]
+        );
+        if (!users.length) {
+            return res.status(400).json({ message: "Code invalide ou expiré. Vérifie les informations ou demande un nouveau code." });
+        }
+        const user = users[0];
+        if (Number(user.email_verified) === 1) {
+            return res.json({ message: "Cette adresse e-mail est déjà vérifiée.", verified: true });
+        }
+
+        const [codes] = await db.execute(
+            "SELECT id, code_hash, attempts FROM email_verification_codes WHERE user_id = ? AND used_at IS NULL AND expires_at > NOW() ORDER BY created_at DESC, id DESC LIMIT 1",
+            [user.id]
+        );
+        if (!codes.length || Number(codes[0].attempts) >= MAX_EMAIL_VERIFICATION_ATTEMPTS) {
+            return res.status(400).json({ message: "Aucun code actif. Demande un nouveau code de vérification." });
+        }
+
+        const expected = Buffer.from(String(codes[0].code_hash), "hex");
+        const received = Buffer.from(hashEmailVerificationCode(code), "hex");
+        const valid = expected.length === received.length && crypto.timingSafeEqual(expected, received);
+
+        if (!valid) {
+            await db.execute(
+                "UPDATE email_verification_codes SET attempts = attempts + 1, used_at = CASE WHEN attempts + 1 >= ? THEN NOW() ELSE used_at END WHERE id = ?",
+                [MAX_EMAIL_VERIFICATION_ATTEMPTS, codes[0].id]
+            );
+            return res.status(400).json({
+                message: Number(codes[0].attempts) + 1 >= MAX_EMAIL_VERIFICATION_ATTEMPTS
+                    ? "Trop de tentatives. Demande un nouveau code."
+                    : "Code incorrect. Vérifie les 6 chiffres et réessaie.",
+            });
+        }
+
+        const connection = await db.getConnection();
+        try {
+            await connection.beginTransaction();
+            await connection.execute(
+                "UPDATE users SET email_verified = 1 WHERE id = ?",
+                [user.id]
+            );
+            await connection.execute(
+                "UPDATE email_verification_codes SET used_at = NOW() WHERE user_id = ? AND used_at IS NULL",
+                [user.id]
+            );
+            await connection.commit();
+        } catch (error) {
+            try { await connection.rollback(); } catch (rollbackError) {
+                console.error("[Grindly:EmailVerification] Rollback failed:", rollbackError.message);
+            }
+            throw error;
+        } finally {
+            connection.release();
+        }
+
+        return res.json({ message: "Adresse e-mail vérifiée. Ton compte est activé.", verified: true });
+    } catch (error) {
+        console.error("[Grindly:EmailVerification] Verification failed:", error.message);
+        return res.status(500).json({ message: "La vérification est momentanément indisponible. Réessaie." });
+    }
+});
+
+router.post("/resend-verification", async (req, res) => {
+    try {
+        const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+        if (!isValidEmail(email)) {
+            return res.status(400).json({ message: "Saisis une adresse e-mail valide." });
+        }
+
+        const [users] = await db.execute(
+            "SELECT id, email_verified FROM users WHERE email = ? LIMIT 1",
+            [email]
+        );
+        if (users.length && Number(users[0].email_verified) !== 1) {
+            try {
+                await issueEmailVerificationCode(users[0].id, email);
+            } catch (error) {
+                console.error("[Grindly:EmailVerification] Resend failed:", error.message);
+            }
+        }
+
+        // Keep the response identical for unknown, verified and pending accounts.
+        return res.json({
+            message: "Si un compte en attente correspond à cette adresse, un nouveau code a été envoyé.",
+        });
+    } catch (error) {
+        console.error("[Grindly:EmailVerification] Resend request failed:", error.message);
+        return res.status(500).json({ message: "Impossible de demander un nouvel envoi pour le moment." });
+    }
+});
+SUB(NOW(), INTERVAL 7 DAY)"
+    );
+    await db.execute(
+        "INSERT INTO email_verification_codes (user_id, code_hash, attempts, expires_at) VALUES (?, ?, 0, DATE_ADD(NOW(), INTERVAL 15 MINUTE))",
+        [userId, codeHash]
+    );
+
+    await sendEmailVerificationMessage(email, code);
+}
+
+router.post("/signup", async (req, res) => {
+    try {
+        const { username, email, password } = req.body;
+
+        const usernameError = getUsernameError(username);
+        if (usernameError) {
+            return res.status(400).json({ message: usernameError });
+        }
+        if (!isValidEmail(email)) {
+            return res.status(400).json({
+                message: "Adresse e-mail invalide. Vérifie le format et réessaie.",
+            });
+        }
+        if (!isStrongPassword(password)) {
+            return res.status(400).json({
+                message: "Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule et un chiffre.",
+            });
+        }
+
+        const normalizedUsername = username.trim();
+        const normalizedEmail = email.trim().toLowerCase();
+
+        const [existingNames] = await db.execute(
+            "SELECT id FROM users WHERE LOWER(username) = LOWER(?) LIMIT 1",
+            [normalizedUsername]
+        );
+        if (existingNames.length > 0) {
+            return res.status(409).json({ message: "Ce pseudo est déjà utilisé." });
+        }
+
+        const [existingUsers] = await db.execute(
             "SELECT id FROM users WHERE email = ?",
             [normalizedEmail]
         );
@@ -458,6 +676,13 @@ router.post("/login", async (req, res) => {
     const match = await bcrypt.compare(password, user.password);
     if (!match) {
         return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    if (Number(user.email_verified) !== 1) {
+        return res.status(403).json({
+            code: "EMAIL_NOT_VERIFIED",
+            message: "Ton adresse e-mail n'est pas encore vérifiée. Entre le code reçu pour activer ton compte.",
+        });
     }
 
     const token = jwt.sign(

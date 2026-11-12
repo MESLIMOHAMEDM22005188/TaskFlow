@@ -12,27 +12,35 @@ let connectionPool = null;
  */
 
 function getDatabaseConfig() {
+    const host = process.env.DB_HOST;
+    const user = process.env.DB_USER;
+    const database = process.env.DB_NAME;
+    const password = process.env.DB_PASSWORD || process.env.DB_PASS;
+
+    // Prefer individual variables when complete so a rotated DB_PASSWORD
+    // cannot be silently overridden by an outdated DATABASE_URL.
+    if (host && user && database && password) {
+        return {
+            host,
+            port: Number(process.env.DB_PORT || 3306),
+            user,
+            password,
+            database,
+        };
+    }
 
     if (process.env.DATABASE_URL) {
-
-        const databaseUrl = new URL(process.env.DATABASE_URL)
-
+        const databaseUrl = new URL(process.env.DATABASE_URL);
         return {
             host: databaseUrl.hostname,
             port: Number(databaseUrl.port || 3306),
             user: decodeURIComponent(databaseUrl.username),
             password: decodeURIComponent(databaseUrl.password),
-            database: databaseUrl.pathname.replace(/^\//, ""),
+            database: databaseUrl.pathname.slice(1),
         };
     }
 
-    return {
-        host: process.env.DB_HOST,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASS,
-        database: process.env.DB_NAME,
-        port: Number(process.env.DB_PORT || 3306),
-    }
+    throw new Error("Database configuration missing: provide DB_HOST, DB_USER, DB_NAME and DB_PASSWORD (or DATABASE_URL).");
 }
 /**
  * Returns the singleton MySQL connection pool.

@@ -1,98 +1,109 @@
-# Grindly on AlwaysData
+# Grindly on Alwaysdata
 
-## Application type
+## Architecture
 
-- Backend: Node.js + Express
-- Frontend: React + Vite static build
-- Database: MySQL
+- Frontend: React + Vite, built into `frontend/dist`
+- Backend: Node.js + Express, started as an Alwaysdata **Service**
+- Database: MySQL / MariaDB
+- Email: Alwaysdata mailbox through SMTP using Nodemailer
 - Media: Cloudinary
 
-## Expected deployment model
+## Alwaysdata Service (backend 24/7)
 
-1. Build the frontend into `frontend/dist`
-2. Run the backend with Node.js on AlwaysData
-3. Let Express serve both the API under `/api` and the built frontend
+Create the service in **Advanced > Services**. In **Web > Sites**, set the public address `grindlyy.alwaysdata.net` to a **Reverse proxy** targeting `http://services-grindlyy.alwaysdata.net:8300`.
 
-## Required environment variables
+Recommended configuration:
 
-Backend:
+- Working directory: `/home/grindlyy/www/TaskFlow/backend`
+- Command: `node app.js`
+- Run in foreground; do not daemonize or fork the process
+- Node.js: use the account's Node.js 20+ runtime
+- Environment variables: `NODE_ENV=production`, `PORT=8300`, `HOST=::`
 
-- `NODE_ENV=production`
-- `PORT=8100`
-- `HOST=0.0.0.0`
-- `DATABASE_URL=mysql://user:password@mysql-example.alwaysdata.net:3306/database_name`
-- `DB_HOST=mysql-example.alwaysdata.net`
-- `DB_PORT=3306`
-- `DB_USER=user`
-- `DB_PASS=password`
-- `DB_NAME=database_name`
-- `DB_CONNECTION_LIMIT=10`
-- `JWT_SECRET=<long-random-secret>`
-- `CORS_ALLOWED_ORIGINS=https://grindlyy.alwaysdata.net`
-- `CLOUDINARY_CLOUD_NAME=<cloudinary-cloud-name>`
-- `CLOUDINARY_API_KEY=<cloudinary-api-key>`
-- `CLOUDINARY_API_SECRET=<cloudinary-api-secret>`
+Alwaysdata Services must listen on IPv6 address `::` and use an available port in the range `8300-8499`. Choose the same port in the service configuration and the backend environment.
 
-Frontend:
+The service is exposed on `services-grindlyy.alwaysdata.net:8300`. To keep the public HTTPS domain, configure `Web > Sites` for `grindlyy.alwaysdata.net` as a **Reverse proxy** targeting `http://services-grindlyy.alwaysdata.net:8300`. A Service alone does not automatically map the website domain to the application. This is the recommended Alwaysdata 24/7 architecture: a Service for the persistent process and a Reverse proxy site for HTTP access.
 
-- `VITE_API_URL=https://grindlyy.alwaysdata.net`
+Service logs are available in the Alwaysdata administration panel and under `/home/grindlyy/admin/logs/services/`.
 
-## Build commands
+## Backend environment variables
 
-Frontend:
+Set these in the backend service environment or in the backend's private `.env` file. Never commit `.env`.
 
-```powershell
+```dotenv
+NODE_ENV=production
+PORT=8300
+HOST=::
+
+DATABASE_URL=mysql://user:password@mysql-example.alwaysdata.net:3306/database_name
+DB_HOST=mysql-example.alwaysdata.net
+DB_PORT=3306
+DB_NAME=database_name
+DB_USER=user
+DB_PASSWORD=replace-with-database-password
+DB_CONNECTION_LIMIT=10
+
+JWT_SECRET=replace-with-a-long-random-secret
+JWT_EXPIRES_IN=7d
+
+SMTP_HOST=smtp-example.alwaysdata.net
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER=mailbox@example.alwaysdata.net
+SMTP_PASS=replace-with-mailbox-password
+EMAIL_FROM="Grindly <mailbox@example.alwaysdata.net>"
+
+APP_URL=https://your-app.alwaysdata.net
+CORS_ALLOWED_ORIGINS=https://your-app.alwaysdata.net
+
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-cloudinary-api-key
+CLOUDINARY_API_SECRET=replace-with-cloudinary-api-secret
+UPLOAD_DIR=uploads
+LOG_LEVEL=info
+```
+
+## Database migrations
+
+Apply the SQL migrations once, against the production database, after checking the current schema:
+
+1. `backend/migrations/20261112_email_verification.sql`
+2. `backend/migrations/20261112_password_reset_codes.sql`
+
+The first migration adds email verification for new accounts. The second stores password-reset code hashes and expiry data. Back up the database before applying migrations.
+
+## Build and deployment
+
+Build the frontend locally or in GitHub Actions:
+
+```bash
 cd frontend
-npm install
+npm ci
 npm run build
 ```
 
-Backend:
+Install backend dependencies in an environment with enough resources:
 
-```powershell
+```bash
 cd backend
-npm install
-npm start
+npm ci --omit=dev
 ```
 
-## AlwaysData application settings
+Then restart the Alwaysdata Service from **Advanced > Services**.
 
-Node application:
+## Verification
 
-- Application type: `Node.js`
-- Working directory: `/www/grindly/backend` or the directory where `backend/app.js` is deployed
-- Startup file: `app.js`
-- Node version: `20.x` or newer
-- Environment: `production`
+- `GET /api/health` returns JSON with `ok: true`
+- Sign up sends a six-digit verification code through Alwaysdata SMTP
+- Resend verification sends a new code
+- Forgot password sends a six-digit reset code through Alwaysdata SMTP
+- Resetting the password invalidates active reset codes
+- Authenticated password change still requires the current password
 
-MySQL:
+## Security
 
-- Create a MySQL database in AlwaysData
-- Copy the host, database name, username, and password into the backend environment variables
-
-Domain:
-
-- Point your app domain to the Node application
-- Use the same public origin in `VITE_API_URL` and `CORS_ALLOWED_ORIGINS`
-
-## Deployment sequence
-
-1. Upload the repository
-2. Install backend dependencies in `backend/`
-3. Install frontend dependencies in `frontend/`
-4. Build the frontend
-5. Configure AlwaysData environment variables
-6. Start the Node application
-7. Verify:
-   - `GET /api/health`
-   - `GET /`
-   - login/signup flows
-   - authenticated API routes
-   - avatar upload
-
-## Important manual actions
-
-- Rotate all secrets that were previously committed into `.env`
-- Remove tracked secret files from version control history if this repository has been shared
-- Rebuild the frontend after every frontend change
-- Keep the MySQL schema in sync manually until proper migrations are added
+- Keep `.env` out of Git.
+- Rotate any credential that has been exposed.
+- Use a long, unique JWT secret.
+- Do not print environment variables in terminal logs or support messages.
+- Services are publicly reachable; protect every application endpoint with authentication and rate limits where appropriate.

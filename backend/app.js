@@ -53,8 +53,8 @@ app.disable("x-powered-by")
 console.info(LOG_PREFIX, "Booting", {
     node: process.version,
     environment: process.env.NODE_ENV || "unspecified",
-    port: process.env.PORT || "8100",
-    host: process.env.HOST || "0.0.0.0",
+    port: process.env.PORT || "8300",
+    host: process.env.HOST || "::",
     frontendPath,
     frontendExists: fs.existsSync(frontendPath),
     frontendIndexExists: fs.existsSync(path.join(frontendPath, "index.html")),
@@ -177,8 +177,8 @@ app.use((err, req, res, _next) => {
     })
 })
 
-const PORT = Number(process.env.PORT) || 8100
-const HOST = process.env.HOST || "0.0.0.0"
+const PORT = Number(process.env.PORT) || 8300
+const HOST = process.env.HOST || "::"
 
 const server = app.listen(PORT, HOST, () => {
     console.info(LOG_PREFIX, "LISTENING", { address: `http://${HOST}:${PORT}`, pid: process.pid })

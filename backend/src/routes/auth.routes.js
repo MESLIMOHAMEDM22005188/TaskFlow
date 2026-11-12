@@ -405,8 +405,7 @@ router.post("/forgot-password/challenge", async (req, res) => {
 });
 
 /**
- * Step 2: validate the arithmetic challenge, provision the Supabase Auth
- * identity if needed, and ask Supabase to send its recovery OTP.
+ * Step 2: validate the arithmetic challenge and send a local reset code through SMTP.
  */
 router.post("/forgot-password/send-code", async (req, res) => {
     const challengeId = typeof req.body?.challengeId === "string" ? req.body.challengeId : "";
@@ -414,7 +413,7 @@ router.post("/forgot-password/send-code", async (req, res) => {
     const challenge = recoveryChallenges.get(challengeId);
 
     if (!challenge || challenge.expiresAt <= Date.now() ||
-        challenge.attempts >= 3 || !/^\\d{1,4}$/.test(answer)) {
+        challenge.attempts >= 3 || !/^\d{1,4}$/.test(answer)) {
         recoveryChallenges.delete(challengeId);
         return res.status(400).json({ message: "Le calcul a expiré ou est invalide. Recommence." });
     }
@@ -485,16 +484,12 @@ router.post("/forgot-password/send-code", async (req, res) => {
 /**
  * Step 3: verify the locally stored one-time code and update the MySQL password.
  */
-/**
- * Step 3: verify the Supabase recovery OTP server-side, then update only the
- * corresponding MySQL bcrypt password. Supabase sessions never reach the client.
- */
 router.post("/forgot-password/reset", async (req, res) => {
     const flowId = typeof req.body?.flowId === "string" ? req.body.flowId : "";
     const code = typeof req.body?.token === "string" ? req.body.token.trim() : "";
     const newPassword = req.body?.newPassword;
 
-    if (!flowId || !/^\\d{6}$/.test(code) || !isStrongPassword(newPassword)) {
+    if (!flowId || !/^\d{6}$/.test(code) || !isStrongPassword(newPassword)) {
         return res.status(400).json({
             message: "Code invalide ou expiré. Vérifie le code et les critères du nouveau mot de passe.",
         });

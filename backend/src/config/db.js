@@ -36,7 +36,7 @@ function getDatabaseConfig() {
             port: Number(databaseUrl.port || 3306),
             user: decodeURIComponent(databaseUrl.username),
             password: decodeURIComponent(databaseUrl.password),
-            database: databaseUrl.pathname.replace(/^\\//, ""),
+            database: databaseUrl.pathname.slice(1),
         };
     }
 

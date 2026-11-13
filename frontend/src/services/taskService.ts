@@ -125,7 +125,7 @@ export async function permanentlyDeleteTask(id: number): Promise<{ message: stri
 }
 
 export async function getTaskHistory(): Promise<TaskHistory[]> {
-    const res = await fetch(`${API_ROOT}/tasks/history`, { headers: getHeaders() })
+    const res = await fetch(`${API_ROOT}/tasks/history?status=done`, { headers: getHeaders() })
     return handleResponse(res)
 }
 

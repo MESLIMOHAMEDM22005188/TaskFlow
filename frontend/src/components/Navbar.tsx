@@ -15,7 +15,8 @@ const NAV_ITEMS = [
     { path: "/profil", label: "Profil", keywords: "compte avatar informations" },
     { path: "/communaute", label: "Communauté", keywords: "groupes publications discussions" },
     { path: "/seasons", label: "Season Arc", keywords: "winter summer saison rang classement xp" },
-    { path: "/historique", label: "Historique", keywords: "archives terminées passées" },
+    { path: "/archives", label: "Archives", keywords: "tâches archivées restaurer supprimer" },
+    { path: "/historique", label: "Historique", keywords: "tâches terminées passées" },
     { path: "/moderation", label: "Modération", keywords: "administration modérateur utilisateurs sanctions" },
     { path: "/parametres", label: "Paramètres", keywords: "préférences apparence thème sombre clair" },
 ];

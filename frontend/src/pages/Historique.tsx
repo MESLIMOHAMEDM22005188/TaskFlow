@@ -64,7 +64,7 @@ export default function Historique() {
                 <div className="archive-page-heading">
                     <div>
                         <p className="archive-eyebrow">GRINDLY · MÉMOIRE</p>
-                        <h1 className="title">Historique</h1>
+                        <div className="archive-page-heading"><div><h1 className="title">Historique</h1><p className="archive-subtitle">Retrouve tes tâches terminées.</p></div><Link className="archive-link" to="/archives">Ouvrir les archives →</Link></div>
                         <p className="archive-subtitle">Retrouve les tâches terminées et les tâches mises de côté.</p>
                     </div>
                     <a className="archive-link" href="/archives">Ouvrir les archives →</a>

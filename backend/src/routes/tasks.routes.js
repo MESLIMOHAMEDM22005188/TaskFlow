@@ -647,21 +647,16 @@ router.get("/completions/today", async (req, res) => {
 router.get("/history", async (req, res) => {
     try {
         const requestedStatus = req.query.status
-        const statusFilter = requestedStatus === "archived"
-            ? "archived"
-            : requestedStatus === "done"
-                ? "done"
-                : null
+        const statusFilter = requestedStatus === "archived" || requestedStatus === "done"
+            ? requestedStatus
+            : null
 
         const [tasks] = await db.execute(`
             SELECT
                 t.*,
                 COUNT(tc.id) as total_completions,
-                DATEDIFF(
-                    COALESCE(t.completed_at, t.archived_at, NOW()),
-                    t.created_at
-                ) as lifespan_days,
-                th.name  as theme_name,
+                DATEDIFF(COALESCE(t.completed_at, t.archived_at, NOW()), t.created_at) as lifespan_days,
+                th.name as theme_name,
                 th.emoji as theme_emoji,
                 th.color as theme_color
             FROM tasks t

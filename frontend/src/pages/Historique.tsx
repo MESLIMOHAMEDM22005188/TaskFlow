@@ -7,8 +7,7 @@ import Navbar from "../components/Navbar"
 
 export default function Historique() {
     const [tasks, setTasks] = useState<TaskHistory[]>([])
-    const [filter, setFilter] = useState<"all" | "done" | "archived">("all")
-    const [loadingId, setLoadingId] = useState<number | null>(null)
+        const [loadingId, setLoadingId] = useState<number | null>(null)
     const [error, setError] = useState("")
 
     async function loadHistory() {

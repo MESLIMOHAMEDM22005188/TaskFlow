@@ -17,6 +17,7 @@ import Communaute from "./pages/Communaute"
 import Parametres from "./pages/Parametres"
 import Stats from "./pages/Stats"
 import Historique from "./pages/Historique"
+import Archives from "./pages/Archives"
 import Seasons from "./pages/Seasons"
 import Moderation from "./pages/Moderation"
 
@@ -187,6 +188,7 @@ function App() {
             <Route path="/stats"      element={<RequireAuth><Stats /></RequireAuth>} />
             <Route path="/habitudes"  element={<RequireAuth><Habitudes /></RequireAuth>} />
             <Route path="/historique" element={<RequireAuth><Historique /></RequireAuth>} />
+            <Route path="/archives" element={<RequireAuth><Archives /></RequireAuth>} />
             <Route path="/moderation/*" element={<RequireAuth><Moderation /></RequireAuth>} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>

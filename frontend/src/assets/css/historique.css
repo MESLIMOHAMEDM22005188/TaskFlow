@@ -53,3 +53,9 @@
 
 .histo-empty { text-align: center; opacity: 0.35; font-size: 14px; padding: 80px 0; display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .histo-empty::before { content: "📭"; font-size: 40px; opacity: 0.6; }
+.archive-page-heading{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;margin-bottom:28px;flex-wrap:wrap}
+.archive-eyebrow{margin:0 0 8px;color:var(--accent);font-size:11px;font-weight:700;letter-spacing:.16em}
+.archive-subtitle{margin:8px 0 0;opacity:.62;font-size:14px}
+.archive-link{color:var(--accent);text-decoration:none;font-size:13px;font-weight:600;padding:10px 14px;border:1px solid rgba(var(--accent-rgb),.28);border-radius:10px}
+.archive-link:hover{background:rgba(var(--accent-rgb),.1)}
+.archive-error{color:#ef4444;padding:12px 14px;border:1px solid rgba(239,68,68,.25);border-radius:10px;margin:0 0 18px}

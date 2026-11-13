@@ -646,6 +646,13 @@ router.get("/completions/today", async (req, res) => {
 
 router.get("/history", async (req, res) => {
     try {
+        const requestedStatus = req.query.status
+        const statusFilter = requestedStatus === "archived"
+            ? "archived"
+            : requestedStatus === "done"
+                ? "done"
+                : null
+
         const [tasks] = await db.execute(`
             SELECT
                 t.*,
@@ -658,20 +665,20 @@ router.get("/history", async (req, res) => {
                 th.emoji as theme_emoji,
                 th.color as theme_color
             FROM tasks t
-            LEFT JOIN task_completions tc ON tc.task_id = t.id
+            LEFT JOIN task_completions tc ON tc.task_id = t.id AND tc.user_id = t.user_id
             LEFT JOIN themes th ON th.id = t.theme_id
             WHERE t.user_id = ?
               AND t.status IN ('done', 'archived')
+              AND (? IS NULL OR t.status = ?)
             GROUP BY t.id
-            ORDER BY COALESCE(t.completed_at, t.archived_at) DESC
-            LIMIT 100
-        `, [req.userId])
+            ORDER BY COALESCE(t.archived_at, t.completed_at, t.created_at) DESC
+            LIMIT 200
+        `, [req.userId, statusFilter, statusFilter])
 
         res.json(tasks)
-
     } catch (err) {
         console.error(err)
-        res.status(500).json({ message: "Error fetching history" })
+        res.status(500).json({ message: "Error fetching task history" })
     }
 })
 // COMPLETE task

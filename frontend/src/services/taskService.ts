@@ -125,33 +125,18 @@ export async function permanentlyDeleteTask(id: number): Promise<{ message: stri
 }
 
 export async function getTaskHistory(): Promise<TaskHistory[]> {
-    const res = await fetch(`${API_ROOT}/tasks/history`, {
-        headers: getHeaders()
-    })
+    const res = await fetch(`${API_ROOT}/tasks/history`, { headers: getHeaders() })
     return handleResponse(res)
 }
 
-/** Retourne uniquement les tâches archivées par l'utilisateur. */
 export async function getArchivedTasks(): Promise<TaskHistory[]> {
-    const res = await fetch(`${API_ROOT}/tasks/history?status=archived`, {
-        headers: getHeaders()
-    })
+    const res = await fetch(`${API_ROOT}/tasks/history?status=archived`, { headers: getHeaders() })
     return handleResponse(res)
 }
 
-/** Restaure une tâche archivée dans le dashboard. */
 export async function restoreTask(id: number): Promise<Task> {
     const res = await fetch(`${API_ROOT}/tasks/${id}/restore`, {
         method: "PUT",
-        headers: getHeaders()
-    })
-    return handleResponse(res)
-}
-
-/** Supprime définitivement une tâche archivée. */
-export async function permanentlyDeleteTask(id: number): Promise<{ message: string }> {
-    const res = await fetch(`${API_ROOT}/tasks/${id}/permanent`, {
-        method: "DELETE",
         headers: getHeaders()
     })
     return handleResponse(res)
